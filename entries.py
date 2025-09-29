@@ -7,6 +7,7 @@ import pathlib
 import unicodedata
 
 import babel.dates
+from fasthtml.common import Convertor, register_url_convertor
 import marko
 import yaml
 
@@ -15,19 +16,37 @@ import constants
 # Key: entry id; value: entry instance.
 entries_lookup = {}
 
-class Entry:
-    "Entry in notebook."
 
-    def __init__(self, path):
-        self.path = path
+def get(eid):
+    global entries_lookup
+    return entries_lookup[eid]
+
+
+class Entry:
+    "Abstract entry class."
+
+    def __init__(self, path=None):
+        self._path = path
         self.frontmatter = {}
 
     def __str__(self):
         return self.eid
 
     @property
+    def type(self):
+        return self.__class__.__name__.casefold()
+
+    @property
+    def path(self):
+        return self._path
+
+    @property
     def eid(self):
-        return self.path.stem.casefold()
+        return self.path.stem
+
+    @property
+    def url(self):
+        return f"/{self.type}/{self}"
 
     @property
     def title(self):
@@ -38,32 +57,33 @@ class Entry:
 
     @title.setter
     def title(self, title):
+        "Set the title. If the path has not been set, set it to unique variant."
+        global entries_lookup
+        assert title
         self.frontmatter["title"] = title
+        if self.path is None:
+            filename = unicodedata.normalize("NFKD", title).encode("ASCII", "ignore")
+            filename = "".join(
+                [
+                    c if c in constants.FILENAME_CHARACTERS else "-"
+                    for c in filename.decode("utf-8")
+                ]
+            )
+            filename = filename.casefold()
+            self._path = constants.DATA_DIR / f"{filename}.md"
+            if self.eid in entries_lookup:
+                n = 2
+                while True:
+                    self._path = constants.DATA_DIR / f"{filename}-{n}.md"
+                    if self.eid not in entries_lookup:
+                        break
+                    n += 1
+            entries_lookup[self.eid] = self
 
     @property
     def size(self):
+        "Size of the entry content, in bytes."
         return len(self.content)
-
-    @property
-    def link(self):
-        return self.frontmatter.get("link")
-
-    @property
-    def file(self):
-        try:
-            ext = self.frontmatter["ext"]
-        except KeyError:
-            return None
-        return self.path.with_suffix(ext)
-
-    @property
-    def type(self):
-        if self.link:
-            return constants.LINK
-        elif self.file:
-            return constants.FILE
-        else:
-            return constants.NOTE
 
     @property
     def modified(self):
@@ -84,21 +104,8 @@ class Entry:
             format=constants.DATETIME_BABEL_FORMAT,
         )
 
-    def read(self):
-        content = self.path.read_text()
-        match = constants.FRONTMATTER.match(content)
-        if match:
-            self.frontmatter = yaml.safe_load(match.group(1))
-            # Dates must be represented as strings, not datetime.date.
-            for key, value in self.frontmatter.items():
-                if isinstance(value, datetime.date):
-                    self.frontmatter[key] = str(value)
-            self.content = content[match.start(2) :]
-        else:
-            self.frontmatter = {}
-            self.content = content
-
     def write(self):
+        "Write the entry to file."
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 outfile.write("---\n")
@@ -107,71 +114,107 @@ class Entry:
             if self.content:
                 outfile.write(self.content)
 
-    def copy(self):
-        global entries_lookup
-        new = create_entry(self.title + " [copy]")
-        frontmatter = copy.deepcopy(self.frontmatter)
-        frontmatter.pop("title")
-        new.frontmatter.update(frontmatter)
-        new.content = self.content
-        # XXX other stuff for link and file.
-        new.write()
-        return new
-
     def delete(self):
         global entries_lookup
         entries_lookup.pop(self.eid)
         self.path.unlink()
 
 
+class EntryConvertor(Convertor):
+    "Convert path segment to Entry class instance."
+
+    regex = "[^./]+"
+
+    def convert(self, value: str) -> Entry:
+        return get(value)
+
+    def to_string(self, value: Entry) -> str:
+        return str(value)
+
+
+register_url_convertor("Entry", EntryConvertor())
+
+
+class Note(Entry):
+    "Note entry class."
+
+
+class Link(Entry):
+    "Link entry class"
+
+    @property
+    def href(self):
+        return self.frontmatter.get("href") or "/"
+
+    @href.setter
+    def href(self, href):
+        self.frontmatter["href"] = href.strip() or "/"
+
+
+class File(Entry):
+    "File entry class."
+
+    @property
+    def filename(self):
+        return self.frontmatter["filename"]
+
+    @property
+    def extension(self):
+        return pathlib.Path(self.filename).suffix
+
+    @property
+    def download(self):
+        "URL for download of the file contents."
+        return f"/{self.type}/{self}{self.extension}"
+
+    @property
+    def filepath(self):
+        return constants.DATA_DIR / self.filename
+
+    @property
+    def file_size(self):
+        "Size of the file, in bytes."
+        return self.filepath.stat().st_size
+
+
 def read_entry_files(dirpath=None):
     """Recursively read all entries from from files in the given directory.
-    If no directory is given, start with the root.
-    Create the root if it does not exist.
+    If no directory is given, start with the data dir.
+    Create the data dir if it does not exist.
     """
     global entries_lookup
     if dirpath is None:
         entries_lookup.clear()
-        dirpath = pathlib.Path(os.environ["CHAOS_DIR"])
-        if not dirpath.exists():
-            dirpath.mkdir()
-    for path in dirpath.iterdir():
+        if not constants.DATA_DIR.exists():
+            constants.DATA_DIR.mkdir()
+    for path in constants.DATA_DIR.iterdir():
         if path.is_dir():
             read_entry_files(path)
         elif path.is_file() and path.suffix == ".md":
-            entry = Entry(path)
-            entry.read()
-            entries_lookup[entry.eid] = entry
+            content = path.read_text()
+            match = constants.FRONTMATTER.match(content)
+            if match:
+                frontmatter = yaml.safe_load(match.group(1))
+                # Dates must be represented as strings, not datetime.date.
+                for key, value in frontmatter.items():
+                    if isinstance(value, datetime.date):
+                        frontmatter[key] = str(value)
+            content = content[match.start(2) :]
+        else:
+            frontmatter = {}
+        if "href" in frontmatter:
+            entry = Link(path)
+        elif "filename" in frontmatter:
+            entry = File(path)
+        else:
+            entry = Note(path)
+        entries_lookup[entry.eid] = entry
+        entry.frontmatter = frontmatter
+        entry.content = content
 
-def get(eid):
-    global entries_lookup
-    return entries_lookup[eid]
 
 def recent(start=0, end=25):
     global entries_lookup
     entries = list(entries_lookup.values())
     entries.sort(key=lambda e: e.modified, reverse=True)
     return list(entries[start:end])
-
-def create_entry(title):
-    """Create an entry with the given title.
-    The filename of the entry is created from the title
-    after cleanup, and made unique, if not already.
-    NOTE: The entry is *not* written to file.
-    """
-    global entries_lookup
-    root = pathlib.Path(os.environ["CHAOS_DIR"])
-    filename = unicodedata.normalize("NFKD", title).encode("ASCII", "ignore")
-    filename = "".join(
-        [c.casefold() if c in constants.FILENAME_CHARACTERS else "-" for c in filename.decode("utf-8")]
-    )
-    path = root / f"{filename}.md"
-    if path.exists():
-        n = 2
-        path = root / f"{filename}-{n}.md"
-        while path.exists():
-            n += 1
-    entry = Entry(path)
-    entry.frontmatter["title"] = title
-    entries_lookup[entry.eid] = entry
-    return entry

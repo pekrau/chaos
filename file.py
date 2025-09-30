@@ -1,5 +1,6 @@
 "File entry pages."
 
+import mimetypes
 import pathlib
 
 from fasthtml.common import *
@@ -51,7 +52,7 @@ def get(session):
                     type="submit",
                     value="Save",
                 ),
-                action="/file",
+                action="/file/",
                 method="POST",
                 enctype="multipart/form-data",
             ),
@@ -66,8 +67,10 @@ async def post(session, title: str, upfile: UploadFile, text: str):
     filename = pathlib.Path(upfile.filename)
     ext = filename.suffix
     if ext == ".md":
-        raise components.Error("Markdown file upload is disallowed")
+        raise components.Error("Upload of Markdown file is disallowed")
     file = entries.File()
+    # XXX For some reason, 'auth' is not set in 'request.scope'?
+    file.owner = session["auth"]
     file.title = title.strip() or filename.stem
     file.content = text.strip()
     filecontent = await upfile.read()
@@ -86,6 +89,12 @@ async def post(session, title: str, upfile: UploadFile, text: str):
 def get(session, file: entries.Entry):
     "View the metadata for the file."
     assert file.type == constants.FILE
+    if file.filename.suffix.lower() in constants.IMAGE_SUFFIXES:
+        image = Img(
+            src=f"{file.url}/download", style="border: 1px solid #ddd; padding: 4px;"
+        )
+    else:
+        image = ""
     return (
         Title(file.title),
         Script(src="/clipboard.min.js"),
@@ -126,8 +135,8 @@ def get(session, file: entries.Entry):
         ),
         Main(
             Card(
-                Strong(A(file.filename, href=f"{file.url}{file.extension}")),
-                f" ({file.file_size} bytes)",
+                P(Strong(A(file.filename, href=f"{file.url}/download"))),
+                P(image),
             ),
             NotStr(marko.convert(file.content)),
             cls="container",
@@ -135,7 +144,7 @@ def get(session, file: entries.Entry):
         Footer(
             Hr(),
             Div(
-                Div(f"{file.size} bytes"),
+                Div(f"{file.size:,d} + {file.filesize:,d} bytes"),
                 Div(file.modified_local),
                 cls="grid",
             ),
@@ -144,9 +153,23 @@ def get(session, file: entries.Entry):
     )
 
 
+@rt("/{file:Entry}/download")
+def get(session, file: entries.Entry):
+    "Download the file."
+    media_type, encoding = mimetypes.guess_type(file.filename)
+    headers = {"Content-Disposition": f'attachment; filename="{file.filename}"'}
+    if encoding:
+        headers["Content-Encoding"] = encoding
+    return Response(
+        content=file.filepath.read_bytes(),
+        media_type=media_type or constants.BINARY_MEDIA_TYPE,
+        headers=headers,
+    )
+
+
 @rt("/{file:Entry}/edit")
 def get(session, file: entries.Entry):
-    "Form for editing a file."
+    "Form for editing metadata for a file."
     assert file.type == constants.FILE
     return (
         Title("chaos"),
@@ -170,9 +193,8 @@ def get(session, file: entries.Entry):
                     required=True,
                 ),
                 Input(
-                    type="href",
-                    name="href",
-                    value=file.href,
+                    type="file",
+                    name="upfile",
                 ),
                 Textarea(
                     file.content,
@@ -202,11 +224,21 @@ def get(session, file: entries.Entry):
 
 
 @rt("/{file:Entry}/edit")
-def post(session, file: entries.Entry, title: str, href: str, text: str):
+async def post(session, file: entries.Entry, title: str, upfile: UploadFile, text: str):
     "Actually edit the file."
     assert file.type == constants.FILE
-    file.title = (title or "no title").strip()
-    file.href = href.strip() or "/"
+    if upfile.filename:
+        ext = pathlib.Path(upfile.filename).suffix
+        if ext == ".md":
+            raise components.Error("Upload of Markdown file is disallowed")
+        filecontent = await upfile.read()
+        filename = file.eid + ext
+        try:
+            with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
+                outfile.write(filecontent)
+        except OSError as error:
+            raise components.Error(error)
+    file.title = title.strip() or file.filename.stem
     file.content = text.strip()
     file.write()
     return Redirect(file.url)
@@ -310,8 +342,8 @@ def get(session, file: entries.Entry):
         Footer(
             Hr(),
             Div(
-                Small(f"{file.size} bytes"),
-                Small(file.modified_local),
+                Div(f"{file.size:,d} + {file.filesize:,d} bytes"),
+                Div(file.modified_local),
                 cls="grid",
             ),
             cls="container",

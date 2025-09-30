@@ -1,8 +1,12 @@
 "Chaos notebook."
 
-from icecream import install
+import constants
+if constants.DEVELOPMENT:
+    from icecream import install
+    install()
+    ic(constants.DEVELOPMENT)
 
-install()
+import os
 
 from fasthtml.common import *
 
@@ -41,15 +45,23 @@ def get(auth):
                             Details(
                                 Summary("Add..."),
                                 Ul(
-                                    Li(A("Note", href="/note")),
-                                    Li(A("Link", href="/link")),
-                                    Li(A("File", href="/file")),
+                                    Li(A("Note", href="/note/")),
+                                    Li(A("Link", href="/link/")),
+                                    Li(A("File", href="/file/")),
                                 ),
                                 cls="dropdown",
                             ),
                         ),
                     ),
                     Ul(
+                        Li(
+                            A(
+                                "Reread",
+                                href="/reread",
+                                role="button",
+                                cls="outline secondary",
+                            )
+                        ),
                         Li(A("Logout", href="/logout", role="button", cls="outline")),
                     ),
                     style=constants.MAIN_NAV_STYLE,
@@ -127,6 +139,13 @@ def post(session, username: str, password: str):
         return components.redirect("/")
     session["auth"] = username
     return components.redirect(session.pop("path") or "/")
+
+
+@rt("/reread")
+def get(session):
+    "Reread all entries."
+    entries.read_entry_files()
+    return components.redirect("/")
 
 
 @rt("/logout")

@@ -32,9 +32,9 @@ def set_auth_before(request, session):
 
 def get_fast_app(routes=None):
     app, rt = fast_app(
-        live="CHAOS_DEVELOPMENT" in os.environ,
+        live=constants.DEVELOPMENT,
         static_path="static",
-        before=set_auth_before,
+        before=Beforeware(set_auth_before),
         hdrs=(Link(rel="stylesheet", href="/mods.css", type="text/css"),),
         exception_handlers={
             Error: error_handler,
@@ -92,22 +92,47 @@ def get_entries_table(entries):
         items = [get_entry_clipboard(entry), A(entry.title, href=entry.url)]
         match entry.type:
             case constants.NOTE:
-                pass
+                rows.append(
+                    Tr(
+                        Td(*items),
+                        Td(entry.size, style="text-align: right;"),
+                        Td(entry.owner),
+                        Td(entry.modified_local),
+                    )
+                )
             case constants.LINK:
                 items.append(
-                    A(get_icon("box-arrow-up-right.svg", "go to"), href=entry.href)
+                    A(
+                        get_icon("box-arrow-up-right.svg", title="Go to page"),
+                        href=entry.href,
+                    )
+                )
+                rows.append(
+                    Tr(
+                        Td(*items),
+                        Td(entry.size, style="text-align: right;"),
+                        Td(entry.owner),
+                        Td(entry.modified_local),
+                    )
                 )
             case constants.FILE:
                 items.append(
-                    A(get_icon("download.svg", title="download"), href=entry.download)
+                    A(
+                        get_icon("download.svg", title="Download file"),
+                        href=f"{entry.url}/download",
+                    )
                 )
-        rows.append(
-            Tr(
-                Td(*items),
-                Td(entry.size, style="text-align: right;"),
-                Td(entry.modified_local),
-            )
-        )
+                rows.append(
+                    Tr(
+                        Td(*items),
+                        Td(
+                            f"{entry.size} + {entry.filesize}",
+                            style="text-align: right;",
+                        ),
+                        Td(entry.owner),
+                        Td(entry.modified_local),
+                    )
+                )
     return Table(Tbody(*rows), cls="striped")
 
 

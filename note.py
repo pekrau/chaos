@@ -44,7 +44,7 @@ def get(session):
                     type="submit",
                     value="Save",
                 ),
-                action="/note",
+                action="/note/",
                 method="POST",
             ),
             cls="container",
@@ -56,6 +56,8 @@ def get(session):
 def post(session, title: str, text: str):
     "Actually add the note."
     note = entries.Note()
+    # XXX For some reason, 'auth' is not set in 'request.scope'?
+    note.owner = session["auth"]
     note.title = title.strip() or "no title"
     note.content = text.strip()
     note.write()

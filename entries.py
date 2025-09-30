@@ -49,6 +49,15 @@ class Entry:
         return f"/{self.type}/{self}"
 
     @property
+    def owner(self):
+        return self.frontmatter["owner"]
+
+    @owner.setter
+    def owner(self, owner):
+        assert owner
+        self.frontmatter["owner"] = owner
+
+    @property
     def title(self):
         try:
             return self.frontmatter["title"]
@@ -156,25 +165,20 @@ class File(Entry):
 
     @property
     def filename(self):
-        return self.frontmatter["filename"]
-
-    @property
-    def extension(self):
-        return pathlib.Path(self.filename).suffix
-
-    @property
-    def download(self):
-        "URL for download of the file contents."
-        return f"/{self.type}/{self}{self.extension}"
+        return pathlib.Path(self.frontmatter["filename"])
 
     @property
     def filepath(self):
         return constants.DATA_DIR / self.filename
 
     @property
-    def file_size(self):
+    def filesize(self):
         "Size of the file, in bytes."
         return self.filepath.stat().st_size
+
+    def delete(self):
+        self.filepath.unlink()
+        super().delete()
 
 
 def read_entry_files(dirpath=None):
@@ -199,18 +203,18 @@ def read_entry_files(dirpath=None):
                 for key, value in frontmatter.items():
                     if isinstance(value, datetime.date):
                         frontmatter[key] = str(value)
-            content = content[match.start(2) :]
-        else:
-            frontmatter = {}
-        if "href" in frontmatter:
-            entry = Link(path)
-        elif "filename" in frontmatter:
-            entry = File(path)
-        else:
-            entry = Note(path)
-        entries_lookup[entry.eid] = entry
-        entry.frontmatter = frontmatter
-        entry.content = content
+                content = content[match.start(2) :]
+            else:
+                frontmatter = {}
+            if "href" in frontmatter:
+                entry = Link(path)
+            elif "filename" in frontmatter:
+                entry = File(path)
+            else:
+                entry = Note(path)
+            entries_lookup[entry.eid] = entry
+            entry.frontmatter = frontmatter
+            entry.content = content
 
 
 def recent(start=0, end=25):

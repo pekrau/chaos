@@ -50,7 +50,7 @@ def get(session):
                     type="submit",
                     value="Save",
                 ),
-                action="/link",
+                action="/link/",
                 method="POST",
             ),
             cls="container",
@@ -62,6 +62,8 @@ def get(session):
 def post(session, title: str, href: str, text: str):
     "Actually add the link."
     link = entries.Link()
+    # XXX For some reason, 'auth' is not set in 'request.scope'?
+    link.owner = session["auth"]
     link.title = title.strip() or "no title"
     link.href = href.strip() or "/"
     link.content = text.strip()

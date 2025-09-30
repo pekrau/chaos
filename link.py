@@ -5,7 +5,7 @@ import marko
 
 import components
 import constants
-import entries
+from entries import Entry, Link
 
 
 app, rt = components.fast_app()
@@ -61,7 +61,7 @@ def get(session):
 @rt("/")
 def post(session, title: str, href: str, text: str):
     "Actually add the link."
-    link = entries.Link()
+    link = Link()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     link.owner = session["auth"]
     link.title = title.strip() or "no title"
@@ -72,9 +72,9 @@ def post(session, title: str, href: str, text: str):
 
 
 @rt("/{link:Entry}")
-def get(session, link: entries.Entry):
+def get(session, link: Entry):
     "View the metadata for the link."
-    assert link.type == constants.LINK
+    assert isinstance(link, Link)
     return (
         Title(link.title),
         Script(src="/clipboard.min.js"),
@@ -97,6 +97,7 @@ def get(session, link: entries.Entry):
                     ),
                 ),
                 Ul(
+                    Li(components.search_form()),
                     Li(
                         Details(
                             Summary("Add..."),
@@ -133,9 +134,9 @@ def get(session, link: entries.Entry):
 
 
 @rt("/{link:Entry}/edit")
-def get(session, link: entries.Entry):
+def get(session, link: Entry):
     "Form for editing a link."
-    assert link.type == constants.LINK
+    assert isinstance(link, Link)
     return (
         Title("chaos"),
         Header(
@@ -190,9 +191,9 @@ def get(session, link: entries.Entry):
 
 
 @rt("/{link:Entry}/edit")
-def post(session, link: entries.Entry, title: str, href: str, text: str):
+def post(session, link: Entry, title: str, href: str, text: str):
     "Actually edit the link."
-    assert link.type == constants.LINK
+    assert isinstance(link, Link)
     link.title = (title or "no title").strip()
     link.href = href.strip() or "/"
     link.content = text.strip()
@@ -201,9 +202,10 @@ def post(session, link: entries.Entry, title: str, href: str, text: str):
 
 
 @rt("/{link:Entry}/copy")
-def get(session, link: entries.Entry):
+def get(session, link: Entry):
     "Form for making a copy of the link."
-    assert link.type == constants.LINK
+    assert isinstance(link, Link)
+
     return (
         Title("chaos"),
         Header(
@@ -258,9 +260,10 @@ def get(session, link: entries.Entry):
 
 
 @rt("/{link:Entry}/delete")
-def get(session, link: entries.Entry):
+def get(session, link: Entry):
     "Ask for confirmation to delete the link."
-    assert link.type == constants.LINK
+    assert isinstance(link, Link)
+
     return (
         Title(link.title),
         Header(
@@ -308,9 +311,9 @@ def get(session, link: entries.Entry):
 
 
 @rt("/{link:Entry}/delete")
-def post(session, link: entries.Entry, action: str):
+def post(session, link: Entry, action: str):
     "Actually delete the link."
-    assert link.type == constants.LINK
+    assert isinstance(link, Link)
     if "yes" in action.casefold():
         link.delete()
         return Redirect(f"/")

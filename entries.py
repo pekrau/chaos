@@ -4,6 +4,7 @@ import copy
 import datetime
 import os
 import pathlib
+import re
 import unicodedata
 
 import babel.dates
@@ -33,10 +34,6 @@ class Entry:
         return self.eid
 
     @property
-    def type(self):
-        return self.__class__.__name__.casefold()
-
-    @property
     def path(self):
         return self._path
 
@@ -46,7 +43,7 @@ class Entry:
 
     @property
     def url(self):
-        return f"/{self.type}/{self}"
+        return f"/{self.__class__.__name__.casefold()}/{self}"
 
     @property
     def owner(self):
@@ -124,9 +121,17 @@ class Entry:
                 outfile.write(self.content)
 
     def delete(self):
+        "Delete the entry from the file system and remove from the lookup."
         global entries_lookup
         entries_lookup.pop(self.eid)
         self.path.unlink()
+
+    def score(self, term):
+        """Calculate the score for the term in the title or text of the entry.
+        Presence in the title is weighted by 2.
+        """
+        rx = re.compile(f"{term.strip()}.*", re.IGNORECASE)
+        return 2.0 * len(rx.findall(self.title)) + len(rx.findall(self.content))
 
 
 class EntryConvertor(Convertor):
@@ -177,6 +182,7 @@ class File(Entry):
         return self.filepath.stat().st_size
 
     def delete(self):
+        "Delete the entry from the file system and its file and remove from the lookup."
         self.filepath.unlink()
         super().delete()
 

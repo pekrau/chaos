@@ -91,7 +91,7 @@ def get(auth):
                         Li(components.chaos_icon()),
                         Li("Login"),
                     ),
-                    style=constants.MAIN_NAV_STYLE,
+                    style=constants.LOGIN_NAV_STYLE,
                 ),
                 cls="container",
             ),
@@ -138,7 +138,7 @@ def post(session, username: str, password: str):
         add_toast(session, "Invalid username and/or password.", "error")
         return components.redirect("/")
     session["auth"] = username
-    return components.redirect(session.pop("path") or "/")
+    return components.redirect(session.pop("path", None) or "/")
 
 
 @rt("/reread")
@@ -155,9 +155,56 @@ def get(session):
 
 
 @rt("/search")
-def get(session):
+def get(session, auth, term: str):
     "Search the entries."
-    raise NotImplementedError
+    result = []
+    for entry in entries.entries_lookup.values():
+        if score := entry.score(term):
+            if score:
+                result.append((score, entry.modified_local, entry))
+    result.sort(reverse=True)
+    return (
+        Title("chaos"),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.chaos_icon()),
+                    Li("Search"),
+                    Li(components.search_form(term)),
+                ),
+                Ul(
+                    Li(
+                        Details(
+                            Summary("Add..."),
+                            Ul(
+                                Li(A("Note", href="/note/")),
+                                Li(A("Link", href="/link/")),
+                                Li(A("File", href="/file/")),
+                            ),
+                            cls="dropdown",
+                        ),
+                    ),
+                ),
+                style=constants.SEARCH_NAV_STYLE,
+            ),
+            cls="container",
+        ),
+        Main(
+            components.get_entries_table([e for s, m, e in result]),
+            cls="container",
+        ),
+        Footer(
+            Hr(),
+            Div(
+                Div(auth),
+                Div(f"v {constants.VERSION}", style="text-align: right;"),
+                cls="grid",
+            ),
+            cls="container",
+        ),
+    )
 
 
 serve(port=5002)

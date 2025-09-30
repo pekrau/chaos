@@ -5,7 +5,7 @@ import marko
 
 import components
 import constants
-import entries
+from entries import Entry, Note
 
 
 app, rt = components.fast_app()
@@ -55,7 +55,7 @@ def get(session):
 @rt("/")
 def post(session, title: str, text: str):
     "Actually add the note."
-    note = entries.Note()
+    note = Note()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     note.owner = session["auth"]
     note.title = title.strip() or "no title"
@@ -65,9 +65,9 @@ def post(session, title: str, text: str):
 
 
 @rt("/{note:Entry}")
-def get(session, note: entries.Entry):
+def get(session, note: Entry):
     "View the note."
-    assert note.type == constants.NOTE
+    assert isinstance(note, Note)
     return (
         Title(note.title),
         Script(src="/clipboard.min.js"),
@@ -90,6 +90,7 @@ def get(session, note: entries.Entry):
                     ),
                 ),
                 Ul(
+                    Li(components.search_form()),
                     Li(
                         Details(
                             Summary("Add..."),
@@ -123,9 +124,9 @@ def get(session, note: entries.Entry):
 
 
 @rt("/{note:Entry}/edit")
-def get(session, note: entries.Entry):
+def get(session, note: Entry):
     "Form for editing a note."
-    assert note.type == constants.NOTE
+    assert isinstance(note, Note)
     return (
         Title("chaos"),
         Header(
@@ -175,9 +176,9 @@ def get(session, note: entries.Entry):
 
 
 @rt("/{note:Entry}/edit")
-def post(session, note: entries.Entry, title: str, text: str):
+def post(session, note: Entry, title: str, text: str):
     "Actually edit the note."
-    assert note.type == constants.NOTE
+    assert isinstance(note, Note)
     note.title = title or "no title"
     note.content = text
     note.write()
@@ -185,9 +186,9 @@ def post(session, note: entries.Entry, title: str, text: str):
 
 
 @rt("/{note:Entry}/copy")
-def get(session, note: entries.Entry):
+def get(session, note: Entry):
     "Form for making a copy of the note."
-    assert note.type == constants.NOTE
+    assert isinstance(note, Note)
     return (
         Title("chaos"),
         Header(
@@ -236,9 +237,9 @@ def get(session, note: entries.Entry):
 
 
 @rt("/{note:Entry}/delete")
-def get(session, note: entries.Entry):
+def get(session, note: Entry):
     "Ask for confirmation to delete the note."
-    assert note.type == constants.NOTE
+    assert isinstance(note, Note)
     return (
         Title(note.title),
         Header(
@@ -286,9 +287,9 @@ def get(session, note: entries.Entry):
 
 
 @rt("/{note:Entry}/delete")
-def post(session, note: entries.Entry, action: str):
+def post(session, note: Entry, action: str):
     "Actually delete the note."
-    assert note.type == constants.NOTE
+    assert isinstance(note, Note)
     if "yes" in action.casefold():
         note.delete()
         return Redirect(f"/")

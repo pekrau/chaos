@@ -8,7 +8,7 @@ import marko
 
 import components
 import constants
-import entries
+from entries import Entry, File
 
 
 app, rt = components.fast_app()
@@ -68,7 +68,7 @@ async def post(session, title: str, upfile: UploadFile, text: str):
     ext = filename.suffix
     if ext == ".md":
         raise components.Error("Upload of Markdown file is disallowed")
-    file = entries.File()
+    file = File()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
@@ -86,9 +86,9 @@ async def post(session, title: str, upfile: UploadFile, text: str):
 
 
 @rt("/{file:Entry}")
-def get(session, file: entries.Entry):
+def get(session, file: Entry):
     "View the metadata for the file."
-    assert file.type == constants.FILE
+    assert isinstance(file, File)
     if file.filename.suffix.lower() in constants.IMAGE_SUFFIXES:
         image = Img(
             src=f"{file.url}/download", style="border: 1px solid #ddd; padding: 4px;"
@@ -117,6 +117,7 @@ def get(session, file: entries.Entry):
                     ),
                 ),
                 Ul(
+                    Li(components.search_form()),
                     Li(
                         Details(
                             Summary("Add..."),
@@ -154,7 +155,7 @@ def get(session, file: entries.Entry):
 
 
 @rt("/{file:Entry}/download")
-def get(session, file: entries.Entry):
+def get(session, file: Entry):
     "Download the file."
     media_type, encoding = mimetypes.guess_type(file.filename)
     headers = {"Content-Disposition": f'attachment; filename="{file.filename}"'}
@@ -168,9 +169,9 @@ def get(session, file: entries.Entry):
 
 
 @rt("/{file:Entry}/edit")
-def get(session, file: entries.Entry):
+def get(session, file: Entry):
     "Form for editing metadata for a file."
-    assert file.type == constants.FILE
+    assert isinstance(file, File)
     return (
         Title("chaos"),
         Header(
@@ -224,9 +225,9 @@ def get(session, file: entries.Entry):
 
 
 @rt("/{file:Entry}/edit")
-async def post(session, file: entries.Entry, title: str, upfile: UploadFile, text: str):
+async def post(session, file: Entry, title: str, upfile: UploadFile, text: str):
     "Actually edit the file."
-    assert file.type == constants.FILE
+    assert isinstance(file, File)
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
@@ -245,9 +246,9 @@ async def post(session, file: entries.Entry, title: str, upfile: UploadFile, tex
 
 
 @rt("/{file:Entry}/copy")
-def get(session, file: entries.Entry):
+def get(session, file: Entry):
     "Form for making a copy of the file."
-    assert file.type == constants.FILE
+    assert isinstance(file, File)
     return (
         Title("chaos"),
         Header(
@@ -302,9 +303,9 @@ def get(session, file: entries.Entry):
 
 
 @rt("/{file:Entry}/delete")
-def get(session, file: entries.Entry):
+def get(session, file: Entry):
     "Ask for confirmation to delete the file."
-    assert file.type == constants.FILE
+    assert isinstance(file, File)
     return (
         Title(file.title),
         Header(
@@ -352,9 +353,9 @@ def get(session, file: entries.Entry):
 
 
 @rt("/{file:Entry}/delete")
-def post(session, file: entries.Entry, action: str):
+def post(session, file: Entry, action: str):
     "Actually delete the file."
-    assert file.type == constants.FILE
+    assert isinstance(file, File)
     if "yes" in action.casefold():
         file.delete()
         return Redirect(f"/")

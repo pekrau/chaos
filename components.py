@@ -60,13 +60,14 @@ def chaos_icon():
     )
 
 
-def search_form():
+def search_form(term=None):
     return Form(
         Input(
             name="term",
             type="search",
             placeholder="Search...",
             aria_label="Search",
+            value=term or "",
             autofocus=True,
         ),
         style="margin-bottom: 2px; padding-top: 0;",
@@ -90,8 +91,8 @@ def get_entries_table(entries):
     rows = []
     for entry in entries:
         items = [get_entry_clipboard(entry), A(entry.title, href=entry.url)]
-        match entry.type:
-            case constants.NOTE:
+        match entry.__class__.__name__:
+            case "Note":
                 rows.append(
                     Tr(
                         Td(*items),
@@ -100,7 +101,7 @@ def get_entries_table(entries):
                         Td(entry.modified_local),
                     )
                 )
-            case constants.LINK:
+            case "Link":
                 items.append(
                     A(
                         get_icon("box-arrow-up-right.svg", title="Go to page"),
@@ -115,7 +116,7 @@ def get_entries_table(entries):
                         Td(entry.modified_local),
                     )
                 )
-            case constants.FILE:
+            case "File":
                 items.append(
                     A(
                         get_icon("download.svg", title="Download file"),
@@ -133,6 +134,8 @@ def get_entries_table(entries):
                         Td(entry.modified_local),
                     )
                 )
+            case _:
+                raise NotImplementedError
     return Table(Tbody(*rows), cls="striped")
 
 

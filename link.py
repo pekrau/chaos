@@ -5,7 +5,7 @@ import marko
 
 import components
 import constants
-from entries import Entry, Link
+import entries
 
 
 app, rt = components.fast_app()
@@ -61,7 +61,7 @@ def get(session):
 @rt("/")
 def post(session, title: str, href: str, text: str):
     "Actually add the link."
-    link = Link()
+    link = entries.Link()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     link.owner = session["auth"]
     link.title = title.strip() or "no title"
@@ -72,9 +72,9 @@ def post(session, title: str, href: str, text: str):
 
 
 @rt("/{link:Entry}")
-def get(session, link: Entry):
+def get(session, link: entries.Entry):
     "View the metadata for the link."
-    assert isinstance(link, Link)
+    assert isinstance(link, entries.Link)
     return (
         Title(link.title),
         Script(src="/clipboard.min.js"),
@@ -119,6 +119,15 @@ def get(session, link: Entry):
                 Strong(A(link.href, href=link.href)),
             ),
             NotStr(marko.convert(link.content)),
+            Small(
+                Card(
+                    Header(
+                        "Keywords: ",
+                        ", ".join(sorted(link.keywords)),
+                    ),
+                    components.get_entries_table(link.related()),
+                ),
+            ),
             cls="container",
         ),
         Footer(
@@ -134,9 +143,9 @@ def get(session, link: Entry):
 
 
 @rt("/{link:Entry}/edit")
-def get(session, link: Entry):
+def get(session, link: entries.Entry):
     "Form for editing a link."
-    assert isinstance(link, Link)
+    assert isinstance(link, entries.Link)
     return (
         Title("chaos"),
         Header(
@@ -191,9 +200,9 @@ def get(session, link: Entry):
 
 
 @rt("/{link:Entry}/edit")
-def post(session, link: Entry, title: str, href: str, text: str):
+def post(session, link: entries.Entry, title: str, href: str, text: str):
     "Actually edit the link."
-    assert isinstance(link, Link)
+    assert isinstance(link, entries.Link)
     link.title = (title or "no title").strip()
     link.href = href.strip() or "/"
     link.content = text.strip()
@@ -202,9 +211,9 @@ def post(session, link: Entry, title: str, href: str, text: str):
 
 
 @rt("/{link:Entry}/copy")
-def get(session, link: Entry):
+def get(session, link: entries.Entry):
     "Form for making a copy of the link."
-    assert isinstance(link, Link)
+    assert isinstance(link, entries.Link)
 
     return (
         Title("chaos"),
@@ -260,9 +269,9 @@ def get(session, link: Entry):
 
 
 @rt("/{link:Entry}/delete")
-def get(session, link: Entry):
+def get(session, link: entries.Entry):
     "Ask for confirmation to delete the link."
-    assert isinstance(link, Link)
+    assert isinstance(link, entries.Link)
 
     return (
         Title(link.title),
@@ -301,8 +310,8 @@ def get(session, link: Entry):
         Footer(
             Hr(),
             Div(
-                Small(f"{link.size} bytes"),
-                Small(link.modified_local),
+                Div(f"{link.size} bytes"),
+                Div(link.modified_local),
                 cls="grid",
             ),
             cls="container",
@@ -311,11 +320,12 @@ def get(session, link: Entry):
 
 
 @rt("/{link:Entry}/delete")
-def post(session, link: Entry, action: str):
+def post(session, link: entries.Entry, action: str):
     "Actually delete the link."
-    assert isinstance(link, Link)
+    assert isinstance(link, entries.Link)
     if "yes" in action.casefold():
         link.delete()
+        entries.set_all_keywords_relations()
         return Redirect(f"/")
     else:
         return Redirect(link.url)

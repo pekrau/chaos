@@ -9,7 +9,7 @@ import babel.dates
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
 
-VERSION = "0.3"
+VERSION = "0.5"
 
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
 
@@ -30,6 +30,7 @@ NOTE_NAV_STYLE = NAV_STYLE_TEMPLATE.format("mediumseagreen;")
 LINK_NAV_STYLE = NAV_STYLE_TEMPLATE.format("deepskyblue;")
 FILE_NAV_STYLE = NAV_STYLE_TEMPLATE.format("mediumpurple;")
 SEARCH_NAV_STYLE = NAV_STYLE_TEMPLATE.format("orange;")
+KEYWORD_NAV_STYLE = NAV_STYLE_TEMPLATE.format("tomato;")
 
 BINARY_MEDIA_TYPE = "application/octet-stream"
 IMAGE_SUFFIXES = set(

@@ -8,7 +8,7 @@ import marko
 
 import components
 import constants
-from entries import Entry, File
+import entries
 
 
 app, rt = components.fast_app()
@@ -54,7 +54,6 @@ def get(session):
                 ),
                 action="/file/",
                 method="POST",
-                enctype="multipart/form-data",
             ),
             cls="container",
         ),
@@ -67,8 +66,8 @@ async def post(session, title: str, upfile: UploadFile, text: str):
     filename = pathlib.Path(upfile.filename)
     ext = filename.suffix
     if ext == ".md":
-        raise components.Error("Upload of Markdown file is disallowed")
-    file = File()
+        raise components.Error("Upload of Markdown file is disallowed.")
+    file = entries.File()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
@@ -86,9 +85,9 @@ async def post(session, title: str, upfile: UploadFile, text: str):
 
 
 @rt("/{file:Entry}")
-def get(session, file: Entry):
+def get(session, file: entries.Entry):
     "View the metadata for the file."
-    assert isinstance(file, File)
+    assert isinstance(file, entries.File)
     if file.filename.suffix.lower() in constants.IMAGE_SUFFIXES:
         image = Img(
             src=f"{file.url}/download", style="border: 1px solid #ddd; padding: 4px;"
@@ -140,6 +139,15 @@ def get(session, file: Entry):
                 P(image),
             ),
             NotStr(marko.convert(file.content)),
+            Small(
+                Card(
+                    Header(
+                        "Keywords: ",
+                        ", ".join(sorted(file.keywords)),
+                    ),
+                    components.get_entries_table(file.related()),
+                ),
+            ),
             cls="container",
         ),
         Footer(
@@ -155,7 +163,7 @@ def get(session, file: Entry):
 
 
 @rt("/{file:Entry}/download")
-def get(session, file: Entry):
+def get(session, file: entries.Entry):
     "Download the file."
     media_type, encoding = mimetypes.guess_type(file.filename)
     headers = {"Content-Disposition": f'attachment; filename="{file.filename}"'}
@@ -169,9 +177,9 @@ def get(session, file: Entry):
 
 
 @rt("/{file:Entry}/edit")
-def get(session, file: Entry):
+def get(session, file: entries.Entry):
     "Form for editing metadata for a file."
-    assert isinstance(file, File)
+    assert isinstance(file, entries.File)
     return (
         Title("chaos"),
         Header(
@@ -225,13 +233,13 @@ def get(session, file: Entry):
 
 
 @rt("/{file:Entry}/edit")
-async def post(session, file: Entry, title: str, upfile: UploadFile, text: str):
+async def post(session, file: entries.Entry, title: str, upfile: UploadFile, text: str):
     "Actually edit the file."
-    assert isinstance(file, File)
+    assert isinstance(file, entries.File)
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
-            raise components.Error("Upload of Markdown file is disallowed")
+            raise components.Error("Upload of Markdown file is disallowed.")
         filecontent = await upfile.read()
         filename = file.eid + ext
         try:
@@ -246,9 +254,9 @@ async def post(session, file: Entry, title: str, upfile: UploadFile, text: str):
 
 
 @rt("/{file:Entry}/copy")
-def get(session, file: Entry):
+def get(session, file: entries.Entry):
     "Form for making a copy of the file."
-    assert isinstance(file, File)
+    assert isinstance(file, entries.File)
     return (
         Title("chaos"),
         Header(
@@ -303,9 +311,9 @@ def get(session, file: Entry):
 
 
 @rt("/{file:Entry}/delete")
-def get(session, file: Entry):
+def get(session, file: entries.Entry):
     "Ask for confirmation to delete the file."
-    assert isinstance(file, File)
+    assert isinstance(file, entries.File)
     return (
         Title(file.title),
         Header(
@@ -353,11 +361,12 @@ def get(session, file: Entry):
 
 
 @rt("/{file:Entry}/delete")
-def post(session, file: Entry, action: str):
+def post(session, file: entries.Entry, action: str):
     "Actually delete the file."
-    assert isinstance(file, File)
+    assert isinstance(file, entries.File)
     if "yes" in action.casefold():
         file.delete()
+        entries.set_all_keywords_relations()
         return Redirect(f"/")
     else:
         return Redirect(file.url)

@@ -9,29 +9,36 @@ if constants.DEVELOPMENT:
 import os
 
 from fasthtml.common import *
+import yaml
 
 import components
 import constants
+import settings
 import entries
+import keywords
 import note
 import link
 import file
 
 
+settings.read()
+
 entries.read_entry_files()
+entries.set_all_keywords_relations()
 
 app, rt = components.get_fast_app(
     routes=[
         Mount("/note", note.app),
         Mount("/link", link.app),
         Mount("/file", file.app),
+        Mount("/keywords", keywords.app),
     ],
 )
 
 
 @rt("/")
-def get(auth):
-    if auth:
+def get(session):
+    if session.get("auth"):
         return (
             Title("chaos"),
             Script(src="/clipboard.min.js"),
@@ -52,6 +59,7 @@ def get(auth):
                                 cls="dropdown",
                             ),
                         ),
+                        Li(A("Keywords", href="/keywords", role="button", cls="outline")),
                     ),
                     Ul(
                         Li(
@@ -75,7 +83,7 @@ def get(auth):
             Footer(
                 Hr(),
                 Div(
-                    Div(auth),
+                    Div(session["auth"]),
                     Div(f"v {constants.VERSION}", style="text-align: right;"),
                     cls="grid",
                 ),
@@ -155,7 +163,7 @@ def get(session):
 
 
 @rt("/search")
-def get(session, auth, term: str):
+def get(session, term: str):
     "Search the entries."
     result = []
     for entry in entries.entries_lookup.values():
@@ -198,7 +206,7 @@ def get(session, auth, term: str):
         Footer(
             Hr(),
             Div(
-                Div(auth),
+                Div(session["auth"]),
                 Div(f"v {constants.VERSION}", style="text-align: right;"),
                 cls="grid",
             ),

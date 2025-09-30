@@ -5,6 +5,7 @@ from http import HTTPStatus as HTTP
 from fasthtml.common import *
 
 import constants
+import settings
 
 
 class Error(Exception):
@@ -90,12 +91,18 @@ def get_entry_clipboard(entry):
 def get_entries_table(entries):
     rows = []
     for entry in entries:
+        keywords = settings.get_original_keywords(sorted(entry.keywords))
+        if len(keywords) > 4:
+            keywords = "; ".join(keywords[0:4]) + "..."
+        else:
+            keywords = "; ".join(keywords)
         items = [get_entry_clipboard(entry), A(entry.title, href=entry.url)]
         match entry.__class__.__name__:
             case "Note":
                 rows.append(
                     Tr(
                         Td(*items),
+                        Td(keywords),
                         Td(entry.size, style="text-align: right;"),
                         Td(entry.owner),
                         Td(entry.modified_local),
@@ -111,6 +118,7 @@ def get_entries_table(entries):
                 rows.append(
                     Tr(
                         Td(*items),
+                        Td(keywords),
                         Td(entry.size, style="text-align: right;"),
                         Td(entry.owner),
                         Td(entry.modified_local),
@@ -126,6 +134,7 @@ def get_entries_table(entries):
                 rows.append(
                     Tr(
                         Td(*items),
+                        Td(keywords),
                         Td(
                             f"{entry.size} + {entry.filesize}",
                             style="text-align: right;",

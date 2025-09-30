@@ -5,7 +5,7 @@ import marko
 
 import components
 import constants
-from entries import Entry, Note
+import entries
 
 
 app, rt = components.fast_app()
@@ -55,7 +55,7 @@ def get(session):
 @rt("/")
 def post(session, title: str, text: str):
     "Actually add the note."
-    note = Note()
+    note = entries.Note()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     note.owner = session["auth"]
     note.title = title.strip() or "no title"
@@ -65,9 +65,9 @@ def post(session, title: str, text: str):
 
 
 @rt("/{note:Entry}")
-def get(session, note: Entry):
+def get(session, note: entries.Entry):
     "View the note."
-    assert isinstance(note, Note)
+    assert isinstance(note, entries.Note)
     return (
         Title(note.title),
         Script(src="/clipboard.min.js"),
@@ -109,6 +109,15 @@ def get(session, note: Entry):
         ),
         Main(
             NotStr(marko.convert(note.content)),
+            Small(
+                Card(
+                    Header(
+                        "Keywords: ",
+                        ", ".join(sorted(note.keywords)),
+                    ),
+                    components.get_entries_table(note.related()),
+                ),
+            ),
             cls="container",
         ),
         Footer(
@@ -124,9 +133,9 @@ def get(session, note: Entry):
 
 
 @rt("/{note:Entry}/edit")
-def get(session, note: Entry):
+def get(session, note: entries.Entry):
     "Form for editing a note."
-    assert isinstance(note, Note)
+    assert isinstance(note, entries.Note)
     return (
         Title("chaos"),
         Header(
@@ -176,9 +185,9 @@ def get(session, note: Entry):
 
 
 @rt("/{note:Entry}/edit")
-def post(session, note: Entry, title: str, text: str):
+def post(session, note: entries.Entry, title: str, text: str):
     "Actually edit the note."
-    assert isinstance(note, Note)
+    assert isinstance(note, entries.Note)
     note.title = title or "no title"
     note.content = text
     note.write()
@@ -186,9 +195,9 @@ def post(session, note: Entry, title: str, text: str):
 
 
 @rt("/{note:Entry}/copy")
-def get(session, note: Entry):
+def get(session, note: entries.Entry):
     "Form for making a copy of the note."
-    assert isinstance(note, Note)
+    assert isinstance(note, entries.Note)
     return (
         Title("chaos"),
         Header(
@@ -237,9 +246,9 @@ def get(session, note: Entry):
 
 
 @rt("/{note:Entry}/delete")
-def get(session, note: Entry):
+def get(session, note: entries.Entry):
     "Ask for confirmation to delete the note."
-    assert isinstance(note, Note)
+    assert isinstance(note, entries.Note)
     return (
         Title(note.title),
         Header(
@@ -277,8 +286,8 @@ def get(session, note: Entry):
         Footer(
             Hr(),
             Div(
-                Small(f"{note.size} bytes"),
-                Small(note.modified_local),
+                Div(f"{note.size} bytes"),
+                Div(note.modified_local),
                 cls="grid",
             ),
             cls="container",
@@ -287,11 +296,12 @@ def get(session, note: Entry):
 
 
 @rt("/{note:Entry}/delete")
-def post(session, note: Entry, action: str):
+def post(session, note: entries.Entry, action: str):
     "Actually delete the note."
-    assert isinstance(note, Note)
+    assert isinstance(note, entries.Note)
     if "yes" in action.casefold():
         note.delete()
+        entries.set_all_keywords_relations()
         return Redirect(f"/")
     else:
         return Redirect(note.url)

@@ -13,14 +13,7 @@ import marko
 import yaml
 
 import constants
-
-# Key: entry id; value: entry instance.
-entries_lookup = {}
-
-
-def get(eid):
-    global entries_lookup
-    return entries_lookup[eid]
+import settings
 
 
 class Entry:
@@ -29,6 +22,8 @@ class Entry:
     def __init__(self, path=None):
         self._path = path
         self.frontmatter = {}
+        self.keywords = set()
+        self.relations = {}
 
     def __str__(self):
         return self.eid
@@ -133,6 +128,19 @@ class Entry:
         rx = re.compile(f"{term.strip()}.*", re.IGNORECASE)
         return 2.0 * len(rx.findall(self.title)) + len(rx.findall(self.content))
 
+    def set_keywords(self):
+        "Find keywords in the title and content of this entry."
+        self.keywords = settings.get_keywords(self.title).union(settings.get_keywords(self.content))
+
+    def relation(self, other):
+        "Return the relation number between this entry and the other."
+        assert isinstance(other, Entry)
+        return len(self.keywords.intersection(other.keywords))
+
+    def related(self):
+        "Return the sorted list of related entries."
+        return [get(k) for k, v in sorted(self.relations.items(), key=lambda r: r[1], reverse=True)]
+
 
 class EntryConvertor(Convertor):
     "Convert path segment to Entry class instance."
@@ -187,6 +195,15 @@ class File(Entry):
         super().delete()
 
 
+# Key: entry id; value: entry instance.
+entries_lookup = {}
+
+
+def get(eid):
+    global entries_lookup
+    return entries_lookup[eid]
+
+
 def read_entry_files(dirpath=None):
     """Recursively read all entries from from files in the given directory.
     If no directory is given, start with the data dir.
@@ -221,6 +238,33 @@ def read_entry_files(dirpath=None):
             entries_lookup[entry.eid] = entry
             entry.frontmatter = frontmatter
             entry.content = content
+
+def set_all_keywords_relations():
+    "Find keywords in all the entries and compute relations between them."
+    global entries_lookup
+    entries = list(entries_lookup.values())
+    for entry in entries:
+        entry.set_keywords()
+        entry.relations = {}    # Key: entry id; value: relation number.
+    for pos, entry1 in enumerate(entries):
+        for entry2 in entries[pos+1:]:
+            if relation := entry1.relation(entry2):
+                entry1.relations[entry2.eid] = relation
+                entry2.relations[entry1.eid] = relation
+
+
+def set_keywords_relations(entry):
+    "Update the keywords and relations involving the provided entry."
+    global entries_lookup
+    entry.set_keywords()
+    for entry2 in entries_lookup.values():
+        entry2.relations.pop(entry.eid, None)
+    for entry2 in entries_lookup.values():
+        if entry2 is entry:
+            continue
+        if relation := entry.relation(entry2):
+            entry.relations[entry2.eid] = relation
+            entry2.relations[entry.eid] = relation
 
 
 def recent(start=0, end=25):

@@ -8,7 +8,7 @@ import constants
 import entries
 
 
-app, rt = components.fast_app()
+app, rt = components.get_app_rt()
 
 
 @rt("/")
@@ -22,7 +22,7 @@ def get(session):
                     Li(components.chaos_icon()),
                     Li("Add note"),
                 ),
-                style=constants.NOTE_NAV_STYLE,
+                cls="note",
             ),
             cls="container",
         ),
@@ -77,6 +77,7 @@ def get(session, note: entries.Entry):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
+                    Li(Strong(note.title)),
                     Li(
                         components.get_dropdown_menu(
                             A(
@@ -95,10 +96,9 @@ def get(session, note: entries.Entry):
                             A("Keywords", href="/keywords"),
                         ),
                     ),
-                    Li(Strong(note.title)),
                     Li(components.search_form()),
                 ),
-                style=constants.NOTE_NAV_STYLE,
+                cls="note",
             ),
             cls="container",
         ),
@@ -112,15 +112,7 @@ def get(session, note: entries.Entry):
             ),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(f"{note.size} bytes"),
-                Div(note.modified_local),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer(f"{note.size} bytes", note.modified_local),
     )
 
 
@@ -137,7 +129,7 @@ def get(session, note: entries.Entry):
                     Li(f"Edit"),
                     Li(Strong(note.title)),
                 ),
-                style=constants.NOTE_NAV_STYLE,
+                cls="note",
             ),
             cls="container",
         ),
@@ -208,7 +200,7 @@ def get(session, note: entries.Entry):
                     Li("Copy"),
                     Li(Strong(note.title)),
                 ),
-                style=constants.NOTE_NAV_STYLE,
+                cls="note",
             ),
             cls="container",
         ),
@@ -259,7 +251,7 @@ def get(session, note: entries.Entry):
                     Li("Delete"),
                     Li(Strong(note.title)),
                 ),
-                style=constants.NOTE_NAV_STYLE,
+                cls="note",
             ),
             cls="container",
         ),
@@ -284,15 +276,7 @@ def get(session, note: entries.Entry):
             ),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(f"{note.size} bytes"),
-                Div(note.modified_local),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer(f"{note.size} bytes", note.modified_local),
     )
 
 

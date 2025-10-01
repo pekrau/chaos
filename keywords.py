@@ -7,7 +7,7 @@ import constants
 import entries
 import settings
 
-app, rt = components.fast_app()
+app, rt = components.get_app_rt()
 
 
 @rt("/")
@@ -22,7 +22,7 @@ def get(session):
                     Li("Keywords"),
                     Li(components.search_form()),
                 ),
-                style=constants.KEYWORD_NAV_STYLE,
+                cls="keyword",
             ),
             cls="container",
         ),
@@ -70,15 +70,7 @@ def get(session):
             ),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(session["auth"]),
-                Div(f"v {constants.VERSION}", style="text-align: right;"),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer(),
     )
 
 
@@ -126,7 +118,7 @@ def get(session, keyword: str, page: int = 1):
                     ),
                     Li(components.search_form()),
                 ),
-                style=constants.KEYWORD_NAV_STYLE,
+                cls="keyword",
             ),
             cls="container",
         ),
@@ -143,15 +135,7 @@ def get(session, keyword: str, page: int = 1):
             ),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(session["auth"]),
-                Div(f"v {constants.VERSION}", style="text-align: right;"),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer(),
     )
 
 
@@ -174,7 +158,7 @@ def get(session, keyword: str):
                     Li("Delete"),
                     Li(Strong(keyword)),
                 ),
-                style=constants.KEYWORD_NAV_STYLE,
+                cls="keyword",
             ),
             cls="container",
         ),
@@ -199,10 +183,7 @@ def get(session, keyword: str):
             ),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            cls="container",
-        ),
+        components.get_footer(),
     )
 
 

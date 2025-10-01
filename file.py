@@ -11,7 +11,7 @@ import constants
 import entries
 
 
-app, rt = components.fast_app()
+app, rt = components.get_app_rt()
 
 
 @rt("/")
@@ -25,7 +25,7 @@ def get(session):
                     Li(components.chaos_icon()),
                     Li("Add file"),
                 ),
-                style=constants.FILE_NAV_STYLE,
+                cls="file",
             ),
             cls="container",
         ),
@@ -103,6 +103,7 @@ def get(session, file: entries.Entry):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
+                    Li(Strong(file.title)),
                     Li(
                         components.get_dropdown_menu(
                             A(
@@ -121,10 +122,9 @@ def get(session, file: entries.Entry):
                             A("Keywords", href="/keywords"),
                         ),
                     ),
-                    Li(Strong(file.title)),
                     Li(components.search_form()),
                 ),
-                style=constants.FILE_NAV_STYLE,
+                cls="file",
             ),
             cls="container",
         ),
@@ -142,15 +142,8 @@ def get(session, file: entries.Entry):
             ),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(f"{file.size:,d} + {file.filesize:,d} bytes"),
-                Div(file.modified_local),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer(f"{file.size:,d} + {file.filesize:,d} bytes",
+                              file.modified_local),
     )
 
 
@@ -181,7 +174,7 @@ def get(session, file: entries.Entry):
                     Li(f"Edit"),
                     Li(Strong(file.title)),
                 ),
-                style=constants.FILE_NAV_STYLE,
+                cls="file",
             ),
             cls="container",
         ),
@@ -270,7 +263,7 @@ def get(session, file: entries.Entry):
                     Li("Copy"),
                     Li(Strong(file.title)),
                 ),
-                style=constants.FILE_NAV_STYLE,
+                cls="file",
             ),
             cls="container",
         ),
@@ -338,7 +331,7 @@ def get(session, file: entries.Entry):
                     Li("Delete"),
                     Li(Strong(file.title)),
                 ),
-                style=constants.FILE_NAV_STYLE,
+                cls="file",
             ),
             cls="container",
         ),
@@ -363,15 +356,8 @@ def get(session, file: entries.Entry):
             ),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(f"{file.size:,d} + {file.filesize:,d} bytes"),
-                Div(file.modified_local),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer(f"{file.size:,d} + {file.filesize:,d} bytes",
+                              file.modified_local),
     )
 
 

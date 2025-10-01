@@ -2,3 +2,38 @@ img.white {
     background-color: white;
     padding: 2px;
 }
+
+nav {
+    outline-width: 3px;
+    outline-style: solid;
+    padding: 0px 10px;
+    border-radius: 4px;
+}
+
+nav.main {
+    outline-color: lightgray;
+}
+
+nav.login {
+    outline-color: gray;
+}
+
+nav.note {
+    outline-color: mediumseagreen;
+}
+
+nav.link {
+    outline-color: deepskyblue;
+}
+
+nav.file {
+    outline-color: mediumpurple;
+}
+
+nav.search {
+    outline-color: orange;
+}
+
+nav.keyword {
+    outline-color: tomato;
+}

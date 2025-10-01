@@ -32,11 +32,11 @@ def set_auth_before(request, session):
 
 
 beforeware = Beforeware(
-    set_auth_before, skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods.css", r"/static/*"]
+    set_auth_before, skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods\.css"]
 )
 
 
-def get_fast_app(routes=None):
+def get_app_rt(routes=None):
     app, rt = fast_app(
         live=constants.DEVELOPMENT,
         static_path="static",
@@ -65,7 +65,7 @@ def chaos_icon():
             style="padding: 0;",
             cls="white",
         ),
-        title="chaos",
+        title="chaos: Web service for a repository of notes, links and files with no intrinsic order.",
         role="button",
         style="margin: 0px;",
         cls="secondary outline",
@@ -234,7 +234,20 @@ def get_keywords_links(entry):
         "; ".join(
             [
                 str(A(settings.lookup["keywords"].get(kw), href=f"/keywords/{kw}"))
-                for kw in sorted(note.keywords)
+                for kw in sorted(entry.keywords)
             ]
         )
+    )
+
+def get_footer(first="", second=""):
+    return Footer(
+        Hr(),
+        Div(
+            Div(first),
+            Div(second),
+            Div(A("chaos", href="https://github.com/pekrau/chaos"),
+                f" v {constants.VERSION}", style="text-align: right;"),
+            cls="grid"
+        ),
+        cls="container",
     )

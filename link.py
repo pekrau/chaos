@@ -8,7 +8,7 @@ import constants
 import entries
 
 
-app, rt = components.fast_app()
+app, rt = components.get_app_rt()
 
 
 @rt("/")
@@ -22,7 +22,7 @@ def get(session):
                     Li(components.chaos_icon()),
                     Li("Add link"),
                 ),
-                style=constants.LINK_NAV_STYLE,
+                cls="link",
             ),
             cls="container",
         ),
@@ -86,6 +86,7 @@ def get(session, link: entries.Entry):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
+                    Li(Strong(link.title)),
                     Li(
                         components.get_dropdown_menu(
                             A(
@@ -104,10 +105,9 @@ def get(session, link: entries.Entry):
                             A("Keywords", href="/keywords"),
                         ),
                     ),
-                    Li(Strong(link.title)),
                     Li(components.search_form()),
                 ),
-                style=constants.LINK_NAV_STYLE,
+                cls="link",
             ),
             cls="container",
         ),
@@ -124,15 +124,7 @@ def get(session, link: entries.Entry):
             ),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(f"{link.size} bytes"),
-                Div(link.modified_local),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer(f"{link.size} bytes", link.modified_local),
     )
 
 
@@ -149,7 +141,7 @@ def get(session, link: entries.Entry):
                     Li(f"Edit"),
                     Li(Strong(link.title)),
                 ),
-                style=constants.LINK_NAV_STYLE,
+                cls="link",
             ),
             cls="container",
         ),
@@ -230,7 +222,7 @@ def get(session, link: entries.Entry):
                     Li("Copy"),
                     Li(Strong(link.title)),
                 ),
-                style=constants.LINK_NAV_STYLE,
+                cls="link",
             ),
             cls="container",
         ),
@@ -288,7 +280,7 @@ def get(session, link: entries.Entry):
                     Li("Delete"),
                     Li(Strong(link.title)),
                 ),
-                style=constants.LINK_NAV_STYLE,
+                cls="link",
             ),
             cls="container",
         ),
@@ -313,15 +305,7 @@ def get(session, link: entries.Entry):
             ),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(f"{link.size} bytes"),
-                Div(link.modified_local),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer(f"{link.size} bytes", link.modified_local),
     )
 
 

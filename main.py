@@ -28,7 +28,7 @@ settings.read()
 entries.read_entry_files()
 entries.set_all_keywords_relations()
 
-app, rt = components.get_fast_app(
+app, rt = components.get_app_rt(
     routes=[
         Mount("/note", note.app),
         Mount("/link", link.app),
@@ -62,7 +62,7 @@ def get(session, page: int = 1):
                         ),
                         Li(components.search_form()),
                     ),
-                    style=constants.MAIN_NAV_STYLE,
+                    cls="main",
                 ),
                 cls="container",
             ),
@@ -76,15 +76,7 @@ def get(session, page: int = 1):
                 components.get_table_pager(page, len(entries.lookup), "/"),
                 cls="container",
             ),
-            Footer(
-                Hr(),
-                Div(
-                    Div(session["auth"]),
-                    Div(f"v {constants.VERSION}", style="text-align: right;"),
-                    cls="grid",
-                ),
-                cls="container",
-            ),
+            components.get_footer(session["auth"]),
         )
     else:
         return (
@@ -95,7 +87,7 @@ def get(session, page: int = 1):
                         Li(components.chaos_icon()),
                         Li("Login"),
                     ),
-                    style=constants.LOGIN_NAV_STYLE,
+                    cls="login",
                 ),
                 cls="container",
             ),
@@ -126,11 +118,7 @@ def get(session, page: int = 1):
                 ),
                 cls="container",
             ),
-            Footer(
-                Hr(),
-                Div(f"v {constants.VERSION}", style="text-align: right;"),
-                cls="container",
-            ),
+            components.get_footer(),
         )
 
 
@@ -182,6 +170,7 @@ def get(session, term: str):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
+                    Li("Search"),
                     Li(
                         components.get_dropdown_menu(
                             A("Add note...", href="/note"),
@@ -190,10 +179,9 @@ def get(session, term: str):
                             A("Keywords", href="/keywords"),
                         ),
                     ),
-                    Li("Search"),
                     Li(components.search_form(term)),
                 ),
-                style=constants.SEARCH_NAV_STYLE,
+                cls="search",
             ),
             cls="container",
         ),
@@ -201,15 +189,7 @@ def get(session, term: str):
             components.get_entries_table([e for s, m, e in result]),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(session["auth"]),
-                Div(f"v {constants.VERSION}", style="text-align: right;"),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer(),
     )
 
 

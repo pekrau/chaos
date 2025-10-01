@@ -15,7 +15,7 @@ app, rt = components.fast_app()
 def get(session):
     "Form for adding a link."
     return (
-        Title("chaos"),
+        Title("Add link"),
         Header(
             Nav(
                 Ul(
@@ -28,23 +28,25 @@ def get(session):
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="title",
-                    placeholder="Title...",
-                    required=True,
-                    autofocus=True,
-                ),
-                Input(
-                    type="href",
-                    name="href",
-                    placeholder="Href...",
-                    required=True,
-                ),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
+                Fieldset(
+                    Input(
+                        type="text",
+                        name="title",
+                        placeholder="Title...",
+                        required=True,
+                        autofocus=True,
+                    ),
+                    Input(
+                        type="href",
+                        name="href",
+                        placeholder="Href...",
+                        required=True,
+                    ),
+                    Textarea(
+                        name="text",
+                        rows=10,
+                        placeholder="Text...",
+                    ),
                 ),
                 Input(
                     type="submit",
@@ -84,21 +86,25 @@ def get(session, link: entries.Entry):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li(components.get_entry_clipboard(link)),
-                    Li(Strong(link.title)),
-                    Li(A("Edit", role="button", href=f"{link.url}/edit")),
-                    Li(A("Copy", role="button", href=f"{link.url}/copy")),
                     Li(
-                        A(
-                            "Delete",
-                            role="button",
-                            href=f"{link.url}/delete",
-                            cls="outline",
-                        )
+                        components.get_dropdown_menu(
+                            A(
+                                "Link to clipboard",
+                                data_clipboard_action="copy",
+                                data_clipboard_text=f"[{link.title}]({link.url})",
+                                cls="to_clipboard",
+                                href="#",
+                            ),
+                            A("Edit", href=f"{link.url}/edit"),
+                            A("Copy", href=f"{link.url}/copy"),
+                            A("Delete", href=f"{link.url}/delete"),
+                            A("Add note...", href="/note"),
+                            A("Add link...", href="/link"),
+                            A("Add file...", href="/file"),
+                            A("Keywords", href="/keywords"),
+                        ),
                     ),
-                ),
-                Ul(
-                    Li(components.get_add_dropdown()),
+                    Li(Strong(link.title)),
                     Li(components.search_form()),
                 ),
                 style=constants.LINK_NAV_STYLE,
@@ -112,10 +118,7 @@ def get(session, link: entries.Entry):
             NotStr(marko.convert(link.content)),
             Small(
                 Card(
-                    Header(
-                        "Keywords: ",
-                        ", ".join(sorted(link.keywords)),
-                    ),
+                    Header("Keywords: ", components.get_keywords_links(link)),
                     components.get_entries_table(link.related()),
                 ),
             ),
@@ -138,12 +141,12 @@ def get(session, link: entries.Entry):
     "Form for editing a link."
     assert isinstance(link, entries.Link)
     return (
-        Title("chaos"),
+        Title("Edit"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li(f"Edit link"),
+                    Li(f"Edit"),
                     Li(Strong(link.title)),
                 ),
                 style=constants.LINK_NAV_STYLE,
@@ -152,22 +155,33 @@ def get(session, link: entries.Entry):
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="title",
-                    value=link.title,
-                    required=True,
-                ),
-                Input(
-                    type="href",
-                    name="href",
-                    value=link.href,
-                ),
-                Textarea(
-                    link.content,
-                    name="text",
-                    rows=10,
-                    autofocus=True,
+                Fieldset(
+                    Label(
+                        "Title",
+                        Input(
+                            type="text",
+                            name="title",
+                            value=link.title,
+                            required=True,
+                        ),
+                    ),
+                    Label(
+                        "Href",
+                        Input(
+                            type="href",
+                            name="href",
+                            value=link.href,
+                        ),
+                    ),
+                    Label(
+                        "Text",
+                        Textarea(
+                            link.content,
+                            name="text",
+                            rows=10,
+                            autofocus=True,
+                        ),
+                    ),
                 ),
                 Input(
                     type="submit",
@@ -208,12 +222,12 @@ def get(session, link: entries.Entry):
     assert isinstance(link, entries.Link)
 
     return (
-        Title("chaos"),
+        Title("Copy"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li("Copy link"),
+                    Li("Copy"),
                     Li(Strong(link.title)),
                 ),
                 style=constants.LINK_NAV_STYLE,
@@ -266,12 +280,12 @@ def get(session, link: entries.Entry):
     assert isinstance(link, entries.Link)
 
     return (
-        Title(link.title),
+        Title("Delete"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li("Link"),
+                    Li("Delete"),
                     Li(Strong(link.title)),
                 ),
                 style=constants.LINK_NAV_STYLE,

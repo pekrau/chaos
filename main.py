@@ -51,24 +51,14 @@ def get(session, page: int = 1):
                     Ul(
                         Li(components.chaos_icon()),
                         Li(
-                            Details(
-                                Summary("Actions..."),
-                                Ul(
-                                    Li(A("Add note...", href="/note")),
-                                    Li(A("Add link...", href="/link")),
-                                    Li(A("Add file...", href="/file")),
-                                    Li(A("Reread", href="/reread")),
-                                    Li(A("Logout", href="/logout")),
-                                ),
-                                cls="dropdown",
+                            components.get_dropdown_menu(
+                                A("Add note...", href="/note"),
+                                A("Add link...", href="/link"),
+                                A("Add file...", href="/file"),
+                                A("Keywords", href="/keywords"),
+                                A("Reread", href="/reread"),
+                                A("Logout", href="/logout"),
                             ),
-                        ),
-                        Li(
-                            A(
-                                "Keywords",
-                                href="/keywords",
-                                role="button",
-                            )
                         ),
                         Li(components.search_form()),
                     ),
@@ -185,18 +175,23 @@ def get(session, term: str):
                 result.append((score, entry.modified_local, entry))
     result.sort(reverse=True)
     return (
-        Title("chaos"),
+        Title("Search"),
         Script(src="/clipboard.min.js"),
         Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
+                    Li(
+                        components.get_dropdown_menu(
+                            A("Add note...", href="/note"),
+                            A("Add link...", href="/link"),
+                            A("Add file...", href="/file"),
+                            A("Keywords", href="/keywords"),
+                        ),
+                    ),
                     Li("Search"),
                     Li(components.search_form(term)),
-                ),
-                Ul(
-                    Li(components.get_add_dropdown()),
                 ),
                 style=constants.SEARCH_NAV_STYLE,
             ),

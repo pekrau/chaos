@@ -18,7 +18,7 @@ app, rt = components.fast_app()
 def get(session):
     "Form for adding a file."
     return (
-        Title("chaos"),
+        Title("Add file"),
         Header(
             Nav(
                 Ul(
@@ -103,21 +103,25 @@ def get(session, file: entries.Entry):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li(components.get_entry_clipboard(file)),
-                    Li(Strong(file.title)),
-                    Li(A("Edit", role="button", href=f"{file.url}/edit")),
-                    Li(A("Copy", role="button", href=f"{file.url}/copy")),
                     Li(
-                        A(
-                            "Delete",
-                            role="button",
-                            href=f"{file.url}/delete",
-                            cls="outline",
-                        )
+                        components.get_dropdown_menu(
+                            A(
+                                "Link to clipboard",
+                                data_clipboard_action="copy",
+                                data_clipboard_text=f"[{file.title}]({file.url})",
+                                cls="to_clipboard",
+                                href="#",
+                            ),
+                            A("Edit", href=f"{file.url}/edit"),
+                            A("Copy", href=f"{file.url}/copy"),
+                            A("Delete", href=f"{file.url}/delete"),
+                            A("Add note...", href="/note"),
+                            A("Add link...", href="/link"),
+                            A("Add file...", href="/file"),
+                            A("Keywords", href="/keywords"),
+                        ),
                     ),
-                ),
-                Ul(
-                    Li(components.get_add_dropdown()),
+                    Li(Strong(file.title)),
                     Li(components.search_form()),
                 ),
                 style=constants.FILE_NAV_STYLE,
@@ -132,10 +136,7 @@ def get(session, file: entries.Entry):
             NotStr(marko.convert(file.content)),
             Small(
                 Card(
-                    Header(
-                        "Keywords: ",
-                        ", ".join(sorted(file.keywords)),
-                    ),
+                    Header("Keywords: ", components.get_keywords_links(file)),
                     components.get_entries_table(file.related()),
                 ),
             ),
@@ -172,12 +173,12 @@ def get(session, file: entries.Entry):
     "Form for editing metadata for a file."
     assert isinstance(file, entries.File)
     return (
-        Title("chaos"),
+        Title("Edit"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li(f"Edit file"),
+                    Li(f"Edit"),
                     Li(Strong(file.title)),
                 ),
                 style=constants.FILE_NAV_STYLE,
@@ -186,21 +187,32 @@ def get(session, file: entries.Entry):
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="title",
-                    value=file.title,
-                    required=True,
-                ),
-                Input(
-                    type="file",
-                    name="upfile",
-                ),
-                Textarea(
-                    file.content,
-                    name="text",
-                    rows=10,
-                    autofocus=True,
+                Fieldset(
+                    Label(
+                        "Title",
+                        Input(
+                            type="text",
+                            name="title",
+                            value=file.title,
+                            required=True,
+                        ),
+                    ),
+                    Label(
+                        "File",
+                        Input(
+                            type="file",
+                            name="upfile",
+                        ),
+                    ),
+                    Label(
+                        "Text",
+                        Textarea(
+                            file.content,
+                            name="text",
+                            rows=10,
+                            autofocus=True,
+                        ),
+                    ),
                 ),
                 Input(
                     type="submit",
@@ -250,12 +262,12 @@ def get(session, file: entries.Entry):
     "Form for making a copy of the file."
     assert isinstance(file, entries.File)
     return (
-        Title("chaos"),
+        Title("Copy"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li("Copy file"),
+                    Li("Copy"),
                     Li(Strong(file.title)),
                 ),
                 style=constants.FILE_NAV_STYLE,
@@ -264,22 +276,33 @@ def get(session, file: entries.Entry):
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="title",
-                    value=file.title,
-                    required=True,
-                ),
-                Input(
-                    type="url",
-                    name="href",
-                    value=file.href,
-                ),
-                Textarea(
-                    file.content,
-                    name="text",
-                    rows=10,
-                    autofocus=True,
+                Fieldset(
+                    Label(
+                        "Title",
+                        Input(
+                            type="text",
+                            name="title",
+                            value=file.title,
+                            required=True,
+                        ),
+                    ),
+                    Label(
+                        "File (cannot be changed)",
+                        Input(
+                            type="text",
+                            value=file.filename,
+                            readonly=True,
+                        ),
+                    ),
+                    Label(
+                        "Text",
+                        Textarea(
+                            file.content,
+                            name="text",
+                            rows=10,
+                            autofocus=True,
+                        ),
+                    ),
                 ),
                 Input(
                     type="submit",
@@ -307,12 +330,12 @@ def get(session, file: entries.Entry):
     "Ask for confirmation to delete the file."
     assert isinstance(file, entries.File)
     return (
-        Title(file.title),
+        Title("Delete"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li("File"),
+                    Li("Delete"),
                     Li(Strong(file.title)),
                 ),
                 style=constants.FILE_NAV_STYLE,

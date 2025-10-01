@@ -20,8 +20,6 @@ def get(session):
                 Ul(
                     Li(components.chaos_icon()),
                     Li("Keywords"),
-                ),
-                Ul(
                     Li(components.search_form()),
                 ),
                 style=constants.KEYWORD_NAV_STYLE,
@@ -116,25 +114,16 @@ def get(session, keyword: str, page: int = 1):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li("Keyword"),
                     Li(Strong(keyword)),
                     Li(
-                        A(
-                            "Delete",
-                            href=f"/keywords/{keyword}/delete",
-                            role="button",
-                            cls="outline",
+                        components.get_dropdown_menu(
+                            A("Delete", href=f"/keywords/{keyword}/delete"),
+                            A("Add note...", href="/note"),
+                            A("Add link...", href="/link"),
+                            A("Add file...", href="/file"),
+                            A("Keywords", href="/keywords"),
                         ),
                     ),
-                    Li(
-                        A(
-                            "Keywords",
-                            href="/keywords",
-                            role="button",
-                        )
-                    ),
-                ),
-                Ul(
                     Li(components.search_form()),
                 ),
                 style=constants.KEYWORD_NAV_STYLE,
@@ -182,7 +171,7 @@ def get(session, keyword: str):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li("Keyword"),
+                    Li("Delete"),
                     Li(Strong(keyword)),
                 ),
                 style=constants.KEYWORD_NAV_STYLE,

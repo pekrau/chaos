@@ -227,8 +227,6 @@ def read_entry_files(dirpath=None):
     global lookup
     if dirpath is None:
         lookup.clear()
-        if not constants.DATA_DIR.exists():
-            constants.DATA_DIR.mkdir()
     for path in constants.DATA_DIR.iterdir():
         if path.is_dir():
             read_entry_files(path)

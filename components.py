@@ -31,11 +31,14 @@ def set_auth_before(request, session):
         return redirect("/")
 
 
+beforeware = Beforeware(set_auth_before, skip=[r"/favicon\.ico", r"/static/*"])
+
+
 def get_fast_app(routes=None):
     app, rt = fast_app(
         live=constants.DEVELOPMENT,
         static_path="static",
-        before=Beforeware(set_auth_before),
+        before=beforeware,
         hdrs=(Link(rel="stylesheet", href="/mods.css", type="text/css"),),
         exception_handlers={
             Error: error_handler,
@@ -53,11 +56,27 @@ def redirect(href):
 
 def chaos_icon():
     return A(
-        Img(src="/Greek_lc_chi_icon64.png", height=24, width=24, cls="white"),
+        Img(
+            src="/Greek_lc_chi_icon64.png",
+            height=24,
+            width=24,
+            style="padding: 0;",
+            cls="white",
+        ),
         title="chaos",
         role="button",
+        style="margin: 0px;",
         cls="secondary outline",
         href="/",
+    )
+
+
+def get_dropdown_menu(*links):
+    return Details(
+        Summary(Img(src="/Hamburger_icon.svg", width=24)),
+        Ul(*[Li(l) for l in links]),
+        title="Menu",
+        cls="dropdown",
     )
 
 
@@ -92,7 +111,7 @@ def search_form(term=None):
 def get_entry_clipboard(entry):
     return Img(
         src="/clipboard.svg",
-        title="Copy entry link to clipboard",
+        title="Link to clipboard",
         style="cursor: pointer; background-color: white; margin: 2px 8px;",
         cls="to_clipboard white",
         data_clipboard_action="copy",
@@ -206,3 +225,14 @@ def get_table_pager(current_page, total_entries, action):
             buttons.append(Input(type="submit", name="page", value=str(page)))
         prev_page = page
     return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=action)
+
+
+def get_keywords_links(entry):
+    return NotStr(
+        "; ".join(
+            [
+                str(A(settings.lookup["keywords"].get(kw), href=f"/keywords/{kw}"))
+                for kw in sorted(note.keywords)
+            ]
+        )
+    )

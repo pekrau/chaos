@@ -7,11 +7,13 @@ import string
 
 import babel.dates
 
+VERSION = "0.6.3"
+
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
 
-VERSION = "0.6.2"
-
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
+if not DATA_DIR.exists():
+    raise OSError(f"DATA_DIR {constants.DATA_DIR} does not exist")
 
 FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 

@@ -15,7 +15,7 @@ app, rt = components.fast_app()
 def get(session):
     "Form for adding a note."
     return (
-        Title("chaos"),
+        Title("Add note"),
         Header(
             Nav(
                 Ul(
@@ -77,21 +77,25 @@ def get(session, note: entries.Entry):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li(components.get_entry_clipboard(note)),
-                    Li(Strong(note.title)),
-                    Li(A("Edit", role="button", href=f"{note.url}/edit")),
-                    Li(A("Copy", role="button", href=f"{note.url}/copy")),
                     Li(
-                        A(
-                            "Delete",
-                            role="button",
-                            href=f"{note.url}/delete",
-                            cls="outline",
-                        )
+                        components.get_dropdown_menu(
+                            A(
+                                "Link to clipboard",
+                                data_clipboard_action="copy",
+                                data_clipboard_text=f"[{note.title}]({note.url})",
+                                cls="to_clipboard",
+                                href="#",
+                            ),
+                            A("Edit", href=f"{note.url}/edit"),
+                            A("Copy", href=f"{note.url}/copy"),
+                            A("Delete", href=f"{note.url}/delete"),
+                            A("Add note...", href="/note"),
+                            A("Add link...", href="/link"),
+                            A("Add file...", href="/file"),
+                            A("Keywords", href="/keywords"),
+                        ),
                     ),
-                ),
-                Ul(
-                    Li(components.get_add_dropdown()),
+                    Li(Strong(note.title)),
                     Li(components.search_form()),
                 ),
                 style=constants.NOTE_NAV_STYLE,
@@ -102,10 +106,7 @@ def get(session, note: entries.Entry):
             NotStr(marko.convert(note.content)),
             Small(
                 Card(
-                    Header(
-                        "Keywords: ",
-                        ", ".join(sorted(note.keywords)),
-                    ),
+                    Header("Keywords: ", components.get_keywords_links(note)),
                     components.get_entries_table(note.related()),
                 ),
             ),
@@ -128,12 +129,12 @@ def get(session, note: entries.Entry):
     "Form for editing a note."
     assert isinstance(note, entries.Note)
     return (
-        Title("chaos"),
+        Title("Edit"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li(f"Edit note"),
+                    Li(f"Edit"),
                     Li(Strong(note.title)),
                 ),
                 style=constants.NOTE_NAV_STYLE,
@@ -142,17 +143,25 @@ def get(session, note: entries.Entry):
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="title",
-                    value=note.title,
-                    required=True,
-                ),
-                Textarea(
-                    note.content,
-                    name="text",
-                    rows=10,
-                    autofocus=True,
+                Fieldset(
+                    Label(
+                        "Title",
+                        Input(
+                            type="text",
+                            name="title",
+                            value=note.title,
+                            required=True,
+                        ),
+                    ),
+                    Label(
+                        "Text",
+                        Textarea(
+                            note.content,
+                            name="text",
+                            rows=10,
+                            autofocus=True,
+                        ),
+                    ),
                 ),
                 Input(
                     type="submit",
@@ -191,12 +200,12 @@ def get(session, note: entries.Entry):
     "Form for making a copy of the note."
     assert isinstance(note, entries.Note)
     return (
-        Title("chaos"),
+        Title("Copy"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li("Copy note"),
+                    Li("Copy"),
                     Li(Strong(note.title)),
                 ),
                 style=constants.NOTE_NAV_STYLE,
@@ -242,12 +251,12 @@ def get(session, note: entries.Entry):
     "Ask for confirmation to delete the note."
     assert isinstance(note, entries.Note)
     return (
-        Title(f"Delete {note.title}?"),
+        Title("Delete"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li("Note"),
+                    Li("Delete"),
                     Li(Strong(note.title)),
                 ),
                 style=constants.NOTE_NAV_STYLE,

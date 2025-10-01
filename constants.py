@@ -9,7 +9,7 @@ import babel.dates
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
 
-VERSION = "0.6.1"
+VERSION = "0.6.2"
 
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
 

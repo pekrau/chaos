@@ -50,8 +50,19 @@ def get(session, page: int = 1):
                 Nav(
                     Ul(
                         Li(components.chaos_icon()),
-                        Li(components.search_form()),
-                        Li(components.get_add_dropdown()),
+                        Li(
+                            Details(
+                                Summary("Actions..."),
+                                Ul(
+                                    Li(A("Add note...", href="/note")),
+                                    Li(A("Add link...", href="/link")),
+                                    Li(A("Add file...", href="/file")),
+                                    Li(A("Reread", href="/reread")),
+                                    Li(A("Logout", href="/logout")),
+                                ),
+                                cls="dropdown",
+                            ),
+                        ),
                         Li(
                             A(
                                 "Keywords",
@@ -59,17 +70,7 @@ def get(session, page: int = 1):
                                 role="button",
                             )
                         ),
-                    ),
-                    Ul(
-                        Li(
-                            A(
-                                "Reread",
-                                href="/reread",
-                                role="button",
-                                cls="outline secondary",
-                            )
-                        ),
-                        Li(A("Logout", href="/logout", role="button", cls="outline")),
+                        Li(components.search_form()),
                     ),
                     style=constants.MAIN_NAV_STYLE,
                 ),

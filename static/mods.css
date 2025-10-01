@@ -1,6 +1,30 @@
+.compact {
+    margin: 0px;
+}
+
+.right {
+    text-align: right;
+}
+
 img.white {
     background-color: white;
-    padding: 2px;
+    padding: 1px;
+}
+
+img.icon {
+    background-color: white;
+    margin: 2px 8px;
+}
+
+img.display {
+    border: 1px solid #ddd;
+    padding: 4px;
+}
+
+img.to_clipboard {
+    cursor: pointer;
+    background-color: white;
+    margin: 2px 8px;
 }
 
 nav {
@@ -36,4 +60,13 @@ nav.search {
 
 nav.keyword {
     outline-color: tomato;
+}
+
+form.search {
+    margin-bottom: 2px;
+    padding-top: 0px;
+}
+
+a.thin {
+    padding: 4px 10px;
 }

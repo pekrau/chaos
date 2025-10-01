@@ -90,9 +90,7 @@ def get(session, file: entries.Entry):
     "View the metadata for the file."
     assert isinstance(file, entries.File)
     if file.filename.suffix.lower() in constants.IMAGE_SUFFIXES:
-        image = Img(
-            src=f"{file.url}/download", style="border: 1px solid #ddd; padding: 4px;"
-        )
+        image = Img(src=f"{file.url}/download", cls="display")
     else:
         image = ""
     return (
@@ -142,8 +140,9 @@ def get(session, file: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(f"{file.size:,d} + {file.filesize:,d} bytes",
-                              file.modified_local),
+        components.get_footer(
+            f"{file.size:,d} + {file.filesize:,d} bytes", file.modified_local
+        ),
     )
 
 
@@ -356,8 +355,9 @@ def get(session, file: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(f"{file.size:,d} + {file.filesize:,d} bytes",
-                              file.modified_local),
+        components.get_footer(
+            f"{file.size:,d} + {file.filesize:,d} bytes", file.modified_local
+        ),
     )
 
 

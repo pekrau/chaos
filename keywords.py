@@ -38,10 +38,9 @@ def get(session):
                                     "Delete",
                                     href=f"/keywords/{kw[0]}/delete",
                                     role="button",
-                                    cls="outline",
-                                    style="padding: 4px 10px;",
+                                    cls="outline thin",
                                 ),
-                                style="text-align: right;",
+                                cls="right",
                             ),
                         )
                         for kw in sorted(settings.lookup["keywords"].items())

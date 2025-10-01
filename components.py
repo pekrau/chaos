@@ -62,13 +62,11 @@ def chaos_icon():
             src="/chaos.png",
             height=24,
             width=24,
-            style="padding: 0;",
             cls="white",
         ),
         title="chaos: Web service for a repository of notes, links and files with no intrinsic order.",
         role="button",
-        style="margin: 0px;",
-        cls="secondary outline",
+        cls="compact secondary outline",
         href="/",
     )
 
@@ -104,7 +102,7 @@ def search_form(term=None):
             value=term or "",
             autofocus=True,
         ),
-        style="margin-bottom: 2px; padding-top: 0;",
+        cls="search",
         role="search",
         action="/search",
     )
@@ -114,7 +112,6 @@ def get_entry_clipboard(entry):
     return Img(
         src="/clipboard.svg",
         title="Link to clipboard",
-        style="cursor: pointer; background-color: white; margin: 2px 8px;",
         cls="to_clipboard white",
         data_clipboard_action="copy",
         data_clipboard_text=f"[{entry.title}]({entry.url})",
@@ -137,7 +134,7 @@ def get_entries_table(entries):
                     Tr(
                         Td(*items),
                         Td(keywords),
-                        Td(entry.size, style="text-align: right;"),
+                        Td(entry.size, cls="right"),
                         Td(entry.owner),
                         Td(entry.modified_local),
                     )
@@ -153,7 +150,7 @@ def get_entries_table(entries):
                     Tr(
                         Td(*items),
                         Td(keywords),
-                        Td(entry.size, style="text-align: right;"),
+                        Td(entry.size, cls="right"),
                         Td(entry.owner),
                         Td(entry.modified_local),
                     )
@@ -171,7 +168,7 @@ def get_entries_table(entries):
                         Td(keywords),
                         Td(
                             f"{entry.size} + {entry.filesize}",
-                            style="text-align: right;",
+                            cls="right",
                         ),
                         Td(entry.owner),
                         Td(entry.modified_local),
@@ -186,7 +183,7 @@ def get_icon(filename, title=""):
     return Img(
         src=f"/{filename}",
         title=title,
-        style="background-color: white; margin: 2px 8px;",
+        cls="icon",
     )
 
 
@@ -239,15 +236,19 @@ def get_keywords_links(entry):
         )
     )
 
+
 def get_footer(first="", second=""):
     return Footer(
         Hr(),
         Div(
             Div(first),
             Div(second),
-            Div(A("chaos", href="https://github.com/pekrau/chaos"),
-                f" v {constants.VERSION}", style="text-align: right;"),
-            cls="grid"
+            Div(
+                A("chaos", href="https://github.com/pekrau/chaos"),
+                f" v {constants.VERSION}",
+                cls="right",
+            ),
+            cls="grid",
         ),
         cls="container",
     )

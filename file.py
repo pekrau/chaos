@@ -81,7 +81,8 @@ async def post(session, title: str, upfile: UploadFile, text: str):
         raise components.Error(error)
     file.frontmatter["filename"] = filename
     file.write()
-    return Redirect(file.url)
+    entries.set_keywords_relations(file)
+    return components.redirect(file.url)
 
 
 @rt("/{file:Entry}")
@@ -116,18 +117,8 @@ def get(session, file: entries.Entry):
                     ),
                 ),
                 Ul(
+                    Li(components.get_add_dropdown()),
                     Li(components.search_form()),
-                    Li(
-                        Details(
-                            Summary("Add..."),
-                            Ul(
-                                Li(A("Note", href="/note")),
-                                Li(A("Link", href="/link")),
-                                Li(A("File", href="/file")),
-                            ),
-                            cls="dropdown",
-                        ),
-                    ),
                 ),
                 style=constants.FILE_NAV_STYLE,
             ),
@@ -250,7 +241,8 @@ async def post(session, file: entries.Entry, title: str, upfile: UploadFile, tex
     file.title = title.strip() or file.filename.stem
     file.content = text.strip()
     file.write()
-    return Redirect(file.url)
+    entries.set_keywords_relations(file)
+    return components.redirect(file.url)
 
 
 @rt("/{file:Entry}/copy")
@@ -366,7 +358,6 @@ def post(session, file: entries.Entry, action: str):
     assert isinstance(file, entries.File)
     if "yes" in action.casefold():
         file.delete()
-        entries.set_all_keywords_relations()
-        return Redirect(f"/")
+        return components.redirect(f"/")
     else:
-        return Redirect(file.url)
+        return components.redirect(file.url)

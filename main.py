@@ -1,8 +1,10 @@
 "Chaos notebook."
 
 import constants
+
 if constants.DEVELOPMENT:
     from icecream import install
+
     install()
     ic(constants.DEVELOPMENT)
 
@@ -37,7 +39,8 @@ app, rt = components.get_fast_app(
 
 
 @rt("/")
-def get(session):
+def get(session, page: int = 1):
+    page = max(1, page)
     if session.get("auth"):
         return (
             Title("chaos"),
@@ -48,18 +51,14 @@ def get(session):
                     Ul(
                         Li(components.chaos_icon()),
                         Li(components.search_form()),
+                        Li(components.get_add_dropdown()),
                         Li(
-                            Details(
-                                Summary("Add..."),
-                                Ul(
-                                    Li(A("Note", href="/note/")),
-                                    Li(A("Link", href="/link/")),
-                                    Li(A("File", href="/file/")),
-                                ),
-                                cls="dropdown",
-                            ),
+                            A(
+                                "Keywords",
+                                href="/keywords",
+                                role="button",
+                            )
                         ),
-                        Li(A("Keywords", href="/keywords", role="button", cls="outline")),
                     ),
                     Ul(
                         Li(
@@ -77,7 +76,13 @@ def get(session):
                 cls="container",
             ),
             Main(
-                components.get_entries_table(entries.recent()),
+                components.get_entries_table(
+                    entries.get_recent_entries(
+                        start=(page - 1) * constants.MAX_PAGE_ENTRIES,
+                        end=page * constants.MAX_PAGE_ENTRIES,
+                    )
+                ),
+                components.get_table_pager(page, len(entries.lookup), "/"),
                 cls="container",
             ),
             Footer(
@@ -104,23 +109,29 @@ def get(session):
                 cls="container",
             ),
             Main(
-                Form(
-                    Input(
-                        type="text",
-                        name="username",
-                        placeholder="User name...",
-                        autofocus=True,
-                        required=True,
+                Div(
+                    Div(
+                        Form(
+                            Input(
+                                type="text",
+                                name="username",
+                                placeholder="User name...",
+                                autofocus=True,
+                                required=True,
+                            ),
+                            Input(
+                                type="password",
+                                name="password",
+                                placeholder="Password...",
+                                required=True,
+                            ),
+                            Input(type="submit", value="Login"),
+                            action="/",
+                            method="POST",
+                        ),
+                        Div(),
+                        cls="grid",
                     ),
-                    Input(
-                        type="password",
-                        name="password",
-                        placeholder="Password...",
-                        required=True,
-                    ),
-                    Input(type="submit", value="Login"),
-                    action="/",
-                    method="POST",
                 ),
                 cls="container",
             ),
@@ -153,6 +164,7 @@ def post(session, username: str, password: str):
 def get(session):
     "Reread all entries."
     entries.read_entry_files()
+    entries.set_all_keywords_relations()
     return components.redirect("/")
 
 
@@ -166,7 +178,7 @@ def get(session):
 def get(session, term: str):
     "Search the entries."
     result = []
-    for entry in entries.entries_lookup.values():
+    for entry in entries.lookup.values():
         if score := entry.score(term):
             if score:
                 result.append((score, entry.modified_local, entry))
@@ -183,17 +195,7 @@ def get(session, term: str):
                     Li(components.search_form(term)),
                 ),
                 Ul(
-                    Li(
-                        Details(
-                            Summary("Add..."),
-                            Ul(
-                                Li(A("Note", href="/note/")),
-                                Li(A("Link", href="/link/")),
-                                Li(A("File", href="/file/")),
-                            ),
-                            cls="dropdown",
-                        ),
-                    ),
+                    Li(components.get_add_dropdown()),
                 ),
                 style=constants.SEARCH_NAV_STYLE,
             ),

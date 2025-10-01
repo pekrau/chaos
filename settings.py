@@ -14,10 +14,12 @@ def read():
         # Key: casefolded keyword; value: original keyword
         lookup = {"keywords": {}}
 
+
 def write():
     global lookup
     with open(constants.DATA_DIR / ".chaos.yaml", "w") as outfile:
         yaml.safe_dump(lookup, outfile)
+
 
 lookup = {}
 read()
@@ -31,6 +33,7 @@ def get_keywords(text):
         if keyword in text:
             result.add(keyword)
     return result
+
 
 def get_original_keywords(keywords):
     global lookup

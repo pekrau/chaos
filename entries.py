@@ -59,7 +59,7 @@ class Entry:
     @title.setter
     def title(self, title):
         "Set the title. If the path has not been set, set it to unique variant."
-        global entries_lookup
+        global lookup
         assert title
         self.frontmatter["title"] = title
         if self.path is None:
@@ -72,14 +72,14 @@ class Entry:
             )
             filename = filename.casefold()
             self._path = constants.DATA_DIR / f"{filename}.md"
-            if self.eid in entries_lookup:
+            if self.eid in lookup:
                 n = 2
                 while True:
                     self._path = constants.DATA_DIR / f"{filename}-{n}.md"
-                    if self.eid not in entries_lookup:
+                    if self.eid not in lookup:
                         break
                     n += 1
-            entries_lookup[self.eid] = self
+            lookup[self.eid] = self
 
     @property
     def size(self):
@@ -117,20 +117,32 @@ class Entry:
 
     def delete(self):
         "Delete the entry from the file system and remove from the lookup."
-        global entries_lookup
-        entries_lookup.pop(self.eid)
+        global lookup
+        self.remove_relations()
+        lookup.pop(self.eid)
         self.path.unlink()
+
+    def remove_relations(self):
+        "Remove all relations from other entries to this one."
+        global lookup
+        eid = self.eid
+        for entry in lookup.values():
+            entry.relations.pop(eid, None)
 
     def score(self, term):
         """Calculate the score for the term in the title or text of the entry.
-        Presence in the title is weighted by 2.
+        Presence in the title is weighted heavier.
         """
         rx = re.compile(f"{term.strip()}.*", re.IGNORECASE)
-        return 2.0 * len(rx.findall(self.title)) + len(rx.findall(self.content))
+        return constants.SCORE_TITLE_WEIGHT * len(rx.findall(self.title)) + len(
+            rx.findall(self.content)
+        )
 
     def set_keywords(self):
         "Find keywords in the title and content of this entry."
-        self.keywords = settings.get_keywords(self.title).union(settings.get_keywords(self.content))
+        self.keywords = settings.get_keywords(self.title).union(
+            settings.get_keywords(self.content)
+        )
 
     def relation(self, other):
         "Return the relation number between this entry and the other."
@@ -139,7 +151,10 @@ class Entry:
 
     def related(self):
         "Return the sorted list of related entries."
-        return [get(k) for k, v in sorted(self.relations.items(), key=lambda r: r[1], reverse=True)]
+        return [
+            get(k)
+            for k, v in sorted(self.relations.items(), key=lambda r: r[1], reverse=True)
+        ]
 
 
 class EntryConvertor(Convertor):
@@ -196,12 +211,12 @@ class File(Entry):
 
 
 # Key: entry id; value: entry instance.
-entries_lookup = {}
+lookup = {}
 
 
 def get(eid):
-    global entries_lookup
-    return entries_lookup[eid]
+    global lookup
+    return lookup[eid]
 
 
 def read_entry_files(dirpath=None):
@@ -209,9 +224,9 @@ def read_entry_files(dirpath=None):
     If no directory is given, start with the data dir.
     Create the data dir if it does not exist.
     """
-    global entries_lookup
+    global lookup
     if dirpath is None:
-        entries_lookup.clear()
+        lookup.clear()
         if not constants.DATA_DIR.exists():
             constants.DATA_DIR.mkdir()
     for path in constants.DATA_DIR.iterdir():
@@ -235,19 +250,20 @@ def read_entry_files(dirpath=None):
                 entry = File(path)
             else:
                 entry = Note(path)
-            entries_lookup[entry.eid] = entry
+            lookup[entry.eid] = entry
             entry.frontmatter = frontmatter
             entry.content = content
 
+
 def set_all_keywords_relations():
     "Find keywords in all the entries and compute relations between them."
-    global entries_lookup
-    entries = list(entries_lookup.values())
+    global lookup
+    entries = list(lookup.values())
     for entry in entries:
         entry.set_keywords()
-        entry.relations = {}    # Key: entry id; value: relation number.
+        entry.relations = {}  # Key: entry id; value: relation number.
     for pos, entry1 in enumerate(entries):
-        for entry2 in entries[pos+1:]:
+        for entry2 in entries[pos + 1 :]:
             if relation := entry1.relation(entry2):
                 entry1.relations[entry2.eid] = relation
                 entry2.relations[entry1.eid] = relation
@@ -255,11 +271,10 @@ def set_all_keywords_relations():
 
 def set_keywords_relations(entry):
     "Update the keywords and relations involving the provided entry."
-    global entries_lookup
+    global lookup
+    entry.remove_relations()
     entry.set_keywords()
-    for entry2 in entries_lookup.values():
-        entry2.relations.pop(entry.eid, None)
-    for entry2 in entries_lookup.values():
+    for entry2 in lookup.values():
         if entry2 is entry:
             continue
         if relation := entry.relation(entry2):
@@ -267,8 +282,14 @@ def set_keywords_relations(entry):
             entry2.relations[entry.eid] = relation
 
 
-def recent(start=0, end=25):
-    global entries_lookup
-    entries = list(entries_lookup.values())
-    entries.sort(key=lambda e: e.modified, reverse=True)
-    return list(entries[start:end])
+def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
+    "Get the entries ordered by modified time, optionally filtered by keyword."
+    if keyword:
+        result = []
+        for entry in lookup.values():
+            if keyword in entry.keywords:
+                result.append(entry)
+    else:
+        result = list(lookup.values())
+    result.sort(key=lambda e: e.modified, reverse=True)
+    return result[start:end]

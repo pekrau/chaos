@@ -61,7 +61,8 @@ def post(session, title: str, text: str):
     note.title = title.strip() or "no title"
     note.content = text.strip()
     note.write()
-    return Redirect(note.url)
+    entries.set_keywords_relations(note)
+    return compontents.redirect(note.url)
 
 
 @rt("/{note:Entry}")
@@ -90,18 +91,8 @@ def get(session, note: entries.Entry):
                     ),
                 ),
                 Ul(
+                    Li(components.get_add_dropdown()),
                     Li(components.search_form()),
-                    Li(
-                        Details(
-                            Summary("Add..."),
-                            Ul(
-                                Li(A("Note", href="/note")),
-                                Li(A("Link", href="/link")),
-                                Li(A("File", href="/file")),
-                            ),
-                            cls="dropdown",
-                        ),
-                    ),
                 ),
                 style=constants.NOTE_NAV_STYLE,
             ),
@@ -191,7 +182,8 @@ def post(session, note: entries.Entry, title: str, text: str):
     note.title = title or "no title"
     note.content = text
     note.write()
-    return Redirect(note.url)
+    entries.set_keywords_relations(note)
+    return components.redirect(note.url)
 
 
 @rt("/{note:Entry}/copy")
@@ -250,7 +242,7 @@ def get(session, note: entries.Entry):
     "Ask for confirmation to delete the note."
     assert isinstance(note, entries.Note)
     return (
-        Title(note.title),
+        Title(f"Delete {note.title}?"),
         Header(
             Nav(
                 Ul(
@@ -301,7 +293,6 @@ def post(session, note: entries.Entry, action: str):
     assert isinstance(note, entries.Note)
     if "yes" in action.casefold():
         note.delete()
-        entries.set_all_keywords_relations()
-        return Redirect(f"/")
+        return components.redirect(f"/")
     else:
-        return Redirect(note.url)
+        return components.redirect(note.url)

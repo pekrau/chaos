@@ -61,6 +61,18 @@ def chaos_icon():
     )
 
 
+def get_add_dropdown():
+    return Details(
+        Summary("Add..."),
+        Ul(
+            Li(A("Note", href="/note")),
+            Li(A("Link", href="/link")),
+            Li(A("File", href="/file")),
+        ),
+        cls="dropdown",
+    )
+
+
 def search_form(term=None):
     return Form(
         Input(
@@ -92,10 +104,11 @@ def get_entries_table(entries):
     rows = []
     for entry in entries:
         keywords = settings.get_original_keywords(sorted(entry.keywords))
-        if len(keywords) > 4:
-            keywords = "; ".join(keywords[0:4]) + "..."
+        keywords = [str(A(kw, href=f"/keywords/{kw}")) for kw in keywords]
+        if len(keywords) > constants.MAX_ROW_ITEMS:
+            keywords = NotStr("; ".join(keywords[0 : constants.MAX_ROW_ITEMS]) + "...")
         else:
-            keywords = "; ".join(keywords)
+            keywords = NotStr("; ".join(keywords))
         items = [get_entry_clipboard(entry), A(entry.title, href=entry.url)]
         match entry.__class__.__name__:
             case "Note":
@@ -154,3 +167,24 @@ def get_icon(filename, title=""):
         title=title,
         style="background-color: white; margin: 2px 8px;",
     )
+
+
+def get_table_pager(current_page, total_entries, action):
+    "Return pager form given current page."
+    if total_entries < constants.MAX_PAGE_ENTRIES:
+        return ""
+    buttons = []
+    for page in range(1, (total_entries + 1) // constants.MAX_PAGE_ENTRIES + 1):
+        if page == current_page:
+            buttons.append(
+                Input(
+                    type="submit",
+                    name="page",
+                    value=str(page),
+                    disabled=True,
+                    cls="secondary",
+                )
+            )
+        else:
+            buttons.append(Input(type="submit", name="page", value=str(page)))
+    return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=action)

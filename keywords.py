@@ -23,17 +23,6 @@ def get(session):
                 ),
                 Ul(
                     Li(components.search_form()),
-                    Li(
-                        Details(
-                            Summary("Add..."),
-                            Ul(
-                                Li(A("Note", href="/note/")),
-                                Li(A("Link", href="/link/")),
-                                Li(A("File", href="/file/")),
-                            ),
-                            cls="dropdown",
-                        ),
-                    ),
                 ),
                 style=constants.KEYWORD_NAV_STYLE,
             ),
@@ -42,31 +31,44 @@ def get(session):
         Main(
             Table(
                 Tbody(
-                    *[Tr(Td(kw),
-                         Td(Form(Input(type="hidden", name="keyword", value=kw),
-                                 Input(type="submit", value="Delete",
-                                       style="height: 32px; width: 20%; padding: 0; margin: 0;"),
-                                 action=f"/keywords/{kw}/delete",
-                                 method="POST"),
-                            style="text-align: right;"))
-                      for kw in sorted(settings.lookup["keywords"].values(),
-                                       key=lambda kw: kw.casefold())
-                      ],
+                    *[
+                        Tr(
+                            Td(A(kw[1], href=f"/keywords/{kw[0]}")),
+                            Td(f"{count(kw[0])} entries"),
+                            Td(
+                                A(
+                                    "Delete",
+                                    href=f"/keywords/{kw[0]}/delete",
+                                    role="button",
+                                    cls="outline",
+                                    style="padding: 4px 10px;",
+                                ),
+                                style="text-align: right;",
+                            ),
+                        )
+                        for kw in sorted(settings.lookup["keywords"].items())
+                    ],
                 ),
             ),
-            Form(
-                Input(
-                    type="text",
-                    name="keyword",
-                    placeholder="New keyword...",
-                    required=True,
+            Div(
+                Div(
+                    Form(
+                        Input(
+                            type="text",
+                            name="keyword",
+                            placeholder="Add keyword...",
+                            required=True,
+                        ),
+                        Input(
+                            type="submit",
+                            value="Add",
+                        ),
+                        action="/keywords",
+                        method="POST",
+                    ),
                 ),
-                Input(
-                    type="submit",
-                    value="Add",
-                ),
-                action="/keywords",
-                method="POST",
+                Div(),
+                cls="grid",
             ),
             cls="container",
         ),
@@ -80,7 +82,7 @@ def get(session):
             cls="container",
         ),
     )
-    
+
 
 @rt("/")
 def post(session, keyword: str):
@@ -95,23 +97,143 @@ def post(session, keyword: str):
 
 
 @rt("/{keyword}")
-def get(sesion, keyword: str):
+def get(session, keyword: str, page: int = 1):
     "Display list of entries containing the provided keyword."
     keyword = cleanup(keyword)
     if not keyword:
         return components.redirect("/keywords")
-    
+    page = max(1, page)
+    canonical_keyword = keyword.casefold()
+    keyword = settings.lookup["keywords"].get(canonical_keyword)
+    if not keyword:
+        return components.redirect("/keywords")
+    page = max(1, page)
+    return (
+        Title("chaos"),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.chaos_icon()),
+                    Li("Keyword"),
+                    Li(Strong(keyword)),
+                    Li(
+                        A(
+                            "Delete",
+                            href=f"/keywords/{keyword}/delete",
+                            role="button",
+                            cls="outline",
+                        ),
+                    ),
+                    Li(
+                        A(
+                            "Keywords",
+                            href="/keywords",
+                            role="button",
+                        )
+                    ),
+                ),
+                Ul(
+                    Li(components.search_form()),
+                ),
+                style=constants.KEYWORD_NAV_STYLE,
+            ),
+            cls="container",
+        ),
+        Main(
+            components.get_entries_table(
+                entries.get_recent_entries(
+                    start=(page - 1) * constants.MAX_PAGE_ENTRIES,
+                    end=page * constants.MAX_PAGE_ENTRIES,
+                    keyword=canonical_keyword,
+                )
+            ),
+            components.get_table_pager(
+                page, count(canonical_keyword), action=f"/keywords/{keyword}"
+            ),
+            cls="container",
+        ),
+        Footer(
+            Hr(),
+            Div(
+                Div(session["auth"]),
+                Div(f"v {constants.VERSION}", style="text-align: right;"),
+                cls="grid",
+            ),
+            cls="container",
+        ),
+    )
 
 
 @rt("/{keyword}/delete")
-def post(session, keyword: str):
+def get(session, keyword: str):
+    "Ask for confirmation to delete the keyword."
+    keyword = cleanup(keyword)
+    if not keyword:
+        return components.redirect("/keywords")
+    canonical_keyword = keyword.casefold()
+    keyword = settings.lookup["keywords"].get(canonical_keyword)
+    if not keyword:
+        return components.redirect("/keywords")
+    return (
+        Title(f"Delete {keyword}?"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.chaos_icon()),
+                    Li("Keyword"),
+                    Li(Strong(keyword)),
+                ),
+                style=constants.KEYWORD_NAV_STYLE,
+            ),
+            cls="container",
+        ),
+        Main(
+            P("Really delete the keyword?"),
+            Form(
+                Fieldset(
+                    Input(
+                        type="submit",
+                        name="action",
+                        value="Yes, delete",
+                    ),
+                    Input(
+                        type="submit",
+                        name="action",
+                        value="Cancel",
+                        cls="secondary",
+                    ),
+                ),
+                action=f"/keywords/{canonical_keyword}/delete",
+                method="POST",
+            ),
+            cls="container",
+        ),
+        Footer(
+            Hr(),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{keyword}/delete")
+def post(session, keyword: str, action: str):
     "Actually delete a keyword."
-    settings.lookup["keywords"].pop(keyword, None)
-    settings.write()
-    entries.set_all_keywords_relations()
-    return components.redirect("/keywords")
-    
+    if "yes" in action.casefold():
+        settings.lookup["keywords"].pop(keyword, None)
+        settings.write()
+        entries.set_all_keywords_relations()
+        return components.redirect("/keywords")
+    else:
+        return components.redirect(f"/keywords/{keyword}")
+
 
 def cleanup(keyword):
     "Return cleaned-up (but not casefolded) keyword."
     return keyword.strip().replace("/", "-").replace(".", "-")
+
+
+def count(keyword):
+    "Return the number of entries having the keyword."
+    return len([e for e in entries.lookup.values() if keyword in e.keywords])

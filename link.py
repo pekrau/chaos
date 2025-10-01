@@ -68,7 +68,8 @@ def post(session, title: str, href: str, text: str):
     link.href = href.strip() or "/"
     link.content = text.strip()
     link.write()
-    return Redirect(link.url)
+    entries.set_keywords_relations(link)
+    return components.redirect(link.url)
 
 
 @rt("/{link:Entry}")
@@ -97,18 +98,8 @@ def get(session, link: entries.Entry):
                     ),
                 ),
                 Ul(
+                    Li(components.get_add_dropdown()),
                     Li(components.search_form()),
-                    Li(
-                        Details(
-                            Summary("Add..."),
-                            Ul(
-                                Li(A("Note", href="/note")),
-                                Li(A("Link", href="/link")),
-                                Li(A("File", href="/file")),
-                            ),
-                            cls="dropdown",
-                        ),
-                    ),
                 ),
                 style=constants.LINK_NAV_STYLE,
             ),
@@ -207,7 +198,8 @@ def post(session, link: entries.Entry, title: str, href: str, text: str):
     link.href = href.strip() or "/"
     link.content = text.strip()
     link.write()
-    return Redirect(link.url)
+    entries.set_keywords_relations(link)
+    return components.redirect(link.url)
 
 
 @rt("/{link:Entry}/copy")
@@ -325,7 +317,6 @@ def post(session, link: entries.Entry, action: str):
     assert isinstance(link, entries.Link)
     if "yes" in action.casefold():
         link.delete()
-        entries.set_all_keywords_relations()
-        return Redirect(f"/")
+        return components.redirect(f"/")
     else:
-        return Redirect(link.url)
+        return components.redirect(link.url)

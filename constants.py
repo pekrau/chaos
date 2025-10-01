@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = "0.6.3"
+VERSION = "0.6.4"
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
 

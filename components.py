@@ -31,7 +31,9 @@ def set_auth_before(request, session):
         return redirect("/")
 
 
-beforeware = Beforeware(set_auth_before, skip=[r"/favicon\.ico", r"/static/*"])
+beforeware = Beforeware(
+    set_auth_before, skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods.css", r"/static/*"]
+)
 
 
 def get_fast_app(routes=None):
@@ -57,7 +59,7 @@ def redirect(href):
 def chaos_icon():
     return A(
         Img(
-            src="/Greek_lc_chi_icon64.png",
+            src="/chaos.png",
             height=24,
             width=24,
             style="padding: 0;",

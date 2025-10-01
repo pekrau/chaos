@@ -170,11 +170,28 @@ def get_icon(filename, title=""):
 
 
 def get_table_pager(current_page, total_entries, action):
-    "Return pager form given current page."
+    "Return form with pager buttons given current page."
     if total_entries < constants.MAX_PAGE_ENTRIES:
         return ""
+    pages = [1]
+    max_pages = (total_entries + 1) // constants.MAX_PAGE_ENTRIES
+    for page in range(2, max_pages):
+        if abs(current_page - page) < 2:
+            pages.append(page)
+    if pages[-1] != max_pages:
+        pages.append(max_pages)
     buttons = []
-    for page in range(1, (total_entries + 1) // constants.MAX_PAGE_ENTRIES + 1):
+    prev_page = 1
+    for page in pages:
+        if prev_page + 1 < page:
+            buttons.append(
+                Input(
+                    type="submit",
+                    value="...",
+                    disabled=True,
+                    cls="outline secondary",
+                )
+            )
         if page == current_page:
             buttons.append(
                 Input(
@@ -187,4 +204,5 @@ def get_table_pager(current_page, total_entries, action):
             )
         else:
             buttons.append(Input(type="submit", name="page", value=str(page)))
+        prev_page = page
     return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=action)

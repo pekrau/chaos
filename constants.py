@@ -9,7 +9,7 @@ import babel.dates
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
 
-VERSION = "0.6"
+VERSION = "0.6.1"
 
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
 
@@ -45,5 +45,5 @@ IMAGE_SUFFIXES = set(
 )
 
 SCORE_TITLE_WEIGHT = 2.0
-MAX_PAGE_ENTRIES = 2
+MAX_PAGE_ENTRIES = 25
 MAX_ROW_ITEMS = 5

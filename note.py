@@ -62,7 +62,7 @@ def post(session, title: str, text: str):
     note.content = text.strip()
     note.write()
     entries.set_keywords_relations(note)
-    return compontents.redirect(note.url)
+    return components.redirect(note.url)
 
 
 @rt("/{note:Entry}")

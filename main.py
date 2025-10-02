@@ -21,6 +21,7 @@ import keywords
 import note
 import link
 import file
+import api
 
 
 settings.read()
@@ -34,6 +35,7 @@ app, rt = components.get_app_rt(
         Mount("/link", link.app),
         Mount("/file", file.app),
         Mount("/keywords", keywords.app),
+        Mount("/api", api.app),
     ],
 )
 
@@ -191,6 +193,10 @@ def get(session, term: str):
         ),
         components.get_footer(),
     )
+
+@rt("/ping")
+def get(request):
+    return f"Hello from {request.url}, running chaos v{constants.VERSION}."
 
 
 serve(port=5002)

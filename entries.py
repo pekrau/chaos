@@ -1,6 +1,5 @@
 "Entry class and functions."
 
-import copy
 import datetime
 import os
 import pathlib
@@ -8,7 +7,6 @@ import re
 import unicodedata
 
 import babel.dates
-from fasthtml.common import Convertor, register_url_convertor
 import marko
 import yaml
 
@@ -26,15 +24,11 @@ class Entry:
         self.relations = {}
 
     def __str__(self):
-        return self.eid
+        return self._path.stem
 
     @property
     def path(self):
         return self._path
-
-    @property
-    def eid(self):
-        return self.path.stem
 
     @property
     def url(self):
@@ -72,14 +66,14 @@ class Entry:
             )
             filename = filename.casefold()
             self._path = constants.DATA_DIR / f"{filename}.md"
-            if self.eid in lookup:
+            if str(self) in lookup:
                 n = 2
                 while True:
                     self._path = constants.DATA_DIR / f"{filename}-{n}.md"
-                    if self.eid not in lookup:
+                    if str(self) not in lookup:
                         break
                     n += 1
-            lookup[self.eid] = self
+            lookup[str(self)] = self
 
     @property
     def size(self):
@@ -119,15 +113,15 @@ class Entry:
         "Delete the entry from the file system and remove from the lookup."
         global lookup
         self.remove_relations()
-        lookup.pop(self.eid)
+        lookup.pop(str(self))
         self.path.unlink()
 
     def remove_relations(self):
         "Remove all relations from other entries to this one."
         global lookup
-        eid = self.eid
+        entryid = str(self)
         for entry in lookup.values():
-            entry.relations.pop(eid, None)
+            entry.relations.pop(entryid, None)
 
     def score(self, term):
         """Calculate the score for the term in the title or text of the entry.
@@ -155,21 +149,6 @@ class Entry:
             get(k)
             for k, v in sorted(self.relations.items(), key=lambda r: r[1], reverse=True)
         ]
-
-
-class EntryConvertor(Convertor):
-    "Convert path segment to Entry class instance."
-
-    regex = "[^./]+"
-
-    def convert(self, value: str) -> Entry:
-        return get(value)
-
-    def to_string(self, value: Entry) -> str:
-        return str(value)
-
-
-register_url_convertor("Entry", EntryConvertor())
 
 
 class Note(Entry):
@@ -200,9 +179,16 @@ class File(Entry):
         return constants.DATA_DIR / self.filename
 
     @property
-    def filesize(self):
+    def file_size(self):
         "Size of the file, in bytes."
         return self.filepath.stat().st_size
+
+    @property
+    def file_modified(self):
+        "Modified timestamp in UTC ISO format."
+        timestamp = self.filepath.stat().st_mtime
+        dt = datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC)
+        return dt.strftime(constants.DATETIME_ISO_FORMAT)
 
     def delete(self):
         "Delete the entry from the file system and its file and remove from the lookup."
@@ -214,9 +200,9 @@ class File(Entry):
 lookup = {}
 
 
-def get(eid):
+def get(entryid):
     global lookup
-    return lookup[eid]
+    return lookup[entryid]
 
 
 def read_entry_files(dirpath=None):
@@ -248,7 +234,7 @@ def read_entry_files(dirpath=None):
                 entry = File(path)
             else:
                 entry = Note(path)
-            lookup[entry.eid] = entry
+            lookup[str(entry)] = entry
             entry.frontmatter = frontmatter
             entry.content = content
 
@@ -263,8 +249,8 @@ def set_all_keywords_relations():
     for pos, entry1 in enumerate(entries):
         for entry2 in entries[pos + 1 :]:
             if relation := entry1.relation(entry2):
-                entry1.relations[entry2.eid] = relation
-                entry2.relations[entry1.eid] = relation
+                entry1.relations[str(entry2)] = relation
+                entry2.relations[str(entry1)] = relation
 
 
 def set_keywords_relations(entry):
@@ -276,8 +262,8 @@ def set_keywords_relations(entry):
         if entry2 is entry:
             continue
         if relation := entry.relation(entry2):
-            entry.relations[entry2.eid] = relation
-            entry2.relations[entry.eid] = relation
+            entry.relations[str(entry2)] = relation
+            entry2.relations[str(entry)] = relation
 
 
 def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
@@ -291,3 +277,13 @@ def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
         result = list(lookup.values())
     result.sort(key=lambda e: e.modified, reverse=True)
     return result[start:end]
+
+
+def get_current():
+    "Get a map of entry paths and filepaths with their modified timestamps."
+    result = {}
+    for entry in lookup.values():
+        result[str(entry)] = entry.modified
+        if isinstance(entry, File):
+            result[str(entry.filename)] = entry.file_modified
+    return result

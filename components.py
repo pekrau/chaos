@@ -6,6 +6,22 @@ from fasthtml.common import *
 
 import constants
 import settings
+import entries
+
+
+class EntryConvertor(Convertor):
+    "Convert path segment to Entry class instance."
+
+    regex = "[^./]+"
+
+    def convert(self, value: str) -> entries.Entry:
+        return entries.get(value)
+
+    def to_string(self, value: entries.Entry) -> str:
+        return str(value)
+
+
+register_url_convertor("Entry", EntryConvertor())
 
 
 class Error(Exception):
@@ -32,7 +48,8 @@ def set_auth_before(request, session):
 
 
 beforeware = Beforeware(
-    set_auth_before, skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods\.css"]
+    set_auth_before,
+    skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods\.css", r"/api/.*", r"/ping"]
 )
 
 
@@ -167,7 +184,7 @@ def get_entries_table(entries):
                         Td(*items),
                         Td(keywords),
                         Td(
-                            f"{entry.size} + {entry.filesize}",
+                            f"{entry.size} + {entry.file_size}",
                             cls="right",
                         ),
                         Td(entry.owner),
@@ -240,15 +257,17 @@ def get_keywords_links(entry):
 def get_footer(first="", second=""):
     return Footer(
         Hr(),
-        Div(
-            Div(first),
-            Div(second),
+        Small(
             Div(
-                A("chaos", href="https://github.com/pekrau/chaos"),
-                f" v {constants.VERSION}",
-                cls="right",
+                Div(first),
+                Div(second),
+                Div(
+                    A("chaos", href="https://github.com/pekrau/chaos"),
+                    f" v{constants.VERSION}",
+                    cls="right",
+                ),
+                cls="grid",
             ),
-            cls="grid",
         ),
         cls="container",
     )

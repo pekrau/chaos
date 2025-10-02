@@ -73,7 +73,7 @@ async def post(session, title: str, upfile: UploadFile, text: str):
     file.title = title.strip() or filename.stem
     file.content = text.strip()
     filecontent = await upfile.read()
-    filename = file.eid + ext
+    filename = str(file) + ext
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
@@ -141,7 +141,7 @@ def get(session, file: entries.Entry):
             cls="container",
         ),
         components.get_footer(
-            f"{file.size:,d} + {file.filesize:,d} bytes", file.modified_local
+            f"{file.size:,d} + {file.file_size:,d} bytes", file.modified_local
         ),
     )
 
@@ -155,7 +155,7 @@ def get(session, file: entries.Entry):
         headers["Content-Encoding"] = encoding
     return Response(
         content=file.filepath.read_bytes(),
-        media_type=media_type or constants.BINARY_MEDIA_TYPE,
+        media_type=media_type or constants.BINARY_CONTENT_TYPE,
         headers=headers,
     )
 
@@ -236,7 +236,7 @@ async def post(session, file: entries.Entry, title: str, upfile: UploadFile, tex
         if ext == ".md":
             raise components.Error("Upload of Markdown file is disallowed.")
         filecontent = await upfile.read()
-        filename = file.eid + ext
+        filename = str(file) + ext # The mimetype may change on file contents update.
         try:
             with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
                 outfile.write(filecontent)
@@ -356,7 +356,7 @@ def get(session, file: entries.Entry):
             cls="container",
         ),
         components.get_footer(
-            f"{file.size:,d} + {file.filesize:,d} bytes", file.modified_local
+            f"{file.size:,d} + {file.file_size:,d} bytes", file.modified_local
         ),
     )
 

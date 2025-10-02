@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = "0.6.6"
+VERSION = "0.7.0"
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
 
@@ -24,7 +24,9 @@ DEFAULT_TIMEZONE = babel.dates.get_timezone("Europe/Stockholm")
 DATETIME_BABEL_FORMAT = "yyyy-MM-dd H:mm:ss"
 DATETIME_ISO_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-BINARY_MEDIA_TYPE = "application/octet-stream"
+BINARY_CONTENT_TYPE = "application/octet-stream"
+GZIP_CONTENT_TYPE = "application/gzip"
+
 IMAGE_SUFFIXES = set(
     [
         ".png",

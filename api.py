@@ -16,6 +16,7 @@ app, rt = components.get_app_rt()
 
 @rt("/current")
 def get(request):
+    "Return a JSON dictionary of items {name: modified} for all entries."
     apikey = request.headers.get("apikey")
     if not apikey:
         return Response("no API key", status_code=HTTP.UNAUTHORIZED)
@@ -26,6 +27,7 @@ def get(request):
 
 @rt("/fetch")
 async def post(request):
+    "Return a TGZ file of those items named in the request JSON data."
     data = await request.json()
     buffer = io.BytesIO()
     with tarfile.open(fileobj=buffer, mode="w:gz") as tgzfile:

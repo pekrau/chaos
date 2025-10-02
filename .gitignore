@@ -2,4 +2,5 @@
 .project
 *~
 __pycache__
+cronenv.json
 old

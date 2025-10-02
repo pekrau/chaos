@@ -10,6 +10,11 @@ import sys
 
 import requests
 
+# This must be done before importing 'constants'.
+with open(Path(__file__).parent / "cronenv.json") as infile:
+    for name, value in json.load(infile).items():
+        os.environ[name] = value
+
 import constants
 import entries
 
@@ -65,5 +70,5 @@ def update(url, apikey):
 
 
 if __name__ == "__main__":
-    fetched, deleted = update(os.environ["CHAOS_LOCAL_URL"], os.environ["CHAOS_APIKEY"])
+    fetched, deleted = update(os.environ["CHAOS_REMOTE_URL"], os.environ["CHAOS_APIKEY"])
     print(f"# {fetched=}, # {deleted=}")

@@ -44,7 +44,9 @@ def update(url, apikey):
             fetch_entries.add(name)
 
     if fetch_entries:
-        response = requests.post(url + "/api/fetch", json={"entries": list(fetch_entries)})
+        response = requests.post(
+            url + "/api/fetch", json={"entries": list(fetch_entries)}
+        )
         if response.status_code != HTTP.OK:
             raise IOError(f"invalid response: {response.status_code=}")
         if response.headers["Content-Type"] != constants.GZIP_CONTENT_TYPE:
@@ -70,5 +72,7 @@ def update(url, apikey):
 
 
 if __name__ == "__main__":
-    fetched, deleted = update(os.environ["CHAOS_REMOTE_URL"], os.environ["CHAOS_APIKEY"])
+    fetched, deleted = update(
+        os.environ["CHAOS_REMOTE_URL"], os.environ["CHAOS_APIKEY"]
+    )
     print(f"# {fetched=}, # {deleted=}")

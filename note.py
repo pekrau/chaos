@@ -12,7 +12,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(session):
+def get():
     "Form for adding a note."
     return (
         Title("Add note"),
@@ -66,7 +66,7 @@ def post(session, title: str, text: str):
 
 
 @rt("/{note:Entry}")
-def get(session, note: entries.Entry):
+def get(note: entries.Entry):
     "View the note."
     assert isinstance(note, entries.Note)
     return (
@@ -90,10 +90,10 @@ def get(session, note: entries.Entry):
                             A("Edit", href=f"{note.url}/edit"),
                             A("Copy", href=f"{note.url}/copy"),
                             A("Delete", href=f"{note.url}/delete"),
-                            A("Add note...", href="/note"),
-                            A("Add link...", href="/link"),
-                            A("Add file...", href="/file"),
-                            A("Keywords", href="/keywords"),
+                            A("Add note...", href="/note/"),
+                            A("Add link...", href="/link/"),
+                            A("Add file...", href="/file/"),
+                            A("Keywords", href="/keywords/"),
                         ),
                     ),
                     Li(components.search_form()),
@@ -117,7 +117,7 @@ def get(session, note: entries.Entry):
 
 
 @rt("/{note:Entry}/edit")
-def get(session, note: entries.Entry):
+def get(note: entries.Entry):
     "Form for editing a note."
     assert isinstance(note, entries.Note)
     return (
@@ -177,7 +177,7 @@ def get(session, note: entries.Entry):
 
 
 @rt("/{note:Entry}/edit")
-def post(session, note: entries.Entry, title: str, text: str):
+def post(note: entries.Entry, title: str, text: str):
     "Actually edit the note."
     assert isinstance(note, entries.Note)
     note.title = title or "no title"
@@ -188,7 +188,7 @@ def post(session, note: entries.Entry, title: str, text: str):
 
 
 @rt("/{note:Entry}/copy")
-def get(session, note: entries.Entry):
+def get(note: entries.Entry):
     "Form for making a copy of the note."
     assert isinstance(note, entries.Note)
     return (
@@ -221,7 +221,7 @@ def get(session, note: entries.Entry):
                     type="submit",
                     value="Save",
                 ),
-                action=f"/note",
+                action=f"/note/",
                 method="POST",
             ),
             Form(
@@ -239,7 +239,7 @@ def get(session, note: entries.Entry):
 
 
 @rt("/{note:Entry}/delete")
-def get(session, note: entries.Entry):
+def get(note: entries.Entry):
     "Ask for confirmation to delete the note."
     assert isinstance(note, entries.Note)
     return (
@@ -281,7 +281,7 @@ def get(session, note: entries.Entry):
 
 
 @rt("/{note:Entry}/delete")
-def post(session, note: entries.Entry, action: str):
+def post(note: entries.Entry, action: str):
     "Actually delete the note."
     assert isinstance(note, entries.Note)
     if "yes" in action.casefold():

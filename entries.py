@@ -3,6 +3,7 @@
 import datetime
 import os
 import pathlib
+import random
 import re
 import unicodedata
 
@@ -83,9 +84,7 @@ class Entry:
     @property
     def modified(self):
         "Modified timestamp in UTC ISO format."
-        timestamp = self.path.stat().st_mtime
-        dt = datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC)
-        return dt.strftime(constants.DATETIME_ISO_FORMAT)
+        return timestamp_utc(self.path.stat().st_mtime)
 
     @property
     def modified_local(self):
@@ -150,6 +149,13 @@ class Entry:
             for k, v in sorted(self.relations.items(), key=lambda r: r[1], reverse=True)
         ]
 
+    def is_unrelated(self):
+        "Is this entry not related to any other?"
+        if not self.keywords:
+            return True
+        else:
+            return len(self.related()) == 0
+
 
 class Note(Entry):
     "Note entry class."
@@ -186,9 +192,7 @@ class File(Entry):
     @property
     def file_modified(self):
         "Modified timestamp in UTC ISO format."
-        timestamp = self.filepath.stat().st_mtime
-        dt = datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC)
-        return dt.strftime(constants.DATETIME_ISO_FORMAT)
+        return timestamp_utc(self.filepath.stat().st_mtime)
 
     def delete(self):
         "Delete the entry from the file system and its file and remove from the lookup."
@@ -279,6 +283,23 @@ def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
     return result[start:end]
 
 
+def get_unrelated_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
+    "Get the unrelated entries ordered by modified time."
+    result = [e for e in lookup.values() if e.is_unrelated()]
+    result.sort(key=lambda e: e.modified, reverse=True)
+    return result[start:end]
+
+
+def get_random_entries():
+    "Get a set of random entries."
+    entries = list(lookup.values())
+    if len(entries) <= constants.MAX_PAGE_ENTRIES:
+        random.shuffle(entries)
+        return entries
+    else:
+        return random.sample(entries, constants.MAX_PAGE_ENTRIES)
+
+
 def get_current():
     "Get a map of entry paths and filepaths with their modified timestamps."
     result = {}
@@ -286,4 +307,10 @@ def get_current():
         result[str(entry)] = entry.modified
         if isinstance(entry, File):
             result[str(entry.filename)] = entry.file_modified
+    result[".chaos.json"] = timestamp_utc(Path(".chaos.json").stat().st_mtime)
     return result
+
+
+def timestamp_utc(timestamp):
+    dt = datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC)
+    return dt.strftime(constants.DATETIME_ISO_FORMAT)

@@ -12,7 +12,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(session):
+def get():
     "Form for adding a link."
     return (
         Title("Add link"),
@@ -75,7 +75,7 @@ def post(session, title: str, href: str, text: str):
 
 
 @rt("/{link:Entry}")
-def get(session, link: entries.Entry):
+def get(link: entries.Entry):
     "View the metadata for the link."
     assert isinstance(link, entries.Link)
     return (
@@ -129,7 +129,7 @@ def get(session, link: entries.Entry):
 
 
 @rt("/{link:Entry}/edit")
-def get(session, link: entries.Entry):
+def get(link: entries.Entry):
     "Form for editing a link."
     assert isinstance(link, entries.Link)
     return (
@@ -197,7 +197,7 @@ def get(session, link: entries.Entry):
 
 
 @rt("/{link:Entry}/edit")
-def post(session, link: entries.Entry, title: str, href: str, text: str):
+def post(link: entries.Entry, title: str, href: str, text: str):
     "Actually edit the link."
     assert isinstance(link, entries.Link)
     link.title = (title or "no title").strip()
@@ -209,7 +209,7 @@ def post(session, link: entries.Entry, title: str, href: str, text: str):
 
 
 @rt("/{link:Entry}/copy")
-def get(session, link: entries.Entry):
+def get(link: entries.Entry):
     "Form for making a copy of the link."
     assert isinstance(link, entries.Link)
 
@@ -267,7 +267,7 @@ def get(session, link: entries.Entry):
 
 
 @rt("/{link:Entry}/delete")
-def get(session, link: entries.Entry):
+def get(link: entries.Entry):
     "Ask for confirmation to delete the link."
     assert isinstance(link, entries.Link)
 
@@ -310,7 +310,7 @@ def get(session, link: entries.Entry):
 
 
 @rt("/{link:Entry}/delete")
-def post(session, link: entries.Entry, action: str):
+def post(link: entries.Entry, action: str):
     "Actually delete the link."
     assert isinstance(link, entries.Link)
     if "yes" in action.casefold():

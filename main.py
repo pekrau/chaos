@@ -58,6 +58,8 @@ def get(session, page: int = 1):
                                 A("Add link...", href="/link"),
                                 A("Add file...", href="/file"),
                                 A("Keywords", href="/keywords"),
+                                A("Unrelated entries", href="/unrelated"),
+                                A("Random entries", href="/random"),
                                 A("Reread", href="/reread"),
                                 A("Logout", href="/logout"),
                             ),
@@ -126,6 +128,7 @@ def get(session, page: int = 1):
 
 @rt("/")
 def post(session, username: str, password: str):
+    "Actually perform login."
     if not username or not password:
         add_toast(session, "Missing username and/or password.", "error")
         return components.redirect("/")
@@ -141,8 +144,82 @@ def post(session, username: str, password: str):
     return components.redirect(session.pop("path", None) or "/")
 
 
+@rt("/unrelated")
+def get(page: int = 1):
+    "Display entries having no relations."
+    return (
+        Title("chaos"),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.chaos_icon()),
+                    Li("Unrelated entries"),
+                    Li(
+                        components.get_dropdown_menu(
+                            A("Add note...", href="/note"),
+                            A("Add link...", href="/link"),
+                            A("Add file...", href="/file"),
+                            A("Keywords", href="/keywords"),
+                        ),
+                    ),
+                    Li(components.search_form()),
+                ),
+                cls="main",
+            ),
+            cls="container",
+        ),
+        Main(
+            components.get_entries_table(
+                entries.get_unrelated_entries(
+                    start=(page - 1) * constants.MAX_PAGE_ENTRIES,
+                    end=page * constants.MAX_PAGE_ENTRIES,
+                )
+            ),
+            components.get_table_pager(page, len(entries.lookup), "/"),
+            cls="container",
+        ),
+        components.get_footer(),
+    )
+
+
+@rt("/random")
+def get():
+    "Display a page of random entries."
+    return (
+        Title("chaos"),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.chaos_icon()),
+                    Li("Random entries"),
+                    Li(
+                        components.get_dropdown_menu(
+                            A("Add note...", href="/note"),
+                            A("Add link...", href="/link"),
+                            A("Add file...", href="/file"),
+                            A("Keywords", href="/keywords"),
+                        ),
+                    ),
+                    Li(components.search_form()),
+                ),
+                cls="main",
+            ),
+            cls="container",
+        ),
+        Main(
+            components.get_entries_table(entries.get_random_entries()),
+            cls="container",
+        ),
+        components.get_footer(),
+    )
+
+
 @rt("/reread")
-def get(session):
+def get():
     "Reread all entries."
     entries.read_entry_files()
     entries.set_all_keywords_relations()
@@ -156,7 +233,7 @@ def get(session):
 
 
 @rt("/search")
-def get(session, term: str):
+def get(term: str):
     "Search the entries."
     result = []
     for entry in entries.lookup.values():
@@ -193,6 +270,7 @@ def get(session, term: str):
         ),
         components.get_footer(),
     )
+
 
 @rt("/ping")
 def get(request):

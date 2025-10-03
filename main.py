@@ -80,7 +80,22 @@ def get(session, page: int = 1):
                 components.get_table_pager(page, len(entries.lookup), "/"),
                 cls="container",
             ),
-            components.get_footer(session["auth"]),
+            Footer(
+                Hr(),
+                Small(
+                    Div(
+                        Div(session["auth"]),
+                        Div(
+                            A("chaos", href="https://github.com/pekrau/chaos"),
+                            " ",
+                            constants.VERSION,
+                            cls="right",
+                        ),
+                        cls="grid",
+                    ),
+                ),
+                cls="container",
+            ),
         )
     else:
         return (
@@ -122,7 +137,6 @@ def get(session, page: int = 1):
                 ),
                 cls="container",
             ),
-            components.get_footer(),
         )
 
 
@@ -180,7 +194,6 @@ def get(page: int = 1):
             components.get_table_pager(page, len(entries.lookup), "/"),
             cls="container",
         ),
-        components.get_footer(),
     )
 
 
@@ -214,7 +227,6 @@ def get():
             components.get_entries_table(entries.get_random_entries()),
             cls="container",
         ),
-        components.get_footer(),
     )
 
 
@@ -268,7 +280,6 @@ def get(term: str):
             components.get_entries_table([e for s, m, e in result]),
             cls="container",
         ),
-        components.get_footer(),
     )
 
 

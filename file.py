@@ -141,7 +141,7 @@ def get(file: entries.Entry):
             cls="container",
         ),
         components.get_footer(
-            f"{file.size:,d} + {file.file_size:,d} bytes", file.modified_local
+            file.modified_local, f"{file.size:,d} + {file.file_size:,d} bytes"
         ),
     )
 
@@ -356,7 +356,7 @@ def get(file: entries.Entry):
             cls="container",
         ),
         components.get_footer(
-            f"{file.size:,d} + {file.file_size:,d} bytes", file.modified_local
+            file.modified_local, f"{file.size:,d} + {file.file_size:,d} bytes"
         ),
     )
 

@@ -124,7 +124,7 @@ def get(link: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(f"{link.size} bytes", link.modified_local),
+        components.get_footer(link.modified_local, f"{link.size} bytes"),
     )
 
 
@@ -305,7 +305,7 @@ def get(link: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(f"{link.size} bytes", link.modified_local),
+        components.get_footer(link.modified_local, f"{link.size} bytes"),
     )
 
 

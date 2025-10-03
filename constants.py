@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = "0.8"
+VERSION = "0.8.1"
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
 
@@ -21,7 +21,7 @@ FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
 
 DEFAULT_LOCALE = "sv_SE"
 DEFAULT_TIMEZONE = babel.dates.get_timezone("Europe/Stockholm")
-DATETIME_BABEL_FORMAT = "yyyy-MM-dd H:mm:ss"
+DATETIME_BABEL_FORMAT = "yyyy-MM-dd HH:mm:ss"
 DATETIME_ISO_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 BINARY_CONTENT_TYPE = "application/octet-stream"

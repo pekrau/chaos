@@ -260,12 +260,7 @@ def get_footer(first="", second=""):
         Small(
             Div(
                 Div(first),
-                Div(second),
-                Div(
-                    A("chaos", href="https://github.com/pekrau/chaos"),
-                    f" v{constants.VERSION}",
-                    cls="right",
-                ),
+                Div(second, cls="right"),
                 cls="grid",
             ),
         ),

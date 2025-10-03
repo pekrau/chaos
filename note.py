@@ -112,7 +112,7 @@ def get(note: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(f"{note.size} bytes", note.modified_local),
+        components.get_footer(note.modified_local, f"{note.size} bytes"),
     )
 
 
@@ -276,7 +276,7 @@ def get(note: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(f"{note.size} bytes", note.modified_local),
+        components.get_footer(note.modified_local, f"{note.size} bytes"),
     )
 
 

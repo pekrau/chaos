@@ -307,7 +307,7 @@ def get_current():
         result[str(entry)] = entry.modified
         if isinstance(entry, File):
             result[str(entry.filename)] = entry.file_modified
-    result[".chaos.json"] = timestamp_utc(Path(".chaos.json").stat().st_mtime)
+    result[".chaos.json"] = timestamp_utc((constants.DATA_DIR / ".chaos.yaml").stat().st_mtime)
     return result
 
 

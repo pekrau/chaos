@@ -58,6 +58,7 @@ def get(session, page: int = 1):
                                 A("Add link...", href="/link/"),
                                 A("Add file...", href="/file/"),
                                 A("Keywords", href="/keywords"),
+                                A("Entries without keywords", href="/nokeywords"),
                                 A("Unrelated entries", href="/unrelated"),
                                 A("Random entries", href="/random"),
                                 A("Reread", href="/reread"),
@@ -187,6 +188,45 @@ def get(page: int = 1):
         Main(
             components.get_entries_table(
                 entries.get_unrelated_entries(
+                    start=(page - 1) * constants.MAX_PAGE_ENTRIES,
+                    end=page * constants.MAX_PAGE_ENTRIES,
+                )
+            ),
+            components.get_table_pager(page, len(entries.lookup), "/"),
+            cls="container",
+        ),
+    )
+
+
+@rt("/nokeywords")
+def get(page: int = 1):
+    "Display entries without keywords."
+    return (
+        Title("No keywords"),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.chaos_icon()),
+                    Li("Entries without keywords"),
+                    Li(
+                        components.get_dropdown_menu(
+                            A("Add note...", href="/note/"),
+                            A("Add link...", href="/link/"),
+                            A("Add file...", href="/file/"),
+                            A("Keywords", href="/keywords"),
+                        ),
+                    ),
+                    Li(components.search_form()),
+                ),
+                cls="main",
+            ),
+            cls="container",
+        ),
+        Main(
+            components.get_entries_table(
+                entries.get_no_keyword_entries(
                     start=(page - 1) * constants.MAX_PAGE_ENTRIES,
                     end=page * constants.MAX_PAGE_ENTRIES,
                 )

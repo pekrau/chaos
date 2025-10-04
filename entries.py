@@ -302,6 +302,13 @@ def get_unrelated_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
     return result[start:end]
 
 
+def get_no_keyword_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
+    "Get the entries without keywords ordered by modified time."
+    result = [e for e in lookup.values() if not e.keywords]
+    result.sort(key=lambda e: e.modified, reverse=True)
+    return result[start:end]
+
+
 def get_random_entries():
     "Get a set of random entries."
     entries = list(lookup.values())

@@ -2,6 +2,7 @@
 
 from http import HTTPStatus as HTTP
 
+import babel.numbers
 from fasthtml.common import *
 
 import constants
@@ -266,3 +267,7 @@ def get_footer(first="", second=""):
         ),
         cls="container",
     )
+
+def numerical(n):
+    "Return numerical value as string formatted according to locale."
+    return babel.numbers.format_decimal(n, locale=constants.DEFAULT_LOCALE)

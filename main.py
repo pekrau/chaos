@@ -9,8 +9,10 @@ if constants.DEVELOPMENT:
     ic(constants.DEVELOPMENT)
 
 import os
+import shutil
 
 from fasthtml.common import *
+import psutil
 import yaml
 
 import components
@@ -62,6 +64,8 @@ def get(session, page: int = 1):
                                 A("Unrelated entries", href="/unrelated"),
                                 A("Random entries", href="/random"),
                                 A("Reread", href="/reread"),
+                                A("Software", href="/software"),
+                                A("System", href="/system"),
                                 A("Logout", href="/logout"),
                             ),
                         ),
@@ -89,7 +93,7 @@ def get(session, page: int = 1):
                         Div(
                             A("chaos", href="https://github.com/pekrau/chaos"),
                             " ",
-                            constants.VERSION,
+                            constants.__version__,
                             cls="right",
                         ),
                         cls="grid",
@@ -323,9 +327,103 @@ def get(term: str):
     )
 
 
+@rt("/software")
+def get():
+    "View software versions."
+    import fasthtml
+    import marko
+    import yaml
+
+    rows = []
+    for name, href, version in [
+        (
+            "chaos",
+            "https://github.com/pekrau/chaos",
+            constants.__version__,
+        ),
+        (
+            "Python",
+            "https://www.python.org/",
+            f"{'.'.join([str(v) for v in sys.version_info[0:3]])}",
+        ),
+        ("fastHTML", "https://fastht.ml/", fasthtml.__version__),
+        ("Marko", "https://marko-py.readthedocs.io/", marko.__version__),
+        ("PyYAML", "https://pypi.org/project/PyYAML/", yaml.__version__),
+    ]:
+        rows.append(
+            Tr(
+                Td(A(name, href=href)),
+                Td(version, cls="right"),
+            )
+        )
+    return (
+        Title("Software"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.chaos_icon()),
+                    Li("Software"),
+                ),
+                cls="main",
+            ),
+            cls="container",
+        ),
+        Main(
+            Table(
+                Tbody(*rows),
+            ),
+            cls="container",
+        ),
+    )
+
+
+@rt("/system")
+def get():
+    "View aggregate system information."
+    disk_usage = shutil.disk_usage(constants.DATA_DIR)
+    dir_size = 0
+    for dirpath, dirnames, filenames in os.walk(constants.DATA_DIR):
+        dp = Path(dirpath)
+        for filename in filenames:
+            fp = dp / filename
+            dir_size += os.path.getsize(fp)
+    ram_usage = psutil.Process().memory_info().rss
+
+    return (
+        Title("System"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.chaos_icon()),
+                    Li("System"),
+                ),
+                cls="main",
+            ),
+            cls="container",
+        ),
+        Main(
+            Table(
+                Tr(
+                    Td("RAM usage"),
+                    Td(components.numerical(ram_usage), cls="right"),
+                ),
+                Tr(
+                    Td("Data size"),
+                    Td(components.numerical(dir_size), cls="right"),
+                ),
+                Tr(
+                    Td("Disk free"),
+                    Td(components.numerical(disk_usage.free), cls="right"),
+                ),
+            ),
+            cls="container",
+        ),
+    )
+
+
 @rt("/ping")
 def get(request):
-    return f"Hello from {request.url}, running chaos v{constants.VERSION}."
+    return f"Hello from {request.url}, running chaos v{constants.__version__}."
 
 
 serve(port=5002)

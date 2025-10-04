@@ -35,7 +35,10 @@ async def post(request):
             path = constants.DATA_DIR / name
             if not path.suffix:
                 path = path.with_suffix(".md")
-            tgzfile.add(path, arcname=path.name)
+            try:
+                tgzfile.add(path, arcname=path.name)
+            except FileNotFoundError:
+                pass
     return Response(
         content=buffer.getvalue(),
         media_type=constants.GZIP_CONTENT_TYPE,

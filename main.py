@@ -54,9 +54,9 @@ def get(session, page: int = 1):
                         Li(components.chaos_icon()),
                         Li(
                             components.get_dropdown_menu(
-                                A("Add note...", href="/note"),
-                                A("Add link...", href="/link"),
-                                A("Add file...", href="/file"),
+                                A("Add note...", href="/note/"),
+                                A("Add link...", href="/link/"),
+                                A("Add file...", href="/file/"),
                                 A("Keywords", href="/keywords"),
                                 A("Unrelated entries", href="/unrelated"),
                                 A("Random entries", href="/random"),
@@ -162,7 +162,7 @@ def post(session, username: str, password: str):
 def get(page: int = 1):
     "Display entries having no relations."
     return (
-        Title("chaos"),
+        Title("Unrelated"),
         Script(src="/clipboard.min.js"),
         Script("new ClipboardJS('.to_clipboard');"),
         Header(
@@ -172,9 +172,9 @@ def get(page: int = 1):
                     Li("Unrelated entries"),
                     Li(
                         components.get_dropdown_menu(
-                            A("Add note...", href="/note"),
-                            A("Add link...", href="/link"),
-                            A("Add file...", href="/file"),
+                            A("Add note...", href="/note/"),
+                            A("Add link...", href="/link/"),
+                            A("Add file...", href="/file/"),
                             A("Keywords", href="/keywords"),
                         ),
                     ),
@@ -201,7 +201,7 @@ def get(page: int = 1):
 def get():
     "Display a page of random entries."
     return (
-        Title("chaos"),
+        Title("Random"),
         Script(src="/clipboard.min.js"),
         Script("new ClipboardJS('.to_clipboard');"),
         Header(
@@ -211,9 +211,9 @@ def get():
                     Li("Random entries"),
                     Li(
                         components.get_dropdown_menu(
-                            A("Add note...", href="/note"),
-                            A("Add link...", href="/link"),
-                            A("Add file...", href="/file"),
+                            A("Add note...", href="/note/"),
+                            A("Add link...", href="/link/"),
+                            A("Add file...", href="/file/"),
                             A("Keywords", href="/keywords"),
                         ),
                     ),
@@ -264,9 +264,9 @@ def get(term: str):
                     Li("Search"),
                     Li(
                         components.get_dropdown_menu(
-                            A("Add note...", href="/note"),
-                            A("Add link...", href="/link"),
-                            A("Add file...", href="/file"),
+                            A("Add note...", href="/note/"),
+                            A("Add link...", href="/link/"),
+                            A("Add file...", href="/file/"),
                             A("Keywords", href="/keywords"),
                         ),
                     ),

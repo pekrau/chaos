@@ -8,11 +8,16 @@ import re
 import unicodedata
 
 import babel.dates
+import filetype
 import marko
 import yaml
 
 import constants
 import settings
+
+
+# Key: entry id; value: entry instance.
+lookup = {}
 
 
 class Entry:
@@ -132,9 +137,9 @@ class Entry:
         )
 
     def set_keywords(self):
-        "Find keywords in the title and content of this entry."
-        self.keywords = settings.get_keywords(self.title).union(
-            settings.get_keywords(self.content)
+        "Find the canonical keywords in the title and content of this entry."
+        self.keywords = settings.get_canonical_keywords(self.title).union(
+            settings.get_canonical_keywords(self.content)
         )
 
     def relation(self, other):
@@ -190,6 +195,17 @@ class File(Entry):
         return self.filepath.stat().st_size
 
     @property
+    def file_type(self):
+        """Tuple (file extension, MIME type) or (None, None) if not recognized.
+        Determined from contents, not file extension.
+        """
+        kind = filetype.guess(self.filepath)
+        if kind is None:
+            return (None, None)
+        else:
+            return (kind.extension, kind.mime)
+
+    @property
     def file_modified(self):
         "Modified timestamp in UTC ISO format."
         return timestamp_utc(self.filepath.stat().st_mtime)
@@ -198,10 +214,6 @@ class File(Entry):
         "Delete the entry from the file system and its file and remove from the lookup."
         self.filepath.unlink()
         super().delete()
-
-
-# Key: entry id; value: entry instance.
-lookup = {}
 
 
 def get(entryid):
@@ -314,3 +326,8 @@ def get_current():
 def timestamp_utc(timestamp):
     dt = datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC)
     return dt.strftime(constants.DATETIME_ISO_FORMAT)
+
+
+def count(keyword):
+    "Return the number of entries having the keyword."
+    return len([e for e in lookup.values() if keyword in e.keywords])

@@ -101,9 +101,9 @@ def get_add_dropdown():
     return Details(
         Summary("Add..."),
         Ul(
-            Li(A("Note", href="/note")),
-            Li(A("Link", href="/link")),
-            Li(A("File", href="/file")),
+            Li(A("Note", href="/note/")),
+            Li(A("Link", href="/link/")),
+            Li(A("File", href="/file/")),
         ),
         cls="dropdown",
     )
@@ -138,7 +138,7 @@ def get_entry_clipboard(entry):
 def get_entries_table(entries):
     rows = []
     for entry in entries:
-        keywords = settings.get_original_keywords(sorted(entry.keywords))
+        keywords = sorted(entry.keywords)
         keywords = [str(A(kw, href=f"/keywords/{kw}")) for kw in keywords]
         if len(keywords) > constants.MAX_ROW_ITEMS:
             keywords = NotStr("; ".join(keywords[0 : constants.MAX_ROW_ITEMS]) + "...")
@@ -247,8 +247,8 @@ def get_keywords_links(entry):
     return NotStr(
         "; ".join(
             [
-                str(A(settings.lookup["keywords"].get(kw), href=f"/keywords/{kw}"))
-                for kw in sorted(entry.keywords)
+                str(A(kw, href=f"/keywords/{kw}"))
+                for kw in entry.keywords
             ]
         )
     )

@@ -7,11 +7,14 @@ import string
 
 import babel.dates
 
-VERSION = "0.8.2"
+VERSION = "0.9.0"
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
 
-DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
+if DEVELOPMENT:
+    DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR_DEVELOPMENT"])
+else:
+    DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
 if not DATA_DIR.exists():
     raise OSError(f"DATA_DIR {constants.DATA_DIR} does not exist")
 

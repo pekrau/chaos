@@ -1,9 +1,9 @@
 "File entry pages."
 
-import mimetypes
 import pathlib
 
 from fasthtml.common import *
+import filetype
 import marko
 
 import components
@@ -114,9 +114,9 @@ def get(file: entries.Entry):
                             A("Edit", href=f"{file.url}/edit"),
                             A("Copy", href=f"{file.url}/copy"),
                             A("Delete", href=f"{file.url}/delete"),
-                            A("Add note...", href="/note"),
-                            A("Add link...", href="/link"),
-                            A("Add file...", href="/file"),
+                            A("Add note...", href="/note/"),
+                            A("Add link...", href="/link/"),
+                            A("Add file...", href="/file/"),
                             A("Keywords", href="/keywords"),
                         ),
                     ),
@@ -149,14 +149,9 @@ def get(file: entries.Entry):
 @rt("/{file:Entry}/download")
 def get(file: entries.Entry):
     "Download the file."
-    media_type, encoding = mimetypes.guess_type(file.filename)
-    headers = {"Content-Disposition": f'attachment; filename="{file.filename}"'}
-    if encoding:
-        headers["Content-Encoding"] = encoding
     return Response(
         content=file.filepath.read_bytes(),
-        media_type=media_type or constants.BINARY_CONTENT_TYPE,
-        headers=headers,
+        media_type=file.file_type[1] or constants.BINARY_CONTENT_TYPE,
     )
 
 
@@ -300,7 +295,7 @@ def get(file: entries.Entry):
                     type="submit",
                     value="Save",
                 ),
-                action=f"/file",
+                action=f"/file/",
                 method="POST",
             ),
             Form(

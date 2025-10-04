@@ -13,6 +13,7 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get(session):
     "List of keywords."
+    ic(settings.keywords, settings.canonical_keywords)
     return (
         Title("chaos"),
         Header(
@@ -31,19 +32,22 @@ def get(session):
                 Tbody(
                     *[
                         Tr(
-                            Td(A(kw[1], href=f"/keywords/{kw[0]}")),
-                            Td(f"{count(kw[0])} entries"),
+                            Td(A(kw, href=f"/keywords/{kw}"),
+                               " ",
+                               Small(", ".join([k for k in list(kws) if k!= kw])),
+                            ),
+                            Td(f"{entries.count(kw)} entries"),
                             Td(
                                 A(
                                     "Delete",
-                                    href=f"/keywords/{kw[0]}/delete",
+                                    href=f"/keywords/{kw}/delete",
                                     role="button",
                                     cls="outline thin",
                                 ),
                                 cls="right",
                             ),
                         )
-                        for kw in sorted(settings.lookup["keywords"].items())
+                        for kw, kws in sorted(settings.canonical_keywords.items())
                     ],
                 ),
             ),
@@ -76,10 +80,13 @@ def get(session):
 @rt("/")
 def post(session, keyword: str):
     "Actually add a keyword."
-    keyword = cleanup(keyword)
+    keyword = keyword.strip()
     if not keyword:
         raise components.Error("No new keyword provided.")
-    settings.lookup["keywords"][keyword.casefold()] = keyword
+    try:
+        settings.add_keyword_canonical(keyword)
+    except ValueError as error:
+        raise components.Error(error)
     settings.write()
     entries.set_all_keywords_relations()
     return components.redirect("/keywords")
@@ -88,14 +95,22 @@ def post(session, keyword: str):
 @rt("/{keyword}")
 def get(session, keyword: str, page: int = 1):
     "Display list of entries containing the provided keyword."
-    keyword = cleanup(keyword)
+    keyword = keyword.strip()
     if not keyword:
         return components.redirect("/keywords")
-    page = max(1, page)
-    canonical_keyword = keyword.casefold()
-    keyword = settings.lookup["keywords"].get(canonical_keyword)
-    if not keyword:
-        return components.redirect("/keywords")
+    rows = [Tr(
+        Td(keyword),
+        Td(A("Delete", role="button", href=f"/keywords/{keyword}/delete",
+             cls="outline thin")),
+    )]
+    rows.extend([
+        Tr(
+            Td(synonym, " (synonym)"),
+            Td(A("Delete", role="button", href=f"/keywords/{synonym}/delete",
+                 cls="outline thin")),
+        )
+        for synonym in [kw for kw in settings.canonical_keywords.get(keyword, []) if kw != keyword]
+        ])
     page = max(1, page)
     return (
         Title("chaos"),
@@ -108,10 +123,9 @@ def get(session, keyword: str, page: int = 1):
                     Li(Strong(keyword)),
                     Li(
                         components.get_dropdown_menu(
-                            A("Delete", href=f"/keywords/{keyword}/delete"),
-                            A("Add note...", href="/note"),
-                            A("Add link...", href="/link"),
-                            A("Add file...", href="/file"),
+                            A("Add note...", href="/note/"),
+                            A("Add link...", href="/link/"),
+                            A("Add file...", href="/file/"),
                             A("Keywords", href="/keywords"),
                         ),
                     ),
@@ -122,15 +136,16 @@ def get(session, keyword: str, page: int = 1):
             cls="container",
         ),
         Main(
+            Table(Tbody(*rows)),
             components.get_entries_table(
                 entries.get_recent_entries(
                     start=(page - 1) * constants.MAX_PAGE_ENTRIES,
                     end=page * constants.MAX_PAGE_ENTRIES,
-                    keyword=canonical_keyword,
+                    keyword=keyword,
                 )
             ),
             components.get_table_pager(
-                page, count(canonical_keyword), action=f"/keywords/{keyword}"
+                page, entries.count(keyword), action=f"/keywords/{keyword}"
             ),
             cls="container",
         ),
@@ -141,12 +156,10 @@ def get(session, keyword: str, page: int = 1):
 @rt("/{keyword}/delete")
 def get(session, keyword: str):
     "Ask for confirmation to delete the keyword."
-    keyword = cleanup(keyword)
+    keyword = keyword.strip()
     if not keyword:
         return components.redirect("/keywords")
-    canonical_keyword = keyword.casefold()
-    keyword = settings.lookup["keywords"].get(canonical_keyword)
-    if not keyword:
+    if not (keyword in settings.keywords or keyword in settings.canonical_keywords):
         return components.redirect("/keywords")
     return (
         Title(f"Delete {keyword}?"),
@@ -177,7 +190,7 @@ def get(session, keyword: str):
                         cls="secondary",
                     ),
                 ),
-                action=f"/keywords/{canonical_keyword}/delete",
+                action=f"/keywords/{keyword}/delete",
                 method="POST",
             ),
             cls="container",
@@ -190,19 +203,17 @@ def get(session, keyword: str):
 def post(session, keyword: str, action: str):
     "Actually delete a keyword."
     if "yes" in action.casefold():
-        settings.lookup["keywords"].pop(keyword, None)
+        # The given keyword is a canonical keyword: remove all its text keywords.
+        if keyword in settings.canonical_keywords:
+            for kw in settings.canonical_keywords[keyword]:
+                settings.keywords.pop(kw)
+            settings.canonical_keywords.pop(keyword)
+        # The given keyword is a text keyword; remove it.
+        elif keyword in settings.keywords:
+            canonical = settings.keywords.pop(keyword)
+            settings.canonical_keywords[canonical].remove(keyword)
         settings.write()
         entries.set_all_keywords_relations()
         return components.redirect("/keywords")
     else:
         return components.redirect(f"/keywords/{keyword}")
-
-
-def cleanup(keyword):
-    "Return cleaned-up (but not casefolded) keyword."
-    return keyword.strip().replace("/", "-").replace(".", "-")
-
-
-def count(keyword):
-    "Return the number of entries having the keyword."
-    return len([e for e in entries.lookup.values() if keyword in e.keywords])

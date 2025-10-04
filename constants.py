@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = "0.9.1"
+VERSION = "0.9.2"
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
 
@@ -40,6 +40,8 @@ IMAGE_SUFFIXES = set(
         ".webp",
     ]
 )
+
+OCR_LANGUAGES = ["sv", "en"]
 
 SCORE_TITLE_WEIGHT = 2.0
 MAX_PAGE_ENTRIES = 25

@@ -13,7 +13,6 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get(session):
     "List of keywords."
-    ic(settings.keywords, settings.canonical_keywords)
     return (
         Title("chaos"),
         Header(

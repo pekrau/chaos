@@ -47,7 +47,7 @@ def set_auth_before(request, session):
             request.scope["auth"] = session["auth"] = os.environ["CHAOS_USERNAME"]
         else:
             return Response(content="invalid API key", status_code=HTTP.UNAUTHORIZED)
-    else:
+    elif request.url.path != "/":
         add_toast(session, "Login required.", "error")
         session["path"] = request.url.path
         return redirect("/")

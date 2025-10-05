@@ -34,7 +34,11 @@ def extract(url, apikey):
         raise IOError(f"invalid response: {response.status_code=}")
 
     # Remove entries not having a file attached.
-    file_entries = dict([(k, v) for k, v in response.json().items() if v is not None])
+    if response.text:
+        data = response.json()
+    else:
+        data = {}
+    file_entries = dict([(k, v) for k, v in data.items() if v is not None])
 
     failed = set()
     reader = easyocr.Reader(constants.OCR_LANGUAGES, gpu=constants.OCR_GPU)
@@ -81,7 +85,7 @@ def extract(url, apikey):
 
 
 if __name__ == "__main__":
-    url = os.environ["CHAOS_REMOTE_URL"]
+    url = os.environ["CHAOS_LOCAL_URL"]
     print(f"chaos instance {url}")
     result = extract(url, os.environ["CHAOS_APIKEY"])
     print(", ".join([f"{k}={v}" for k, v in result.items()]))

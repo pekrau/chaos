@@ -35,14 +35,21 @@ def extract(url, apikey):
     response = requests.get(url + "/api/keywords", headers=dict(apikey=apikey))
     if response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=}")
-    keywords = response.json()
+    if response.text:
+        keywords = response.json()
+    else:
+        keywords = {}
 
     response = requests.get(url + "/api/keyword/extract_keywords", headers=dict(apikey=apikey))
     if response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=}")
 
     # Remove entries not having a file attached.
-    file_entries = dict([(k, v) for k, v in response.json().items() if v is not None])
+    if response.text:
+        data = response.json()
+    else:
+        data = {}
+    file_entries = dict([(k, v) for k, v in data.items() if v is not None])
 
     failed = set()
     headers = dict(apikey=apikey)

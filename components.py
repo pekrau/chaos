@@ -42,7 +42,12 @@ def set_auth_before(request, session):
     auth = session.get("auth", None)
     if auth:
         request.scope["auth"] = auth
-    elif request.url.path != "/":
+    elif apikey := request.headers.get("apikey"):
+        if apikey == os.environ.get("CHAOS_APIKEY"):
+            request.scope["auth"] = session["auth"] = os.environ["CHAOS_USERNAME"]
+        else:
+            return Response(content="invalid API key", status_code=HTTP.UNAUTHORIZED)
+    else:
         add_toast(session, "Login required.", "error")
         session["path"] = request.url.path
         return redirect("/")
@@ -177,7 +182,7 @@ def get_entries_table(entries):
                 items.append(
                     A(
                         get_icon("download.svg", title="Download file"),
-                        href=f"{entry.url}/download",
+                        href=f"{entry.url}/data",
                     )
                 )
                 rows.append(
@@ -246,12 +251,7 @@ def get_table_pager(current_page, total_entries, action):
 
 def get_keywords_links(entry):
     return NotStr(
-        "; ".join(
-            [
-                str(A(kw, href=f"/keywords/{kw}"))
-                for kw in entry.keywords
-            ]
-        )
+        "; ".join([str(A(kw, href=f"/keywords/{kw}")) for kw in entry.keywords])
     )
 
 
@@ -267,6 +267,7 @@ def get_footer(first="", second=""):
         ),
         cls="container",
     )
+
 
 def numerical(n):
     "Return numerical value as string formatted according to locale."

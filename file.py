@@ -3,7 +3,6 @@
 import pathlib
 
 from fasthtml.common import *
-import filetype
 import marko
 
 import components
@@ -71,7 +70,7 @@ async def post(session, title: str, upfile: UploadFile, text: str):
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
-    file.content = text.strip()
+    file.text = text.strip()
     filecontent = await upfile.read()
     filename = str(file) + ext
     try:
@@ -89,8 +88,8 @@ async def post(session, title: str, upfile: UploadFile, text: str):
 def get(file: entries.Entry):
     "View the metadata for the file."
     assert isinstance(file, entries.File)
-    if file.filename.suffix.lower() in constants.IMAGE_SUFFIXES:
-        image = Img(src=f"{file.url}/download", cls="display")
+    if file.is_image:
+        image = Img(src=f"{file.url}/data", cls="display")
     else:
         image = ""
     return (
@@ -104,6 +103,7 @@ def get(file: entries.Entry):
                     Li(Strong(file.title)),
                     Li(
                         components.get_dropdown_menu(
+                            A("Edit", href=f"{file.url}/edit"),
                             A(
                                 "Link to clipboard",
                                 data_clipboard_action="copy",
@@ -111,7 +111,6 @@ def get(file: entries.Entry):
                                 cls="to_clipboard",
                                 href="#",
                             ),
-                            A("Edit", href=f"{file.url}/edit"),
                             A("Copy", href=f"{file.url}/copy"),
                             A("Delete", href=f"{file.url}/delete"),
                             A("Add note...", href="/note/"),
@@ -128,10 +127,10 @@ def get(file: entries.Entry):
         ),
         Main(
             Card(
-                P(Strong(A(file.filename, href=f"{file.url}/download"))),
+                P(Strong(A(file.filename, href=f"{file.url}/data"))),
                 P(image),
             ),
-            NotStr(marko.convert(file.content)),
+            NotStr(marko.convert(file.text)),
             Small(
                 Card(
                     Header("Keywords: ", components.get_keywords_links(file)),
@@ -146,12 +145,12 @@ def get(file: entries.Entry):
     )
 
 
-@rt("/{file:Entry}/download")
+@rt("/{file:Entry}/data")
 def get(file: entries.Entry):
-    "Download the file."
+    "Return the file data."
     return Response(
         content=file.filepath.read_bytes(),
-        media_type=file.file_type[1] or constants.BINARY_CONTENT_TYPE,
+        media_type=file.file_mimetype or constants.BINARY_CONTENT_TYPE,
     )
 
 
@@ -194,7 +193,7 @@ def get(file: entries.Entry):
                     Label(
                         "Text",
                         Textarea(
-                            file.content,
+                            file.text,
                             name="text",
                             rows=10,
                             autofocus=True,
@@ -238,7 +237,7 @@ async def post(file: entries.Entry, title: str, upfile: UploadFile, text: str):
         except OSError as error:
             raise components.Error(error)
     file.title = title.strip() or file.filename.stem
-    file.content = text.strip()
+    file.text = text.strip()
     file.write()
     entries.set_keywords_relations(file)
     return components.redirect(file.url)
@@ -284,7 +283,7 @@ def get(file: entries.Entry):
                     Label(
                         "Text",
                         Textarea(
-                            file.content,
+                            file.text,
                             name="text",
                             rows=10,
                             autofocus=True,

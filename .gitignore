@@ -1,6 +1,6 @@
+.env
 .sesskey
 .project
 *~
+*.log
 __pycache__
-cronenv.json
-old

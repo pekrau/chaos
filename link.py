@@ -68,7 +68,7 @@ def post(session, title: str, href: str, text: str):
     link.owner = session["auth"]
     link.title = title.strip() or "no title"
     link.href = href.strip() or "/"
-    link.content = text.strip()
+    link.text = text.strip()
     link.write()
     entries.set_keywords_relations(link)
     return components.redirect(link.url)
@@ -89,6 +89,7 @@ def get(link: entries.Entry):
                     Li(Strong(link.title)),
                     Li(
                         components.get_dropdown_menu(
+                            A("Edit", href=f"{link.url}/edit"),
                             A(
                                 "Link to clipboard",
                                 data_clipboard_action="copy",
@@ -96,7 +97,6 @@ def get(link: entries.Entry):
                                 cls="to_clipboard",
                                 href="#",
                             ),
-                            A("Edit", href=f"{link.url}/edit"),
                             A("Copy", href=f"{link.url}/copy"),
                             A("Delete", href=f"{link.url}/delete"),
                             A("Add note...", href="/note/"),
@@ -115,7 +115,7 @@ def get(link: entries.Entry):
             Card(
                 Strong(A(link.href, href=link.href)),
             ),
-            NotStr(marko.convert(link.content)),
+            NotStr(marko.convert(link.text)),
             Small(
                 Card(
                     Header("Keywords: ", components.get_keywords_links(link)),
@@ -168,7 +168,7 @@ def get(link: entries.Entry):
                     Label(
                         "Text",
                         Textarea(
-                            link.content,
+                            link.text,
                             name="text",
                             rows=10,
                             autofocus=True,
@@ -202,7 +202,7 @@ def post(link: entries.Entry, title: str, href: str, text: str):
     assert isinstance(link, entries.Link)
     link.title = (title or "no title").strip()
     link.href = href.strip() or "/"
-    link.content = text.strip()
+    link.text = text.strip()
     link.write()
     entries.set_keywords_relations(link)
     return components.redirect(link.url)
@@ -240,7 +240,7 @@ def get(link: entries.Entry):
                     value=link.href,
                 ),
                 Textarea(
-                    link.content,
+                    link.text,
                     name="text",
                     rows=10,
                     autofocus=True,

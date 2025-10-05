@@ -59,7 +59,7 @@ def post(session, title: str, text: str):
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     note.owner = session["auth"]
     note.title = title.strip() or "no title"
-    note.content = text.strip()
+    note.text = text.strip()
     note.write()
     entries.set_keywords_relations(note)
     return components.redirect(note.url)
@@ -80,6 +80,7 @@ def get(note: entries.Entry):
                     Li(Strong(note.title)),
                     Li(
                         components.get_dropdown_menu(
+                            A("Edit", href=f"{note.url}/edit"),
                             A(
                                 "Link to clipboard",
                                 data_clipboard_action="copy",
@@ -87,7 +88,6 @@ def get(note: entries.Entry):
                                 cls="to_clipboard",
                                 href="#",
                             ),
-                            A("Edit", href=f"{note.url}/edit"),
                             A("Copy", href=f"{note.url}/copy"),
                             A("Delete", href=f"{note.url}/delete"),
                             A("Add note...", href="/note/"),
@@ -103,7 +103,7 @@ def get(note: entries.Entry):
             cls="container",
         ),
         Main(
-            NotStr(marko.convert(note.content)),
+            NotStr(marko.convert(note.text)),
             Small(
                 Card(
                     Header("Keywords: ", components.get_keywords_links(note)),
@@ -148,7 +148,7 @@ def get(note: entries.Entry):
                     Label(
                         "Text",
                         Textarea(
-                            note.content,
+                            note.text,
                             name="text",
                             rows=10,
                             autofocus=True,
@@ -181,7 +181,7 @@ def post(note: entries.Entry, title: str, text: str):
     "Actually edit the note."
     assert isinstance(note, entries.Note)
     note.title = title or "no title"
-    note.content = text
+    note.text = text
     note.write()
     entries.set_keywords_relations(note)
     return components.redirect(note.url)
@@ -212,7 +212,7 @@ def get(note: entries.Entry):
                     value=note.title,
                 ),
                 Textarea(
-                    note.content,
+                    note.text,
                     name="text",
                     rows=10,
                     autofocus=True,

@@ -5,29 +5,99 @@ import io
 import tarfile
 
 from fasthtml.common import *
-import requests
 
 import components
 import constants
 import entries
+import settings
 
 app, rt = components.get_app_rt()
 
 
-@rt("/current")
-def get(request):
-    "Return a JSON dictionary of items {name: modified} for all entries."
+def check_apikey(request):
     apikey = request.headers.get("apikey")
     if not apikey:
-        return Response("no API key", status_code=HTTP.UNAUTHORIZED)
+        raise KeyError("no API key")
     if apikey != os.environ.get("CHAOS_APIKEY"):
-        return Response("invalid API key", status_code=HTTP.UNAUTHORIZED)
-    return entries.get_current()
+        raise KeyError("invalid API key")
+
+
+@rt("/")
+def get(request):
+    "Return a JSON dictionary of items {name: modified} for all entries."
+    try:
+        check_apikey(request)
+    except KeyError as error:
+        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
+    return entries.get_all()
+
+
+@rt("/keywords")
+def get(request):
+    "Return a JSON dictionary containing the keywords."
+    try:
+        check_apikey(request)
+    except KeyError as error:
+        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
+    return settings.keywords
+
+
+@rt("/keyword/{keyword}")
+def get(request, keyword: str):
+    """Return a JSON dictionary of items {name: filename}, where 'filename'
+    may be None, for all entries with the given keyword.
+    """
+    try:
+        check_apikey(request)
+    except KeyError as error:
+        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
+    result = {}
+    for entry in entries.get_recent_entries(start=None, keyword=keyword):
+        try:
+            result[str(entry)] = entry.filename
+        except AttributeError:
+            result[str(entry)] = None
+    return result
+
+
+@rt("/entry/{entry:Entry}")
+def get(request, entry: entries.Entry):
+    "Return the contents of an entry."
+    try:
+        check_apikey(request)
+    except KeyError as error:
+        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
+    result = {"title": entry.title, "text": entry.text}
+    try:
+        result["filename"] = entry.filename
+    except KeyError:
+        pass
+    return result
+
+
+@rt("/entry/{entry:Entry}")
+def post(request, entry: entries.Entry, title: str = None, text: str = None):
+    "Set the text of an entry."
+    try:
+        check_apikey(request)
+    except KeyError as error:
+        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
+    if title is not None:
+        entry.title = title.strip() or "no title"
+    if text is not None:
+        entry.text = text.strip()
+    entry.write()
+    entries.set_keywords_relations(entry)
+    return Response(content="text updated", status_code=HTTP.OK)
 
 
 @rt("/fetch")
 async def post(request):
     "Return a TGZ file of those items named in the request JSON data."
+    try:
+        check_apikey(request)
+    except KeyError as error:
+        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
     data = await request.json()
     buffer = io.BytesIO()
     with tarfile.open(fileobj=buffer, mode="w:gz") as tgzfile:

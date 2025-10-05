@@ -31,9 +31,10 @@ def get(session):
                 Tbody(
                     *[
                         Tr(
-                            Td(A(kw, href=f"/keywords/{kw}"),
-                               " ",
-                               Small(", ".join([k for k in list(kws) if k!= kw])),
+                            Td(
+                                A(kw, href=f"/keywords/{kw}"),
+                                " ",
+                                Small(", ".join([k for k in list(kws) if k != kw])),
                             ),
                             Td(f"{entries.count(kw)} entries"),
                             Td(
@@ -97,19 +98,39 @@ def get(session, keyword: str, page: int = 1):
     keyword = keyword.strip()
     if not keyword:
         return components.redirect("/keywords")
-    rows = [Tr(
-        Td(keyword),
-        Td(A("Delete", role="button", href=f"/keywords/{keyword}/delete",
-             cls="outline thin")),
-    )]
-    rows.extend([
+    rows = [
         Tr(
-            Td(synonym, " (synonym)"),
-            Td(A("Delete", role="button", href=f"/keywords/{synonym}/delete",
-                 cls="outline thin")),
+            Td(keyword),
+            Td(
+                A(
+                    "Delete",
+                    role="button",
+                    href=f"/keywords/{keyword}/delete",
+                    cls="outline thin",
+                )
+            ),
         )
-        for synonym in [kw for kw in settings.canonical_keywords.get(keyword, []) if kw != keyword]
-        ])
+    ]
+    rows.extend(
+        [
+            Tr(
+                Td(synonym, " (synonym)"),
+                Td(
+                    A(
+                        "Delete",
+                        role="button",
+                        href=f"/keywords/{synonym}/delete",
+                        cls="outline thin",
+                    )
+                ),
+            )
+            for synonym in [
+                kw
+                for kw in settings.canonical_keywords.get(keyword, [])
+                if kw != keyword
+            ]
+        ]
+    )
     page = max(1, page)
     return (
         Title("chaos"),

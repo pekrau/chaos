@@ -1,19 +1,25 @@
 "chaos: Update the local directory from the www instance."
 
+# Done first, to measure all work including loading modules.
+from timer import Timer
+timer = Timer()
+
 from http import HTTPStatus as HTTP
 import io
-import json
 import os
 from pathlib import Path
-import tarfile
 import sys
+import tarfile
 
 import requests
 
 # This must be done before importing 'constants'.
-with open(Path(__file__).parent / "cronenv.json") as infile:
-    for name, value in json.load(infile).items():
-        os.environ[name] = value
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
+# Allow finding chaos modules.
+sys.path.insert(0, str(Path(sys.path[0]).parent))
 
 import constants
 import entries
@@ -21,21 +27,16 @@ import entries
 
 def update(url, apikey):
     """Get the current state of the remote site and update the local data.
-    Return a tuple with the number of modified and deleted files.
+    Return a dictionary with statistics.
     """
-
-    print(f"fetching data from remote instance {url}")
-    response = requests.get(url + "/api/current", headers=dict(apikey=apikey))
-
+    response = requests.get(url + "/api/", headers=dict(apikey=apikey))
     if response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=}")
 
     remote_entries = response.json()
 
     entries.read_entry_files()
-    local_entries = entries.get_current()
-
-    print(f"# local={len(local_entries)}, # remote={len(remote_entries)}")
+    local_entries = entries.get_all()
 
     # Fetch the set of files with different modified timestamps from the remote.
     fetch_entries = set()
@@ -68,11 +69,18 @@ def update(url, apikey):
             path = path.with_suffix(".md")
         path.unlink()
 
-    return (len(fetch_entries), len(delete_entries))
+    result = {
+        "local": len(local_entries),
+        "remote": len(remote_entries),
+        "fetched": len(fetch_entries),
+        "deleted": len(delete_entries),
+    }
+    result["time"] = str(timer)
+    return result
 
 
 if __name__ == "__main__":
-    fetched, deleted = update(
-        os.environ["CHAOS_REMOTE_URL"], os.environ["CHAOS_APIKEY"]
-    )
-    print(f"# {fetched=}, # {deleted=}")
+    url = os.environ["CHAOS_REMOTE_URL"]
+    print(f"chaos remote instance {url}")
+    result = update(url, os.environ["CHAOS_APIKEY"])
+    print(", ".join([f"{k}={v}" for k, v in result.items()]))

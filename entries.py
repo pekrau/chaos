@@ -26,6 +26,7 @@ class Entry:
     def __init__(self, path=None):
         self._path = path
         self.frontmatter = {}
+        self.text = ""
         self.keywords = set()
         self.relations = {}
 
@@ -83,8 +84,8 @@ class Entry:
 
     @property
     def size(self):
-        "Size of the entry content, in bytes."
-        return len(self.content)
+        "Size of the entry text, in bytes."
+        return len(self.text)
 
     @property
     def modified(self):
@@ -110,8 +111,8 @@ class Entry:
                 outfile.write("---\n")
                 outfile.write(yaml.safe_dump(self.frontmatter, allow_unicode=True))
                 outfile.write("---\n")
-            if self.content:
-                outfile.write(self.content)
+            if self.text:
+                outfile.write(self.text)
 
     def delete(self):
         "Delete the entry from the file system and remove from the lookup."
@@ -133,13 +134,13 @@ class Entry:
         """
         rx = re.compile(f"{term.strip()}.*", re.IGNORECASE)
         return constants.SCORE_TITLE_WEIGHT * len(rx.findall(self.title)) + len(
-            rx.findall(self.content)
+            rx.findall(self.text)
         )
 
     def set_keywords(self):
-        "Find the canonical keywords in the title and content of this entry."
+        "Find the canonical keywords in the title and text of this entry."
         self.keywords = settings.get_canonical_keywords(self.title).union(
-            settings.get_canonical_keywords(self.content)
+            settings.get_canonical_keywords(self.text)
         )
 
     def relation(self, other):
@@ -195,15 +196,30 @@ class File(Entry):
         return self.filepath.stat().st_size
 
     @property
-    def file_type(self):
-        """Tuple (file extension, MIME type) or (None, None) if not recognized.
-        Determined from contents, not file extension.
+    def file_extension(self):
+        """Return file extension or None if not recognized.
+        Determined from file data, not explicit file extension.
         """
         kind = filetype.guess(self.filepath)
         if kind is None:
             return (None, None)
         else:
             return (kind.extension, kind.mime)
+
+    @property
+    def file_mimetype(self):
+        """Return MIME type, or None if not recognized.
+        Determined from file data, not explicit file extension.
+        """
+        kind = filetype.guess(self.filepath)
+        if kind is None:
+            None
+        else:
+            return kind.mime
+
+    @property
+    def is_image(self):
+        return self.file_mimetype in constants.IMAGE_CONTENT_TYPES
 
     @property
     def file_modified(self):
@@ -241,9 +257,10 @@ def read_entry_files(dirpath=None):
                 for key, value in frontmatter.items():
                     if isinstance(value, datetime.date):
                         frontmatter[key] = str(value)
-                content = content[match.start(2) :]
+                text = content[match.start(2) :]
             else:
                 frontmatter = {}
+                text = content
             if "href" in frontmatter:
                 entry = Link(path)
             elif "filename" in frontmatter:
@@ -252,7 +269,7 @@ def read_entry_files(dirpath=None):
                 entry = Note(path)
             lookup[str(entry)] = entry
             entry.frontmatter = frontmatter
-            entry.content = content
+            entry.text = text
 
 
 def set_all_keywords_relations():
@@ -283,7 +300,9 @@ def set_keywords_relations(entry):
 
 
 def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
-    "Get the entries ordered by modified time, optionally filtered by keyword."
+    """Get the entries ordered by modified time, optionally filtered by keyword.
+    If start is None, then return all entries.
+    """
     if keyword:
         result = []
         for entry in lookup.values():
@@ -292,25 +311,38 @@ def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
     else:
         result = list(lookup.values())
     result.sort(key=lambda e: e.modified, reverse=True)
-    return result[start:end]
+    if start is None:
+        return result
+    else:
+        return result[start:end]
 
 
 def get_unrelated_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
-    "Get the unrelated entries ordered by modified time."
+    """Get the unrelated entries ordered by modified time.
+    If start is None, then return all entries.
+    """
     result = [e for e in lookup.values() if e.is_unrelated()]
     result.sort(key=lambda e: e.modified, reverse=True)
-    return result[start:end]
+    if start is None:
+        return result
+    else:
+        return result[start:end]
 
 
 def get_no_keyword_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
-    "Get the entries without keywords ordered by modified time."
+    """Get the entries without keywords ordered by modified time.
+    If start is None, then return all entries.
+    """
     result = [e for e in lookup.values() if not e.keywords]
     result.sort(key=lambda e: e.modified, reverse=True)
-    return result[start:end]
+    if start is None:
+        return result
+    else:
+        return result[start:end]
 
 
 def get_random_entries():
-    "Get a set of random entries."
+    "Get a set of at most MAX_PAGE_ENTRIES random entries."
     entries = list(lookup.values())
     if len(entries) <= constants.MAX_PAGE_ENTRIES:
         random.shuffle(entries)
@@ -319,14 +351,16 @@ def get_random_entries():
         return random.sample(entries, constants.MAX_PAGE_ENTRIES)
 
 
-def get_current():
+def get_all():
     "Get a map of entry paths and filepaths with their modified timestamps."
     result = {}
     for entry in lookup.values():
         result[str(entry)] = entry.modified
         if isinstance(entry, File):
             result[str(entry.filename)] = entry.file_modified
-    result[".chaos.yaml"] = timestamp_utc((constants.DATA_DIR / ".chaos.yaml").stat().st_mtime)
+    result[".chaos.yaml"] = timestamp_utc(
+        (constants.DATA_DIR / ".chaos.yaml").stat().st_mtime
+    )
     return result
 
 

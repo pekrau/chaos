@@ -7,8 +7,9 @@ import yaml
 import constants
 
 
-keywords = {}        # Key: keyword in text; value: canonical keyword.
-canonical_keywords = {} # Key: canonical keyword: set of keywords in text.
+keywords = {}  # Key: keyword in text; value: canonical keyword.
+canonical_keywords = {}  # Key: canonical keyword: set of keywords in text.
+
 
 def read():
     global keywords
@@ -23,6 +24,7 @@ def read():
     for keyword, canonical in lookup.get("keywords", {}).items():
         add_keyword(keyword, canonical)
 
+
 def add_keyword_canonical(keyword):
     "Add keyword specifying it as 'keyword: canonical'."
     parts = keyword.split(":")
@@ -32,6 +34,7 @@ def add_keyword_canonical(keyword):
         keyword = parts[0].strip()
         canonical = ":".join(parts[1:]).strip()
     add_keyword(keyword, canonical)
+
 
 def add_keyword(keyword, canonical):
     global keywords
@@ -43,6 +46,7 @@ def add_keyword(keyword, canonical):
     canonical_keywords.setdefault(canonical, set()).add(keyword)
     canonical_keywords[canonical].add(canonical)
 
+
 def write():
     global keywords
     with open(constants.DATA_DIR / ".chaos.yaml", "w") as outfile:
@@ -52,10 +56,12 @@ def write():
 read()
 
 
-def get_canonical_keywords(text):
+def get_canonical_keywords(text, external_keywords=None):
     "Get the set of canonical keywords in the given text."
+    global keywords
+    kws = external_keywords or keywords
     result = set()
-    for keyword, canonical in keywords.items():
-        if re.search(fr"\b{keyword}\S*\s?", text, re.IGNORECASE):
+    for keyword, canonical in kws.items():
+        if re.search(rf"\b{keyword}\S*\s?", text, re.IGNORECASE):
             result.add(canonical)
     return result

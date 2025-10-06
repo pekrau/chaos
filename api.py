@@ -43,7 +43,7 @@ def get(request):
 
 
 @rt("/keyword/{keyword}")
-def get(request, keyword: str):
+def get(request, keyword: str, start: int = 0, end: int = constants.MAX_PAGE_ENTRIES):
     """Return a JSON dictionary of items {name: filename}, where 'filename'
     may be None, for all entries with the given keyword.
     """
@@ -52,7 +52,7 @@ def get(request, keyword: str):
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
     result = {}
-    for entry in entries.get_recent_entries(start=None, keyword=keyword):
+    for entry in entries.get_recent_entries(start=start, end=end, keyword=keyword):
         try:
             result[str(entry)] = entry.filename
         except AttributeError:
@@ -91,7 +91,7 @@ def post(request, entry: entries.Entry, title: str = None, text: str = None):
     return Response(content="text updated", status_code=HTTP.OK)
 
 
-@rt("/fetch")
+@rt("/download")
 async def post(request):
     "Return a TGZ file of those items named in the request JSON data."
     try:

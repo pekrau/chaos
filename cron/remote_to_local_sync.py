@@ -38,15 +38,15 @@ def update(url, apikey):
     entries.read_entry_files()
     local_entries = entries.get_all()
 
-    # Fetch the set of files with different modified timestamps from the remote.
-    fetch_entries = set()
+    # Download the set of files with different modified timestamps from the remote.
+    download_entries = set()
     for name, modified in remote_entries.items():
         if (name not in local_entries) or (local_entries[name] != modified):
-            fetch_entries.add(name)
+            download_entries.add(name)
 
-    if fetch_entries:
+    if download_entries:
         response = requests.post(
-            url + "/api/fetch", json={"entries": list(fetch_entries)},
+            url + "/api/download", json={"entries": list(download_entries)},
             headers=dict(apikey=apikey)
         )
         if response.status_code != HTTP.OK:
@@ -70,13 +70,13 @@ def update(url, apikey):
             path = path.with_suffix(".md")
         path.unlink()
 
-    if not fetch_entries and not delete_entries:
+    if not download_entries and not delete_entries:
         return {}
     else:
         result = {
             "local": len(local_entries),
             "remote": len(remote_entries),
-            "fetched": len(fetch_entries),
+            "downloaded": len(download_entries),
             "deleted": len(delete_entries),
         }
         result["time"] = str(timer)

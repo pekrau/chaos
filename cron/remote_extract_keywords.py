@@ -51,6 +51,10 @@ def extract(url, apikey):
         data = {}
     file_entries = dict([(k, v) for k, v in data.items() if v is not None])
 
+    # Just return if no entries to process.
+    if not file_entries:
+        return {}
+
     failed = set()
     headers = dict(apikey=apikey)
 

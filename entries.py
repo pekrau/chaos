@@ -303,6 +303,8 @@ def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
     """Get the entries ordered by modified time, optionally filtered by keyword.
     If start is None, then return all entries.
     """
+    assert (start is None) or (start >= 0)
+    assert (end is None) or (end > start)
     if keyword:
         result = []
         for entry in lookup.values():
@@ -311,7 +313,7 @@ def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
     else:
         result = list(lookup.values())
     result.sort(key=lambda e: e.modified, reverse=True)
-    if start is None:
+    if (start is None) or (end is None):
         return result
     else:
         return result[start:end]
@@ -323,7 +325,7 @@ def get_unrelated_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
     """
     result = [e for e in lookup.values() if e.is_unrelated()]
     result.sort(key=lambda e: e.modified, reverse=True)
-    if start is None:
+    if (start is None) or (end is None):
         return result
     else:
         return result[start:end]

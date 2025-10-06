@@ -97,7 +97,7 @@ def extract(url, apikey):
             continue
 
         text = text.replace("extract_keywords", "")
-        text = f"{text}\n\n## Keywords extracted from file\n\n{found}"
+        text = f"{text}\n\n## Extracted keywords from file\n\n{found}"
         response = requests.post(url + f"/api/entry/{entry}", headers=headers, data={"text": text})
         if response.status_code != HTTP.OK:
             failed.add(filename + ": could not update text")

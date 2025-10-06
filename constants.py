@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (0, 11, 5)
+VERSION = (0, 11, 6)
 __version__ = ".".join([str(n) for n in VERSION])
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
@@ -57,6 +57,7 @@ TEXTUAL_CONTENT_TYPES = {
     EPUB_CONTENT_TYPE,
 }
 
-SCORE_TITLE_WEIGHT = 2.0
-MAX_PAGE_ENTRIES = 25
+MAX_PAGE_ENTRIES = 20
 MAX_ROW_ITEMS = 5
+
+SCORE_TITLE_WEIGHT = 2.0

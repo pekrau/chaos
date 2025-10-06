@@ -64,8 +64,8 @@ def get(session, page: int = 1):
                                 A("Unrelated entries", href="/unrelated"),
                                 A("Random entries", href="/random"),
                                 A("Reread", href="/reread"),
+                                A("Usage", href="/usage"),
                                 A("Software", href="/software"),
-                                A("System", href="/system"),
                                 A("Logout", href="/logout"),
                             ),
                         ),
@@ -377,9 +377,9 @@ def get():
     )
 
 
-@rt("/system")
+@rt("/usage")
 def get():
-    "View aggregate system information."
+    "View aggregate usage information."
     disk_usage = shutil.disk_usage(constants.DATA_DIR)
     dir_size = 0
     for dirpath, dirnames, filenames in os.walk(constants.DATA_DIR):
@@ -390,12 +390,12 @@ def get():
     ram_usage = psutil.Process().memory_info().rss
 
     return (
-        Title("System"),
+        Title("Usage"),
         Header(
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li("System"),
+                    Li("Usage"),
                 ),
                 cls="main",
             ),
@@ -404,11 +404,11 @@ def get():
         Main(
             Table(
                 Tr(
-                    Td("RAM usage"),
+                    Td("RAM"),
                     Td(components.numerical(ram_usage), cls="right"),
                 ),
                 Tr(
-                    Td("Data size"),
+                    Td("Disk"),
                     Td(components.numerical(dir_size), cls="right"),
                 ),
                 Tr(

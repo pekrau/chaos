@@ -28,7 +28,7 @@ def extract(url, apikey):
     """Fetch which entries to do OCR on, extract the text and upload it.
     Return a dictionary with statistics.
     """
-    response = requests.get(url + "/api/keyword/extract_image_text", headers=dict(apikey=apikey))
+    response = requests.get(url + "/api/keyword/extract_text", headers=dict(apikey=apikey))
     if response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
@@ -75,8 +75,8 @@ def extract(url, apikey):
         except KeyError:
             failed.add(filename + ": no entry text in response")
             continue
-        text = text.replace("extract_image_text", "")
-        text = f"{text}\n\n## Text extracted from image\n\n{image_text}"
+        text = text.replace("extract_text", "")
+        text = f"{text}\n\n## Extracteded text from image\n\n{image_text}"
         response = requests.post(url + f"/api/entry/{entry}", headers=headers, data={"text": text})
         if response.status_code != HTTP.OK:
             failed.add(filename + ": could not update text")
@@ -89,7 +89,7 @@ def extract(url, apikey):
 
 
 if __name__ == "__main__":
-    url = os.environ["CHAOS_LOCAL_URL"]
+    url = os.environ["CHAOS_REMOTE_URL"]
     print(f"chaos {timer.now}, instance {url}")
     result = extract(url, os.environ["CHAOS_APIKEY"])
     if result:

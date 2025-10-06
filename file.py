@@ -173,7 +173,6 @@ def get(file: entries.Entry):
         ),
         Main(
             Form(
-                Fieldset(
                     Label(
                         "Title",
                         Input(
@@ -199,6 +198,20 @@ def get(file: entries.Entry):
                             autofocus=True,
                         ),
                     ),
+                Fieldset(
+                    Legend("Extract..."),
+                    Label(
+                        Input(type="radio", name="extract", value="text"),
+                        "Text from image.",
+                    ),
+                    Label(
+                        Input(type="radio", name="extract", value="keywords"),
+                        "Keywords from PDF, DOCX or EPUB.",
+                    ),
+                    Label(
+                        Input(type="radio", name="extract", value="markdown"),
+                        "Markdown text from PDF, DOCX or EPUB.",
+                    ),
                 ),
                 Input(
                     type="submit",
@@ -222,7 +235,7 @@ def get(file: entries.Entry):
 
 
 @rt("/{file:Entry}/edit")
-async def post(file: entries.Entry, title: str, upfile: UploadFile, text: str):
+async def post(file: entries.Entry, title: str, upfile: UploadFile, text: str, extract: str = None):
     "Actually edit the file."
     assert isinstance(file, entries.File)
     if upfile.filename:
@@ -237,7 +250,14 @@ async def post(file: entries.Entry, title: str, upfile: UploadFile, text: str):
         except OSError as error:
             raise components.Error(error)
     file.title = title.strip() or file.filename.stem
-    file.text = text.strip()
+    text = text.strip()
+    if extract:
+        # Remove old extracted text if new is to be done.
+        pos = text.find("## Extracted")
+        if pos >= 0:
+            text = text[:pos]
+        text += f"extract_{extract}"
+    file.text = text
     file.write()
     entries.set_keywords_relations(file)
     return components.redirect(file.url)

@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (0, 11, 2)
+VERSION = (0, 11, 3)
 __version__ = ".".join([str(n) for n in VERSION])
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
@@ -35,18 +35,27 @@ JPEG_CONTENT_TYPE = "image/jpeg"
 WEBP_CONTENT_TYPE = "image/webp"
 GIF_CONTENT_TYPE = "image/gif"
 PDF_CONTENT_TYPE = "application/pdf"
-DOCX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+DOCX_CONTENT_TYPE = (
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+)
+EPUB_CONTENT_TYPE = "application/epub+zip"
 
-IMAGE_CONTENT_TYPES = {PNG_CONTENT_TYPE,
-                       JPEG_CONTENT_TYPE,
-                       WEBP_CONTENT_TYPE,
-                       GIF_CONTENT_TYPE,
-                       }
+
+IMAGE_CONTENT_TYPES = {
+    PNG_CONTENT_TYPE,
+    JPEG_CONTENT_TYPE,
+    WEBP_CONTENT_TYPE,
+    GIF_CONTENT_TYPE,
+}
 
 OCR_LANGUAGES = ["sv", "en"]
 OCR_GPU = bool(os.environ.get("CHAOS_OCR_GPU"))
 
-TEXTUAL_CONTENT_TYPES = {PDF_CONTENT_TYPE, DOCX_CONTENT_TYPE}
+TEXTUAL_CONTENT_TYPES = {
+    PDF_CONTENT_TYPE,
+    DOCX_CONTENT_TYPE,
+    EPUB_CONTENT_TYPE,
+}
 
 SCORE_TITLE_WEIGHT = 2.0
 MAX_PAGE_ENTRIES = 25

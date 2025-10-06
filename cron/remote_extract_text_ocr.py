@@ -85,7 +85,7 @@ def extract(url, apikey):
 
 
 if __name__ == "__main__":
-    url = os.environ["CHAOS_LOCAL_URL"]
+    url = os.environ["CHAOS_REMOTE_URL"]
     print(f"chaos instance {url}")
     result = extract(url, os.environ["CHAOS_APIKEY"])
     print(", ".join([f"{k}={v}" for k, v in result.items()]))

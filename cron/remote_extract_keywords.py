@@ -107,7 +107,7 @@ def extract(url, apikey):
 
 if __name__ == "__main__":
     url = os.environ["CHAOS_REMOTE_URL"]
-    print(f"chaos {time.now}, instance {url}")
+    print(f"chaos {timer.now}, instance {url}")
     result = extract(url, os.environ["CHAOS_APIKEY"])
     if result:
         print(", ".join([f"{k}={v}" for k, v in result.items()]))

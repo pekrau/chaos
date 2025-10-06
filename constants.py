@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (0, 11, 3)
+VERSION = (0, 11, 4)
 __version__ = ".".join([str(n) for n in VERSION])
 
 DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))

@@ -34,7 +34,7 @@ def extract(url, apikey):
     """
     response = requests.get(url + "/api/keywords", headers=dict(apikey=apikey))
     if response.status_code != HTTP.OK:
-        raise IOError(f"invalid response: {response.status_code=}")
+        raise IOError(f"invalid response: {response.status_code=} {response.content=}")
     if response.text:
         keywords = response.json()
     else:
@@ -42,7 +42,7 @@ def extract(url, apikey):
 
     response = requests.get(url + "/api/keyword/extract_keywords", headers=dict(apikey=apikey))
     if response.status_code != HTTP.OK:
-        raise IOError(f"invalid response: {response.status_code=}")
+        raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
     # Remove entries not having a file attached.
     if response.text:
@@ -70,7 +70,7 @@ def extract(url, apikey):
         with open(filepath, "wb") as outfile:
             outfile.write(response.content)
         file_text = []
-        doc = pymupdf.open(filepath)
+        doc = pymupdf.open(str(filepath))
         for page in doc:
             file_text.append(page.get_text())
         doc.close()
@@ -107,6 +107,7 @@ def extract(url, apikey):
 
 if __name__ == "__main__":
     url = os.environ["CHAOS_REMOTE_URL"]
-    print(f"chaos instance {url}")
+    print(f"chaos {time.now}, instance {url}")
     result = extract(url, os.environ["CHAOS_APIKEY"])
-    print(", ".join([f"{k}={v}" for k, v in result.items()]))
+    if result:
+        print(", ".join([f"{k}={v}" for k, v in result.items()]))

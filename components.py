@@ -212,7 +212,7 @@ def get_icon(filename, title=""):
 
 def get_table_pager(current_page, total_entries, action):
     "Return form with pager buttons given current page."
-    if total_entries < constants.MAX_PAGE_ENTRIES:
+    if total_entries <= constants.MAX_PAGE_ENTRIES:
         return ""
     pages = [1]
     max_pages = (total_entries + 1) // constants.MAX_PAGE_ENTRIES

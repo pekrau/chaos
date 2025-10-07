@@ -44,8 +44,8 @@ app, rt = components.get_app_rt(
 
 @rt("/")
 def get(session, page: int = 1):
-    page = max(1, page)
     if session.get("auth"):
+        page = min(max(1, page), entries.total_pages())
         return (
             Title("chaos"),
             Script(src="/clipboard.min.js"),
@@ -181,6 +181,7 @@ def get(page: int = 1):
                             A("Add link...", href="/link/"),
                             A("Add file...", href="/file/"),
                             A("Keywords", href="/keywords"),
+                            A("Entries without keywords", href="/nokeywords"),
                         ),
                     ),
                     Li(components.search_form()),
@@ -220,6 +221,7 @@ def get(page: int = 1):
                             A("Add link...", href="/link/"),
                             A("Add file...", href="/file/"),
                             A("Keywords", href="/keywords"),
+                            A("Unrelated entries", href="/unrelated"),
                         ),
                     ),
                     Li(components.search_form()),
@@ -259,6 +261,7 @@ def get():
                             A("Add link...", href="/link/"),
                             A("Add file...", href="/file/"),
                             A("Keywords", href="/keywords"),
+                            A("Random entries", href="/random"),
                         ),
                     ),
                     Li(components.search_form()),
@@ -327,6 +330,50 @@ def get(term: str):
     )
 
 
+@rt("/usage")
+def get():
+    "View aggregate usage information."
+    disk_usage = shutil.disk_usage(constants.DATA_DIR)
+    dir_size = 0
+    for dirpath, dirnames, filenames in os.walk(constants.DATA_DIR):
+        dp = Path(dirpath)
+        for filename in filenames:
+            fp = dp / filename
+            dir_size += os.path.getsize(fp)
+    ram_usage = psutil.Process().memory_info().rss
+
+    return (
+        Title("Usage"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.chaos_icon()),
+                    Li("Usage"),
+                ),
+                cls="main",
+            ),
+            cls="container",
+        ),
+        Main(
+            Table(
+                Tr(
+                    Td("RAM"),
+                    Td(components.numerical(ram_usage), cls="right"),
+                ),
+                Tr(
+                    Td("Disk"),
+                    Td(components.numerical(dir_size), cls="right"),
+                ),
+                Tr(
+                    Td("Disk free"),
+                    Td(components.numerical(disk_usage.free), cls="right"),
+                ),
+            ),
+            cls="container",
+        ),
+    )
+
+
 @rt("/software")
 def get():
     "View software versions."
@@ -371,50 +418,6 @@ def get():
         Main(
             Table(
                 Tbody(*rows),
-            ),
-            cls="container",
-        ),
-    )
-
-
-@rt("/usage")
-def get():
-    "View aggregate usage information."
-    disk_usage = shutil.disk_usage(constants.DATA_DIR)
-    dir_size = 0
-    for dirpath, dirnames, filenames in os.walk(constants.DATA_DIR):
-        dp = Path(dirpath)
-        for filename in filenames:
-            fp = dp / filename
-            dir_size += os.path.getsize(fp)
-    ram_usage = psutil.Process().memory_info().rss
-
-    return (
-        Title("Usage"),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.chaos_icon()),
-                    Li("Usage"),
-                ),
-                cls="main",
-            ),
-            cls="container",
-        ),
-        Main(
-            Table(
-                Tr(
-                    Td("RAM"),
-                    Td(components.numerical(ram_usage), cls="right"),
-                ),
-                Tr(
-                    Td("Disk"),
-                    Td(components.numerical(dir_size), cls="right"),
-                ),
-                Tr(
-                    Td("Disk free"),
-                    Td(components.numerical(disk_usage.free), cls="right"),
-                ),
             ),
             cls="container",
         ),

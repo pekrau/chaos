@@ -77,17 +77,10 @@ def get(note: entries.Entry):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li(Strong(note.title)),
+                    Li(components.get_entry_clipboard(note), Strong(note.title)),
                     Li(
                         components.get_dropdown_menu(
                             A("Edit", href=f"{note.url}/edit"),
-                            A(
-                                "Link to clipboard",
-                                data_clipboard_action="copy",
-                                data_clipboard_text=f"[{note.title}]({note.url})",
-                                cls="to_clipboard",
-                                href="#",
-                            ),
                             A("Copy", href=f"{note.url}/copy"),
                             A("Delete", href=f"{note.url}/delete"),
                             A("Add note...", href="/note/"),
@@ -107,7 +100,7 @@ def get(note: entries.Entry):
             Small(
                 Card(
                     Header("Keywords: ", components.get_keywords_links(note)),
-                    components.get_entries_table(note.related()),
+                    components.get_entries_table(note.related(), full=False),
                 ),
             ),
             cls="container",

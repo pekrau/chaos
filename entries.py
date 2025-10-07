@@ -303,6 +303,7 @@ def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
     """Get the entries ordered by modified time, optionally filtered by keyword.
     If start is None, then return all entries.
     """
+    global lookup
     assert (start is None) or (start >= 0)
     assert (end is None) or (end > start)
     if keyword:
@@ -323,6 +324,7 @@ def get_unrelated_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
     """Get the unrelated entries ordered by modified time.
     If start is None, then return all entries.
     """
+    global lookup
     result = [e for e in lookup.values() if e.is_unrelated()]
     result.sort(key=lambda e: e.modified, reverse=True)
     if (start is None) or (end is None):
@@ -335,6 +337,7 @@ def get_no_keyword_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
     """Get the entries without keywords ordered by modified time.
     If start is None, then return all entries.
     """
+    global lookup
     result = [e for e in lookup.values() if not e.keywords]
     result.sort(key=lambda e: e.modified, reverse=True)
     if start is None:
@@ -345,6 +348,7 @@ def get_no_keyword_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
 
 def get_random_entries():
     "Get a set of at most MAX_PAGE_ENTRIES random entries."
+    global lookup
     entries = list(lookup.values())
     if len(entries) <= constants.MAX_PAGE_ENTRIES:
         random.shuffle(entries)
@@ -355,6 +359,7 @@ def get_random_entries():
 
 def get_all():
     "Get a map of entry paths and filepaths with their modified timestamps."
+    global lookup
     result = {}
     for entry in lookup.values():
         result[str(entry)] = entry.modified
@@ -371,6 +376,20 @@ def timestamp_utc(timestamp):
     return dt.strftime(constants.DATETIME_ISO_FORMAT)
 
 
+def total():
+    "Return the total number of entries."
+    global lookup
+    return len(lookup)
+
+
+def total_pages(total_entries=None):
+    "Return the total number of table pages for the given number of entries."
+    if total_entries is None:
+        total_entries = total()
+    return (total_entries - 1) // constants.MAX_PAGE_ENTRIES + 1
+
+
 def count(keyword):
     "Return the number of entries having the keyword."
+    global lookup
     return len([e for e in lookup.values() if keyword in e.keywords])

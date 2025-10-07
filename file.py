@@ -100,17 +100,10 @@ def get(file: entries.Entry):
             Nav(
                 Ul(
                     Li(components.chaos_icon()),
-                    Li(Strong(file.title)),
+                    Li(components.get_entry_clipboard(file), Strong(file.title)),
                     Li(
                         components.get_dropdown_menu(
                             A("Edit", href=f"{file.url}/edit"),
-                            A(
-                                "Link to clipboard",
-                                data_clipboard_action="copy",
-                                data_clipboard_text=f"[{file.title}]({file.url})",
-                                cls="to_clipboard",
-                                href="#",
-                            ),
                             A("Copy", href=f"{file.url}/copy"),
                             A("Delete", href=f"{file.url}/delete"),
                             A("Add note...", href="/note/"),
@@ -134,7 +127,7 @@ def get(file: entries.Entry):
             Small(
                 Card(
                     Header("Keywords: ", components.get_keywords_links(file)),
-                    components.get_entries_table(file.related()),
+                    components.get_entries_table(file.related(), full=False),
                 ),
             ),
             cls="container",

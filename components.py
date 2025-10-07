@@ -141,7 +141,7 @@ def get_entry_clipboard(entry):
     )
 
 
-def get_entries_table(entries):
+def get_entries_table(entries, full=True):
     rows = []
     for entry in entries:
         keywords = sorted(entry.keywords)
@@ -153,53 +153,53 @@ def get_entries_table(entries):
         items = [get_entry_clipboard(entry), A(entry.title, href=entry.url)]
         match entry.__class__.__name__:
             case "Note":
-                rows.append(
-                    Tr(
-                        Td(*items),
-                        Td(keywords),
+                if full:
+                    cells = [
                         Td(entry.size, cls="right"),
                         Td(entry.owner),
                         Td(entry.modified_local),
-                    )
-                )
+                    ]
+                else:
+                    cells = []
+                rows.append(Tr(Td(*items), Td(keywords), *cells))
             case "Link":
+                if full:
+                    cells = [
+                        Td(entry.size, cls="right"),
+                        Td(entry.owner),
+                        Td(entry.modified_local),
+                    ]
+                else:
+                    cells = []
                 items.append(
                     A(
                         get_icon("box-arrow-up-right.svg", title="Go to page"),
                         href=entry.href,
                     )
                 )
-                rows.append(
-                    Tr(
-                        Td(*items),
-                        Td(keywords),
-                        Td(entry.size, cls="right"),
-                        Td(entry.owner),
-                        Td(entry.modified_local),
-                    )
-                )
+                rows.append(Tr(Td(*items), Td(keywords), *cells))
             case "File":
-                items.append(
-                    A(
-                        get_icon("download.svg", title="Download file"),
-                        href=f"{entry.url}/data",
-                    )
-                )
-                rows.append(
-                    Tr(
-                        Td(*items),
-                        Td(keywords),
+                if full:
+                    cells = [
                         Td(
                             f"{entry.size} + {entry.file_size}",
                             cls="right",
                         ),
                         Td(entry.owner),
                         Td(entry.modified_local),
+                    ]
+                else:
+                    cells = []
+                items.append(
+                    A(
+                        get_icon("download.svg", title="Download file"),
+                        href=f"{entry.url}/data",
                     )
                 )
+                rows.append(Tr(Td(*items), Td(keywords), *cells))
             case _:
                 raise NotImplementedError
-    return Table(Tbody(*rows), cls="striped")
+    return Table(Tbody(*rows), cls="striped compressed")
 
 
 def get_icon(filename, title=""):
@@ -210,17 +210,17 @@ def get_icon(filename, title=""):
     )
 
 
-def get_table_pager(current_page, total_entries, action):
+def get_table_pager(current_page, total_entries, href):
     "Return form with pager buttons given current page."
     if total_entries <= constants.MAX_PAGE_ENTRIES:
         return ""
     pages = [1]
-    max_pages = (total_entries + 1) // constants.MAX_PAGE_ENTRIES
-    for page in range(2, max_pages):
+    total_pages = entries.total_pages(total_entries)
+    for page in range(2, total_pages):
         if abs(current_page - page) < 2:
             pages.append(page)
-    if pages[-1] != max_pages:
-        pages.append(max_pages)
+    if pages[-1] != total_pages:
+        pages.append(total_pages)
     buttons = []
     prev_page = 1
     for page in pages:
@@ -246,7 +246,7 @@ def get_table_pager(current_page, total_entries, action):
         else:
             buttons.append(Input(type="submit", name="page", value=str(page)))
         prev_page = page
-    return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=action)
+    return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=href)
 
 
 def get_keywords_links(entry):

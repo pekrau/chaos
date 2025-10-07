@@ -70,3 +70,8 @@ form.search {
 a.thin {
     padding: 4px 10px;
 }
+
+table.compressed > tbody > tr > td {
+    padding-bottom: 0px;
+    margin-bottom: 0px;
+}

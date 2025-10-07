@@ -165,7 +165,7 @@ def get(session, keyword: str, page: int = 1):
                 )
             ),
             components.get_table_pager(
-                page, entries.count(keyword), action=f"/keywords/{keyword}"
+                page, entries.count(keyword), f"/keywords/{keyword}"
             ),
             cls="container",
         ),

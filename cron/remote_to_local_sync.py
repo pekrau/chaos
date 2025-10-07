@@ -2,6 +2,7 @@
 
 # Done first, to measure all work including loading modules.
 from timer import Timer
+
 timer = Timer()
 
 from http import HTTPStatus as HTTP
@@ -46,11 +47,14 @@ def update(url, apikey):
 
     if download_entries:
         response = requests.post(
-            url + "/api/download", json={"entries": list(download_entries)},
-            headers=dict(apikey=apikey)
+            url + "/api/download",
+            json={"entries": list(download_entries)},
+            headers=dict(apikey=apikey),
         )
         if response.status_code != HTTP.OK:
-            raise IOError(f"invalid response: {response.status_code=} {response.content=}")
+            raise IOError(
+                f"invalid response: {response.status_code=} {response.content=}"
+            )
         if response.headers["Content-Type"] != constants.GZIP_CONTENT_TYPE:
             raise IOError("invalid file type from remote")
         content = response.content

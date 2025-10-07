@@ -55,7 +55,7 @@ def set_auth_before(request, session):
 
 beforeware = Beforeware(
     set_auth_before,
-    skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods\.css", r"/api/.*", r"/ping"],
+    skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods\.css", r"/ping"],
 )
 
 

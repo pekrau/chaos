@@ -4,6 +4,7 @@ for entries in the www instance that request it.
 
 # Done first, to measure all work including loading modules.
 from timer import Timer
+
 timer = Timer()
 
 from http import HTTPStatus as HTTP
@@ -40,7 +41,9 @@ def extract(url, apikey):
     else:
         keywords = {}
 
-    response = requests.get(url + "/api/keyword/extract_markdown", headers=dict(apikey=apikey))
+    response = requests.get(
+        url + "/api/keyword/extract_markdown", headers=dict(apikey=apikey)
+    )
     if response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
@@ -88,13 +91,14 @@ def extract(url, apikey):
 
         text = text.replace("extract_markdown", "")
         text = f"{text}\n\n## Extracted Markdown from file\n\n{md_text}"
-        response = requests.post(url + f"/api/entry/{entry}", headers=headers, data={"text": text})
+        response = requests.post(
+            url + f"/api/entry/{entry}", headers=headers, data={"text": text}
+        )
         if response.status_code != HTTP.OK:
             failed.add(filename + ": could not update text")
             continue
 
-    result = {"file_entries": len(file_entries),
-              "failed": list(failed)}
+    result = {"file_entries": len(file_entries), "failed": list(failed)}
     result["time"] = timer.current
     return result
 

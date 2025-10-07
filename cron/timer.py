@@ -4,6 +4,7 @@ import time
 
 DATETIME_ISO_FORMAT = "%Y-%m-%d %H:%M:%S"
 
+
 class Timer:
     "Return elapsed time and CPU time since creation of the instance."
 
@@ -16,8 +17,10 @@ class Timer:
 
     @property
     def current(self):
-        return {"elapsed time": time.time() - self.time,
-                "CPU time": time.process_time() - self.process_time}
+        return {
+            "elapsed time": time.time() - self.time,
+            "CPU time": time.process_time() - self.process_time,
+        }
 
     @property
     def now(self):

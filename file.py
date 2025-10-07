@@ -173,6 +173,7 @@ def get(file: entries.Entry):
         ),
         Main(
             Form(
+                Fieldset(
                     Label(
                         "Title",
                         Input(
@@ -188,6 +189,7 @@ def get(file: entries.Entry):
                             type="file",
                             name="upfile",
                         ),
+                        Small(f"Current file: {file.filename}"),
                     ),
                     Label(
                         "Text",
@@ -198,19 +200,17 @@ def get(file: entries.Entry):
                             autofocus=True,
                         ),
                     ),
-                Fieldset(
-                    Legend("Extract..."),
                     Label(
-                        Input(type="radio", name="extract", value="text"),
-                        "Text from image.",
-                    ),
-                    Label(
-                        Input(type="radio", name="extract", value="keywords"),
-                        "Keywords from PDF, DOCX or EPUB.",
-                    ),
-                    Label(
-                        Input(type="radio", name="extract", value="markdown"),
-                        "Markdown text from PDF, DOCX or EPUB.",
+                        "Extraction task",
+                        Select(
+                            Option("None", selected=True, disabled=True, value=""),
+                            Option("Text from image", value="text"),
+                            Option("Keywords from PDF, DOCX or EPUB", value="keywords"),
+                            Option(
+                                "Markdown text from PDF, DOCX or EPUB", value="markdown"
+                            ),
+                            name="extract",
+                        ),
                     ),
                 ),
                 Input(
@@ -235,7 +235,9 @@ def get(file: entries.Entry):
 
 
 @rt("/{file:Entry}/edit")
-async def post(file: entries.Entry, title: str, upfile: UploadFile, text: str, extract: str = None):
+async def post(
+    file: entries.Entry, title: str, upfile: UploadFile, text: str, extract: str = None
+):
     "Actually edit the file."
     assert isinstance(file, entries.File)
     if upfile.filename:

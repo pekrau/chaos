@@ -2,6 +2,7 @@
 
 # Done first, to measure all work including loading modules.
 from timer import Timer
+
 timer = Timer()
 
 from http import HTTPStatus as HTTP
@@ -28,7 +29,9 @@ def extract(url, apikey):
     """Fetch which entries to do OCR on, extract the text and upload it.
     Return a dictionary with statistics.
     """
-    response = requests.get(url + "/api/keyword/extract_text", headers=dict(apikey=apikey))
+    response = requests.get(
+        url + "/api/keyword/extract_text", headers=dict(apikey=apikey)
+    )
     if response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
@@ -44,7 +47,8 @@ def extract(url, apikey):
         return {}
 
     failed = set()
-    import easyocr              # Saves time doing this here, if no entries.
+    import easyocr  # Saves time doing this here, if no entries.
+
     reader = easyocr.Reader(constants.OCR_LANGUAGES, gpu=constants.OCR_GPU)
     headers = dict(apikey=apikey)
 
@@ -77,13 +81,14 @@ def extract(url, apikey):
             continue
         text = text.replace("extract_text", "")
         text = f"{text}\n\n## Extracteded text from image\n\n{image_text}"
-        response = requests.post(url + f"/api/entry/{entry}", headers=headers, data={"text": text})
+        response = requests.post(
+            url + f"/api/entry/{entry}", headers=headers, data={"text": text}
+        )
         if response.status_code != HTTP.OK:
             failed.add(filename + ": could not update text")
             continue
 
-    result = {"file_entries": len(file_entries),
-              "failed": list(failed)}
+    result = {"file_entries": len(file_entries), "failed": list(failed)}
     result["time"] = str(timer)
     return result
 

@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (0, 11, 14)
+VERSION = (0, 11, 15)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"

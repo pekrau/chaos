@@ -47,6 +47,15 @@ def get(request):
                     rows=10,
                     placeholder="Text...",
                 ),
+                Select(
+                    Option("Extract...", selected=True, disabled=True, value=""),
+                    Option("Text from image", value="text"),
+                    Option("Keywords from PDF, DOCX or EPUB", value="keywords"),
+                    Option(
+                        "Markdown text from PDF, DOCX or EPUB", value="markdown"
+                    ),
+                    name="extract",
+                ),
                 Input(
                     type="submit",
                     value="Save",
@@ -69,7 +78,7 @@ def get(request):
 
 
 @rt("/")
-async def post(session, title: str, upfile: UploadFile, text: str):
+async def post(session, title: str, upfile: UploadFile, text: str, extract: str = ""):
     "Actually add the file."
     filename = pathlib.Path(upfile.filename)
     ext = filename.suffix
@@ -79,6 +88,8 @@ async def post(session, title: str, upfile: UploadFile, text: str):
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
+    if extract:
+        text += f" extract_{extract}"
     file.text = text.strip()
     filecontent = await upfile.read()
     filename = str(file) + ext

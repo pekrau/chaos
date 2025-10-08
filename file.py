@@ -194,7 +194,7 @@ def get(file: entries.Entry):
                         ),
                     ),
                     Label(
-                        "Extraction task",
+                        "Extract",
                         Select(
                             Option("None", selected=True, disabled=True, value=""),
                             Option("Text from image", value="text"),
@@ -251,7 +251,7 @@ async def post(
         pos = text.find("## Extracted")
         if pos >= 0:
             text = text[:pos]
-        text += f"extract_{extract}"
+        text += f" extract_{extract}"
     file.text = text
     file.write()
     entries.set_keywords_relations(file)
@@ -288,12 +288,13 @@ def get(file: entries.Entry):
                         ),
                     ),
                     Label(
-                        "File (cannot be changed)",
+                        "File",
                         Input(
                             type="text",
                             value=file.filename,
                             readonly=True,
                         ),
+                        Small("Cannot be changed."),
                     ),
                     Label(
                         "Text",
@@ -309,7 +310,7 @@ def get(file: entries.Entry):
                     type="submit",
                     value="Save",
                 ),
-                action=f"/file/",
+                action=f"/file/{file}/copy",
                 method="POST",
             ),
             Form(
@@ -324,6 +325,30 @@ def get(file: entries.Entry):
             cls="container",
         ),
     )
+
+
+@rt("/{sourcefile:Entry}/copy")
+def post(session, sourcefile: entries.File, title: str, text: str):
+    "Actually copy the file."
+    assert isinstance(sourcefile, entries.File)
+    filename = pathlib.Path(sourcefile.filename)
+    file = entries.File()
+    # XXX For some reason, 'auth' is not set in 'request.scope'?
+    file.owner = session["auth"]
+    file.title = title.strip() or filename.stem
+    file.text = text.strip()
+    with open(sourcefile.filepath, "rb") as infile:
+        filecontent = infile.read()
+    filename = str(file) + filename.suffix
+    try:
+        with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
+            outfile.write(filecontent)
+    except OSError as error:
+        raise components.Error(error)
+    file.frontmatter["filename"] = filename
+    file.write()
+    entries.set_keywords_relations(file)
+    return components.redirect(file.url)
 
 
 @rt("/{file:Entry}/delete")

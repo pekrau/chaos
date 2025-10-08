@@ -21,7 +21,7 @@ def get():
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Add file"),
                 ),
                 cls="file",
@@ -99,7 +99,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li(components.get_entry_clipboard(file), Strong(file.title)),
                     Li(
                         components.get_dropdown_menu(
@@ -143,7 +143,7 @@ def get(file: entries.Entry):
     "Return the file data."
     return Response(
         content=file.filepath.read_bytes(),
-        media_type=file.file_mimetype or constants.BINARY_CONTENT_TYPE,
+        media_type=file.file_mimetype or constants.BINARY_MIMETYPE,
     )
 
 
@@ -156,7 +156,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li(f"Edit"),
                     Li(Strong(file.title)),
                 ),
@@ -267,7 +267,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Copy"),
                     Li(Strong(file.title)),
                 ),
@@ -360,7 +360,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Delete"),
                     Li(Strong(file.title)),
                 ),

@@ -19,7 +19,7 @@ def get():
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Add note"),
                 ),
                 cls="note",
@@ -76,7 +76,7 @@ def get(note: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li(components.get_entry_clipboard(note), Strong(note.title)),
                     Li(
                         components.get_dropdown_menu(
@@ -118,7 +118,7 @@ def get(note: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li(f"Edit"),
                     Li(Strong(note.title)),
                 ),
@@ -189,7 +189,7 @@ def get(note: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Copy"),
                     Li(Strong(note.title)),
                 ),
@@ -240,7 +240,7 @@ def get(note: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Delete"),
                     Li(Strong(note.title)),
                 ),

@@ -67,12 +67,12 @@ def extract(url, apikey):
             failed.add(filename + ": could not fetch file data")
             continue
 
-        content_type = response.headers["Content-Type"]
-        if content_type not in constants.TEXTUAL_CONTENT_TYPES:
+        mimetype = response.headers["Content-Type"]
+        if mimetype not in constants.TEXTUAL_MIMETYPES:
             failed.add(filename + ": not textual file")
             continue
 
-        filename = entry + (mimetypes.guess_extension(content_type) or ".bin")
+        filename = entry + (mimetypes.guess_extension(mimetype) or ".bin")
         filepath = Path("/tmp") / filename
         with open(filepath, "wb") as outfile:
             outfile.write(response.content)

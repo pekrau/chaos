@@ -19,7 +19,7 @@ def get():
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Add link"),
                 ),
                 cls="link",
@@ -85,7 +85,7 @@ def get(link: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li(components.get_entry_clipboard(link), Strong(link.title)),
                     Li(
                         components.get_dropdown_menu(
@@ -130,7 +130,7 @@ def get(link: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li(f"Edit"),
                     Li(Strong(link.title)),
                 ),
@@ -211,7 +211,7 @@ def get(link: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Copy"),
                     Li(Strong(link.title)),
                 ),
@@ -269,7 +269,7 @@ def get(link: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Delete"),
                     Li(Strong(link.title)),
                 ),

@@ -48,12 +48,10 @@ def get(session, page: int = 1):
         page = min(max(1, page), entries.total_pages())
         return (
             Title("chaos"),
-            Script(src="/clipboard.min.js"),
-            Script("new ClipboardJS('.to_clipboard');"),
             Header(
                 Nav(
                     Ul(
-                        Li(components.chaos_icon()),
+                        Li(components.get_chaos_icon()),
                         Li(
                             components.get_dropdown_menu(
                                 A("Add note...", href="/note/"),
@@ -108,7 +106,7 @@ def get(session, page: int = 1):
             Header(
                 Nav(
                     Ul(
-                        Li(components.chaos_icon()),
+                        Li(components.get_chaos_icon()),
                         Li("Login"),
                     ),
                     cls="login",
@@ -168,12 +166,10 @@ def get(page: int = 1):
     "Display entries having no relations."
     return (
         Title("Unrelated"),
-        Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Unrelated entries"),
                     Li(
                         components.get_dropdown_menu(
@@ -208,12 +204,10 @@ def get(page: int = 1):
     "Display entries without keywords."
     return (
         Title("No keywords"),
-        Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Entries without keywords"),
                     Li(
                         components.get_dropdown_menu(
@@ -248,12 +242,10 @@ def get():
     "Display a page of random entries."
     return (
         Title("Random"),
-        Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Random entries"),
                     Li(
                         components.get_dropdown_menu(
@@ -302,12 +294,10 @@ def get(term: str):
     result.sort(reverse=True)
     return (
         Title("Search"),
-        Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Search"),
                     Li(
                         components.get_dropdown_menu(
@@ -347,7 +337,7 @@ def get():
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Usage"),
                 ),
                 cls="main",
@@ -408,7 +398,7 @@ def get():
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Software"),
                 ),
                 cls="main",

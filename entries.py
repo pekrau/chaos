@@ -219,7 +219,7 @@ class File(Entry):
 
     @property
     def is_image(self):
-        return self.file_mimetype in constants.IMAGE_CONTENT_TYPES
+        return self.file_mimetype in constants.IMAGE_MIMETYPES
 
     @property
     def file_modified(self):

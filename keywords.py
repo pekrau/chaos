@@ -18,7 +18,7 @@ def get(session):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Keywords"),
                     Li(components.search_form()),
                 ),
@@ -134,12 +134,10 @@ def get(session, keyword: str, page: int = 1):
     page = max(1, page)
     return (
         Title("chaos"),
-        Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li(Strong(keyword)),
                     Li(
                         components.get_dropdown_menu(
@@ -186,7 +184,7 @@ def get(session, keyword: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.chaos_icon()),
+                    Li(components.get_chaos_icon()),
                     Li("Delete"),
                     Li(Strong(keyword)),
                 ),

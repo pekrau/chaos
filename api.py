@@ -111,5 +111,5 @@ async def post(request):
                 pass
     return Response(
         content=buffer.getvalue(),
-        media_type=constants.GZIP_CONTENT_TYPE,
+        media_type=constants.GZIP_MIMETYPE,
     )

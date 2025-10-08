@@ -79,7 +79,7 @@ def redirect(href):
     return RedirectResponse(href, status_code=HTTP.SEE_OTHER)
 
 
-def chaos_icon():
+def get_chaos_icon():
     return A(
         Img(
             src="/chaos.png",
@@ -150,7 +150,6 @@ def get_entries_table(entries, full=True):
             keywords = NotStr("; ".join(keywords[0 : constants.MAX_ROW_ITEMS]) + "...")
         else:
             keywords = NotStr("; ".join(keywords))
-        items = [get_entry_clipboard(entry), A(entry.title, href=entry.url)]
         match entry.__class__.__name__:
             case "Note":
                 if full:
@@ -161,7 +160,13 @@ def get_entries_table(entries, full=True):
                     ]
                 else:
                     cells = []
-                rows.append(Tr(Td(*items), Td(keywords), *cells))
+                rows.append(
+                    Tr(
+                        Td(A(entry.title, href=entry.url)),
+                        Td(keywords),
+                        *cells,
+                    )
+                )
             case "Link":
                 if full:
                     cells = [
@@ -171,13 +176,19 @@ def get_entries_table(entries, full=True):
                     ]
                 else:
                     cells = []
-                items.append(
-                    A(
-                        get_icon("box-arrow-up-right.svg", title="Go to page"),
-                        href=entry.href,
+                rows.append(
+                    Tr(
+                        Td(
+                            A(
+                                get_icon("box-arrow-up-right.svg", title="Go to page"),
+                                href=entry.href,
+                            ),
+                            A(entry.title, href=entry.url),
+                        ),
+                        Td(keywords),
+                        *cells,
                     )
                 )
-                rows.append(Tr(Td(*items), Td(keywords), *cells))
             case "File":
                 if full:
                     cells = [
@@ -190,13 +201,19 @@ def get_entries_table(entries, full=True):
                     ]
                 else:
                     cells = []
-                items.append(
-                    A(
-                        get_icon("download.svg", title="Download file"),
-                        href=f"{entry.url}/data",
+                rows.append(
+                    Tr(
+                        Td(
+                            A(
+                                get_mimetype_icon(entry.file_mimetype, title="View or download file"),
+                                href=f"{entry.url}/data",
+                            ),
+                            A(entry.title, href=entry.url),
+                        ),
+                        Td(keywords),
+                        *cells,
                     )
                 )
-                rows.append(Tr(Td(*items), Td(keywords), *cells))
             case _:
                 raise NotImplementedError
     return Table(Tbody(*rows), cls="striped compressed")
@@ -208,6 +225,19 @@ def get_icon(filename, title=""):
         title=title,
         cls="icon",
     )
+
+
+def get_mimetype_icon(mimetype, title=""):
+    if mimetype in constants.IMAGE_MIMETYPES:
+        return get_icon("file-earmark-image.svg", title=title)
+    match mimetype:
+        case constants.PDF_MIMETYPE:
+            return get_icon("file-earmark-pdf.svg", title=title)
+        case constants.DOCX_MIMETYPE:
+            return get_icon("file-earmark-word.svg", title=title)
+        case constants.EPUB_MIMETYPE:
+            return get_icon("file-earmark-text.svg", title=title)
+    return get_icon("file-earmark-binary.svg", title=title)
 
 
 def get_table_pager(current_page, total_entries, href):

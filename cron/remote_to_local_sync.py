@@ -55,7 +55,7 @@ def update(url, apikey):
             raise IOError(
                 f"invalid response: {response.status_code=} {response.content=}"
             )
-        if response.headers["Content-Type"] != constants.GZIP_CONTENT_TYPE:
+        if response.headers["Content-Type"] != constants.GZIP_MIMETYPE:
             raise IOError("invalid file type from remote")
         content = response.content
         if not content:

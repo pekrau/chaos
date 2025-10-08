@@ -156,10 +156,10 @@ def get(session, keyword: str, page: int = 1):
         Main(
             Table(Tbody(*rows)),
             components.get_entries_table(
-                entries.get_recent_entries(
+                entries.get_keyword_entries(
+                    keyword,
                     start=(page - 1) * constants.MAX_PAGE_ENTRIES,
                     end=page * constants.MAX_PAGE_ENTRIES,
-                    keyword=keyword,
                 )
             ),
             components.get_table_pager(

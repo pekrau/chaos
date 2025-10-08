@@ -52,7 +52,7 @@ def get(request, keyword: str, start: int = 0, end: int = constants.MAX_PAGE_ENT
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
     result = {}
-    for entry in entries.get_recent_entries(start=start, end=end, keyword=keyword):
+    for entry in entries.get_keyword_entries(keyword, start=start, end=end):
         try:
             result[str(entry)] = entry.filename
         except AttributeError:

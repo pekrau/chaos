@@ -299,20 +299,14 @@ def set_keywords_relations(entry):
             entry2.relations[str(entry)] = relation
 
 
-def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
-    """Get the entries ordered by modified time, optionally filtered by keyword.
-    If start is None, then return all entries.
+def get_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
+    """Get the entries sorted by modified time.
+    If start or end is None, then return all entries.
     """
     global lookup
     assert (start is None) or (start >= 0)
     assert (end is None) or (end > start)
-    if keyword:
-        result = []
-        for entry in lookup.values():
-            if keyword in entry.keywords:
-                result.append(entry)
-    else:
-        result = list(lookup.values())
+    result = list(lookup.values())
     result.sort(key=lambda e: e.modified, reverse=True)
     if (start is None) or (end is None):
         return result
@@ -321,8 +315,8 @@ def get_recent_entries(start=0, end=constants.MAX_PAGE_ENTRIES, keyword=None):
 
 
 def get_unrelated_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
-    """Get the unrelated entries ordered by modified time.
-    If start is None, then return all entries.
+    """Get the unrelated entries sorted by modified time.
+    If start or end is None, then return all entries.
     """
     global lookup
     result = [e for e in lookup.values() if e.is_unrelated()]
@@ -333,14 +327,26 @@ def get_unrelated_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
         return result[start:end]
 
 
+def get_keyword_entries(keyword, start=0, end=constants.MAX_PAGE_ENTRIES):
+    """Get the entries with the given keyword sorted by modified time.
+    If start or end is None, then return all entries.
+    """
+    global lookup
+    result = [e for e in lookup.values() if keyword in e.keywords]
+    result.sort(key=lambda e: e.modified, reverse=True)
+    if (start is None) or (end is None):
+        return result
+    else:
+        return result[start:end]
+
 def get_no_keyword_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
-    """Get the entries without keywords ordered by modified time.
-    If start is None, then return all entries.
+    """Get the entries without keywords sorted by modified time.
+    If start or end is None, then return all entries.
     """
     global lookup
     result = [e for e in lookup.values() if not e.keywords]
     result.sort(key=lambda e: e.modified, reverse=True)
-    if start is None:
+    if (start is None) or (end is None):
         return result
     else:
         return result[start:end]

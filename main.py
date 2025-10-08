@@ -58,9 +58,9 @@ def get(session, page: int = 1):
                                 A("Add link...", href="/link/"),
                                 A("Add file...", href="/file/"),
                                 A("Keywords", href="/keywords"),
-                                A("Entries without keywords", href="/nokeywords"),
-                                A("Unrelated entries", href="/unrelated"),
-                                A("Random entries", href="/random"),
+                                A("No keywords", href="/nokeywords"),
+                                A("Unrelated", href="/unrelated"),
+                                A("Random", href="/random"),
                                 A("Reread", href="/reread"),
                                 A("Usage", href="/usage"),
                                 A("Software", href="/software"),
@@ -75,7 +75,7 @@ def get(session, page: int = 1):
             ),
             Main(
                 components.get_entries_table(
-                    entries.get_recent_entries(
+                    entries.get_entries(
                         start=(page - 1) * constants.MAX_PAGE_ENTRIES,
                         end=page * constants.MAX_PAGE_ENTRIES,
                     )

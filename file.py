@@ -14,7 +14,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get():
+def get(request):
     "Form for adding a file."
     return (
         Title("Add file"),
@@ -53,6 +53,15 @@ def get():
                 ),
                 action="/file/",
                 method="POST",
+            ),
+            Form(
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
+                ),
+                action=request.headers.get("Referer", "/"),
+                method="GET",
             ),
             cls="container",
         ),
@@ -100,16 +109,12 @@ def get(file: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li(components.get_entry_clipboard(file), Strong(file.title)),
+                    Li(components.get_entry_clipboard(file), file.title),
                     Li(
-                        components.get_dropdown_menu(
+                        components.get_nav_menu(
                             A("Edit", href=f"{file.url}/edit"),
                             A("Copy", href=f"{file.url}/copy"),
                             A("Delete", href=f"{file.url}/delete"),
-                            A("Add note...", href="/note/"),
-                            A("Add link...", href="/link/"),
-                            A("Add file...", href="/file/"),
-                            A("Keywords", href="/keywords"),
                         ),
                     ),
                     Li(components.search_form()),
@@ -132,8 +137,16 @@ def get(file: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(
-            file.modified_local, f"{file.size:,d} + {file.file_size:,d} bytes"
+        Footer(
+            Hr(),
+            Small(
+                Div(
+                    Div(file.modified_local),
+                    Div(f"{file.size:,d} + {file.file_size:,d} bytes", cls="right"),
+                    cls="grid",
+                ),
+            ),
+            cls="container",
         ),
     )
 
@@ -157,8 +170,7 @@ def get(file: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li(f"Edit"),
-                    Li(Strong(file.title)),
+                    Li(f"Edit '{file.title}'"),
                 ),
                 cls="file",
             ),
@@ -268,8 +280,7 @@ def get(file: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li("Copy"),
-                    Li(Strong(file.title)),
+                    Li(f"Copy '{file.title}'"),
                 ),
                 cls="file",
             ),
@@ -361,8 +372,7 @@ def get(file: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li("Delete"),
-                    Li(Strong(file.title)),
+                    Li(f"Delete '{file.title}'"),
                 ),
                 cls="file",
             ),
@@ -388,9 +398,6 @@ def get(file: entries.Entry):
                 method="POST",
             ),
             cls="container",
-        ),
-        components.get_footer(
-            file.modified_local, f"{file.size:,d} + {file.file_size:,d} bytes"
         ),
     )
 

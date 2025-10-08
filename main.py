@@ -11,7 +11,9 @@ if constants.DEVELOPMENT:
 import os
 import shutil
 
+import fasthtml
 from fasthtml.common import *
+import marko
 import psutil
 import yaml
 
@@ -45,60 +47,13 @@ app, rt = components.get_app_rt(
 @rt("/")
 def get(session, page: int = 1):
     if session.get("auth"):
-        page = min(max(1, page), entries.total_pages())
-        return (
-            Title("chaos"),
-            Header(
-                Nav(
-                    Ul(
-                        Li(components.get_chaos_icon()),
-                        Li(
-                            components.get_dropdown_menu(
-                                A("Add note...", href="/note/"),
-                                A("Add link...", href="/link/"),
-                                A("Add file...", href="/file/"),
-                                A("Keywords", href="/keywords"),
-                                A("No keywords", href="/nokeywords"),
-                                A("Unrelated", href="/unrelated"),
-                                A("Random", href="/random"),
-                                A("Reread", href="/reread"),
-                                A("Usage", href="/usage"),
-                                A("Software", href="/software"),
-                                A("Logout", href="/logout"),
-                            ),
-                        ),
-                        Li(components.search_form()),
-                    ),
-                    cls="main",
-                ),
-                cls="container",
-            ),
-            Main(
-                components.get_entries_table(
-                    entries.get_entries(
-                        start=(page - 1) * constants.MAX_PAGE_ENTRIES,
-                        end=page * constants.MAX_PAGE_ENTRIES,
-                    )
-                ),
-                components.get_table_pager(page, len(entries.lookup), "/"),
-                cls="container",
-            ),
-            Footer(
-                Hr(),
-                Small(
-                    Div(
-                        Div(session["auth"]),
-                        Div(
-                            A("chaos", href="https://github.com/pekrau/chaos"),
-                            " ",
-                            constants.__version__,
-                            cls="right",
-                        ),
-                        cls="grid",
-                    ),
-                ),
-                cls="container",
-            ),
+        return components.get_entries_table_page(
+            session,
+            "chaos",
+            entries.get_entries(),
+            page,
+            "/",
+            after=components.get_after_buttons(),
         )
     else:
         return (
@@ -161,126 +116,82 @@ def post(session, username: str, password: str):
     return components.redirect(session.pop("path", None) or "/")
 
 
-@rt("/unrelated")
-def get(page: int = 1):
-    "Display entries having no relations."
-    return (
-        Title("Unrelated"),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_chaos_icon()),
-                    Li("Unrelated entries"),
-                    Li(
-                        components.get_dropdown_menu(
-                            A("Add note...", href="/note/"),
-                            A("Add link...", href="/link/"),
-                            A("Add file...", href="/file/"),
-                            A("Keywords", href="/keywords"),
-                            A("Entries without keywords", href="/nokeywords"),
-                        ),
-                    ),
-                    Li(components.search_form()),
-                ),
-                cls="main",
-            ),
-            cls="container",
-        ),
-        Main(
-            components.get_entries_table(
-                entries.get_unrelated_entries(
-                    start=(page - 1) * constants.MAX_PAGE_ENTRIES,
-                    end=page * constants.MAX_PAGE_ENTRIES,
-                )
-            ),
-            components.get_table_pager(page, len(entries.lookup), "/"),
-            cls="container",
-        ),
+@rt("/notes")
+def get(session, page: int = 1):
+    "Display note entries."
+    return components.get_entries_table_page(
+        session,
+        "Notes",
+        entries.get_notes(),
+        page,
+        "/notes",
+        after=components.get_after_buttons(),
+    )
+
+
+@rt("/links")
+def get(session, page: int = 1):
+    "Display note entries."
+    return components.get_entries_table_page(
+        session,
+        "Links",
+        entries.get_links(),
+        page,
+        "/links",
+        after=components.get_after_buttons(),
+    )
+
+
+@rt("/files")
+def get(session, page: int = 1):
+    "Display note entries."
+    return components.get_entries_table_page(
+        session,
+        "Files",
+        entries.get_files(),
+        page,
+        "/files",
+        after=components.get_after_buttons(),
     )
 
 
 @rt("/nokeywords")
-def get(page: int = 1):
+def get(session, page: int = 1):
     "Display entries without keywords."
-    return (
-        Title("No keywords"),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_chaos_icon()),
-                    Li("Entries without keywords"),
-                    Li(
-                        components.get_dropdown_menu(
-                            A("Add note...", href="/note/"),
-                            A("Add link...", href="/link/"),
-                            A("Add file...", href="/file/"),
-                            A("Keywords", href="/keywords"),
-                            A("Unrelated entries", href="/unrelated"),
-                        ),
-                    ),
-                    Li(components.search_form()),
-                ),
-                cls="main",
-            ),
-            cls="container",
-        ),
-        Main(
-            components.get_entries_table(
-                entries.get_no_keyword_entries(
-                    start=(page - 1) * constants.MAX_PAGE_ENTRIES,
-                    end=page * constants.MAX_PAGE_ENTRIES,
-                )
-            ),
-            components.get_table_pager(page, len(entries.lookup), "/"),
-            cls="container",
-        ),
+    return components.get_entries_table_page(
+        session,
+        "No keywords",
+        entries.get_no_keyword_entries(),
+        page,
+        "/nokeywords",
+        after=components.get_after_buttons(),
+    )
+
+
+@rt("/unrelated")
+def get(session, page: int = 1):
+    "Display entries having no relations."
+    return components.get_entries_table_page(
+        session,
+        "Unrelated",
+        entries.get_unrelated_entries(),
+        page,
+        "/unrelated",
+        after=components.get_after_buttons(),
     )
 
 
 @rt("/random")
-def get():
-    "Display a page of random entries."
-    return (
-        Title("Random"),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_chaos_icon()),
-                    Li("Random entries"),
-                    Li(
-                        components.get_dropdown_menu(
-                            A("Add note...", href="/note/"),
-                            A("Add link...", href="/link/"),
-                            A("Add file...", href="/file/"),
-                            A("Keywords", href="/keywords"),
-                            A("Random entries", href="/random"),
-                        ),
-                    ),
-                    Li(components.search_form()),
-                ),
-                cls="main",
-            ),
-            cls="container",
-        ),
-        Main(
-            components.get_entries_table(entries.get_random_entries()),
-            cls="container",
-        ),
-    )
-
-
-@rt("/reread")
-def get():
-    "Reread all entries."
-    entries.read_entry_files()
-    entries.set_all_keywords_relations()
-    return components.redirect("/")
-
-
-@rt("/logout")
 def get(session):
-    session.pop("auth", None)
-    return components.redirect("/")
+    "Display a page of random entries."
+    return components.get_entries_table_page(
+        session,
+        "Random",
+        entries.get_random_entries(),
+        1,
+        "/random",
+        after=components.get_after_buttons(),
+    )
 
 
 @rt("/search")
@@ -291,7 +202,7 @@ def get(term: str):
         if score := entry.score(term):
             if score:
                 result.append((score, entry.modified_local, entry))
-    result.sort(reverse=True)
+    result.sort(key=lambda e: (-e[0], e[1]), reverse=True)
     return (
         Title("Search"),
         Header(
@@ -299,14 +210,7 @@ def get(term: str):
                 Ul(
                     Li(components.get_chaos_icon()),
                     Li("Search"),
-                    Li(
-                        components.get_dropdown_menu(
-                            A("Add note...", href="/note/"),
-                            A("Add link...", href="/link/"),
-                            A("Add file...", href="/file/"),
-                            A("Keywords", href="/keywords"),
-                        ),
-                    ),
+                    Li(components.get_nav_menu()),
                     Li(components.search_form(term)),
                 ),
                 cls="search",
@@ -315,108 +219,94 @@ def get(term: str):
         ),
         Main(
             components.get_entries_table([e for s, m, e in result]),
+            components.get_after_buttons(),
             cls="container",
         ),
     )
 
 
-@rt("/usage")
+@rt("/system")
 def get():
-    "View aggregate usage information."
-    disk_usage = shutil.disk_usage(constants.DATA_DIR)
-    dir_size = 0
+    "Displaysystem information."
+    software = Table(
+        Thead(Tr(Th("Software", Th("Version", cls="right")))),
+        Tbody(
+            Tr(
+                Td(A("chaos", href=constants.GITHUB_URL)),
+                Td(constants.__version__, cls="right"),
+            ),
+            Tr(
+                Td(A("Python", href="https://www.python.org/")),
+                Td(f"{'.'.join([str(v) for v in sys.version_info[0:3]])}", cls="right"),
+            ),
+            Tr(
+                Td(A("fastHTML", href="https://fastht.ml/")),
+                Td(fasthtml.__version__, cls="right"),
+            ),
+            Tr(
+                Td(A("Marko", href="https://marko-py.readthedocs.io/")),
+                Td(marko.__version__, cls="right"),
+            ),
+            Tr(
+                Td(A("PyYAML", href="https://pypi.org/project/PyYAML/")),
+                Td(yaml.__version__, cls="right"),
+            ),
+        ),
+    )
+    disk_usage = 0
     for dirpath, dirnames, filenames in os.walk(constants.DATA_DIR):
         dp = Path(dirpath)
         for filename in filenames:
             fp = dp / filename
-            dir_size += os.path.getsize(fp)
-    ram_usage = psutil.Process().memory_info().rss
-
-    return (
-        Title("Usage"),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_chaos_icon()),
-                    Li("Usage"),
-                ),
-                cls="main",
-            ),
-            cls="container",
-        ),
-        Main(
-            Table(
-                Tr(
-                    Td("RAM"),
-                    Td(components.numerical(ram_usage), cls="right"),
-                ),
-                Tr(
-                    Td("Disk"),
-                    Td(components.numerical(dir_size), cls="right"),
-                ),
-                Tr(
-                    Td("Disk free"),
-                    Td(components.numerical(disk_usage.free), cls="right"),
+            disk_usage += os.path.getsize(fp)
+    usage = Table(
+        Thead(Tr(Th("System usage", Th("Bytes", cls="right")))),
+        Tbody(
+            Tr(
+                Td("RAM"),
+                Td(
+                    components.numerical(psutil.Process().memory_info().rss),
+                    cls="right",
                 ),
             ),
-            cls="container",
+            Tr(
+                Td("Disk"),
+                Td(components.numerical(disk_usage), cls="right"),
+            ),
+            Tr(
+                Td("Disk free"),
+                Td(
+                    components.numerical(shutil.disk_usage(constants.DATA_DIR).free),
+                    cls="right",
+                ),
+            ),
         ),
     )
-
-
-@rt("/software")
-def get():
-    "View software versions."
-    import fasthtml
-    import marko
-    import yaml
-
-    rows = []
-    for name, href, version in [
-        (
-            "chaos",
-            "https://github.com/pekrau/chaos",
-            constants.__version__,
-        ),
-        (
-            "Python",
-            "https://www.python.org/",
-            f"{'.'.join([str(v) for v in sys.version_info[0:3]])}",
-        ),
-        ("fastHTML", "https://fastht.ml/", fasthtml.__version__),
-        ("Marko", "https://marko-py.readthedocs.io/", marko.__version__),
-        ("PyYAML", "https://pypi.org/project/PyYAML/", yaml.__version__),
-    ]:
-        rows.append(
-            Tr(
-                Td(A(name, href=href)),
-                Td(version, cls="right"),
-            )
-        )
     return (
-        Title("Software"),
+        Title("System"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li("Software"),
+                    Li("System"),
                 ),
                 cls="main",
             ),
             cls="container",
         ),
-        Main(
-            Table(
-                Tbody(*rows),
-            ),
-            cls="container",
-        ),
+        Main(software, usage, components.get_after_buttons(), cls="container"),
     )
 
 
 @rt("/ping")
 def get(request):
     return f"Hello from {request.url}, running chaos v{constants.__version__}."
+
+
+@rt("/logout")
+def get(session):
+    session.pop("auth", None)
+    return components.redirect("/")
 
 
 serve(port=5002)

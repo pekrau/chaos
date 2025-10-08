@@ -299,57 +299,66 @@ def set_keywords_relations(entry):
             entry2.relations[str(entry)] = relation
 
 
-def get_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
-    """Get the entries sorted by modified time.
-    If start or end is None, then return all entries.
-    """
+def get_entries():
+    "Get all entries sorted by modified time."
     global lookup
-    assert (start is None) or (start >= 0)
-    assert (end is None) or (end > start)
     result = list(lookup.values())
     result.sort(key=lambda e: e.modified, reverse=True)
-    if (start is None) or (end is None):
-        return result
-    else:
-        return result[start:end]
+    return result
 
 
-def get_unrelated_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
-    """Get the unrelated entries sorted by modified time.
-    If start or end is None, then return all entries.
-    """
+def get_notes():
+    "Get all note entries sorted by modified time."
     global lookup
-    result = [e for e in lookup.values() if e.is_unrelated()]
+    result = [e for e in lookup.values() if isinstance(e, Note)]
     result.sort(key=lambda e: e.modified, reverse=True)
-    if (start is None) or (end is None):
-        return result
-    else:
-        return result[start:end]
+    return result
 
 
-def get_keyword_entries(keyword, start=0, end=constants.MAX_PAGE_ENTRIES):
-    """Get the entries with the given keyword sorted by modified time.
-    If start or end is None, then return all entries.
-    """
+def get_links():
+    "Get all link entries sorted by modified time."
+    global lookup
+    result = [e for e in lookup.values() if isinstance(e, Link)]
+    result.sort(key=lambda e: e.modified, reverse=True)
+    return result
+
+
+def get_files():
+    "Get all file entries sorted by modified time."
+    global lookup
+    result = [e for e in lookup.values() if isinstance(e, File)]
+    result.sort(key=lambda e: e.modified, reverse=True)
+    return result
+
+
+def get_keyword_entries(keyword):
+    "Get the entries with the given keyword sorted by modified time."
     global lookup
     result = [e for e in lookup.values() if keyword in e.keywords]
     result.sort(key=lambda e: e.modified, reverse=True)
-    if (start is None) or (end is None):
-        return result
-    else:
-        return result[start:end]
+    return result
 
-def get_no_keyword_entries(start=0, end=constants.MAX_PAGE_ENTRIES):
-    """Get the entries without keywords sorted by modified time.
-    If start or end is None, then return all entries.
-    """
+
+def get_total_keyword_entries(keyword):
+    "Return the number of entries having the keyword."
+    global lookup
+    return len([e for e in lookup.values() if keyword in e.keywords])
+
+
+def get_unrelated_entries():
+    "Get the unrelated entries sorted by modified time."
+    global lookup
+    result = [e for e in lookup.values() if e.is_unrelated()]
+    result.sort(key=lambda e: e.modified, reverse=True)
+    return result
+
+
+def get_no_keyword_entries():
+    "Get the entries without keywords sorted by modified time."
     global lookup
     result = [e for e in lookup.values() if not e.keywords]
     result.sort(key=lambda e: e.modified, reverse=True)
-    if (start is None) or (end is None):
-        return result
-    else:
-        return result[start:end]
+    return result
 
 
 def get_random_entries():
@@ -380,22 +389,3 @@ def get_all():
 def timestamp_utc(timestamp):
     dt = datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC)
     return dt.strftime(constants.DATETIME_ISO_FORMAT)
-
-
-def total():
-    "Return the total number of entries."
-    global lookup
-    return len(lookup)
-
-
-def total_pages(total_entries=None):
-    "Return the total number of table pages for the given number of entries."
-    if total_entries is None:
-        total_entries = total()
-    return (total_entries - 1) // constants.MAX_PAGE_ENTRIES + 1
-
-
-def count(keyword):
-    "Return the number of entries having the keyword."
-    global lookup
-    return len([e for e in lookup.values() if keyword in e.keywords])

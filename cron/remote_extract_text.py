@@ -46,6 +46,9 @@ def extract(url, apikey):
     if not file_entries:
         return {}
 
+    # Process at most one page of entries in one go.
+    file_entries = file_entries[0 : constants.MAX_PAGE_ENTRIES]
+
     failed = set()
     import easyocr  # Saves time doing this here, if no entries.
 

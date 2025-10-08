@@ -43,7 +43,7 @@ def get(request):
 
 
 @rt("/keyword/{keyword}")
-def get(request, keyword: str, start: int = 0, end: int = constants.MAX_PAGE_ENTRIES):
+def get(request, keyword: str):
     """Return a JSON dictionary of items {name: filename}, where 'filename'
     may be None, for all entries with the given keyword.
     """
@@ -52,7 +52,7 @@ def get(request, keyword: str, start: int = 0, end: int = constants.MAX_PAGE_ENT
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
     result = {}
-    for entry in entries.get_keyword_entries(keyword, start=start, end=end):
+    for entry in entries.get_keyword_entries(keyword):
         try:
             result[str(entry)] = entry.filename
         except AttributeError:

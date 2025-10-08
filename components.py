@@ -89,29 +89,58 @@ def get_chaos_icon():
         ),
         title="chaos: Web service for a repository of notes, links and files with no intrinsic order.",
         role="button",
-        cls="compact secondary outline",
+        cls="secondary outline no_margin",
         href="/",
     )
 
 
-def get_dropdown_menu(*links):
+def get_icon(filename, title=""):
+    return Img(
+        src=f"/{filename}",
+        title=title,
+        cls="icon",
+    )
+
+
+def get_mimetype_icon(mimetype, title=""):
+    if mimetype in constants.IMAGE_MIMETYPES:
+        return get_icon("file-earmark-image.svg", title=title)
+    match mimetype:
+        case constants.PDF_MIMETYPE:
+            return get_icon("file-earmark-pdf.svg", title=title)
+        case constants.DOCX_MIMETYPE:
+            return get_icon("file-earmark-word.svg", title=title)
+        case constants.EPUB_MIMETYPE:
+            return get_icon("file-earmark-text.svg", title=title)
+    return get_icon("file-earmark-binary.svg", title=title)
+
+
+def get_nav_menu(*links):
     return Details(
         Summary(Img(src="/Hamburger_icon.svg", width=24)),
-        Ul(*[Li(l) for l in links]),
+        Ul(
+            *[Li(l) for l in links],
+            Li(A("Add note...", href="/note/")),
+            Li(A("Add link...", href="/link/")),
+            Li(A("Add file...", href="/file/")),
+            Li(A("Keywords", href="/keywords")),
+        ),
         title="Menu",
         cls="dropdown",
     )
 
 
-def get_add_dropdown():
-    return Details(
-        Summary("Add..."),
-        Ul(
-            Li(A("Note", href="/note/")),
-            Li(A("Link", href="/link/")),
-            Li(A("File", href="/file/")),
-        ),
-        cls="dropdown",
+def get_after_buttons():
+    return Div(
+        Div(A("Notes", href="/notes", role="button", cls="thin")),
+        Div(A("Links", href="/links", role="button", cls="thin")),
+        Div(A("Files", href="/files", role="button", cls="thin")),
+        Div(A("No keywords", href="/nokeywords", role="button", cls="thin")),
+        Div(A("Unrelated", href="/unrelated", role="button", cls="thin")),
+        Div(A("Random", href="/random", role="button", cls="thin")),
+        Div(A("System", href="/system", role="button", cls="outline thin")),
+        Div(A("Logout", href="/logout", role="button", cls="secondary thin")),
+        cls="grid",
     )
 
 
@@ -141,9 +170,51 @@ def get_entry_clipboard(entry):
     )
 
 
+def get_entries_table_page(session, title, entries, page, href, after=""):
+    "Get the page displaying a table of the given entries."
+    total_entries = len(entries)
+    page = min(max(1, page), get_total_pages(total_entries))
+    start = (page - 1) * constants.MAX_PAGE_ENTRIES
+    end = page * constants.MAX_PAGE_ENTRIES
+    table = get_entries_table(entries[start:end])
+    pager = get_table_pager(page, total_entries, href)
+    return (
+        Title(title),
+        Header(
+            Nav(
+                Ul(
+                    Li(get_chaos_icon()),
+                    Li(title),
+                    Li(get_nav_menu()),
+                    Li(search_form()),
+                ),
+                cls="main",
+            ),
+            cls="container",
+        ),
+        Main(table, pager, after, cls="container"),
+        Footer(
+            Hr(),
+            Small(
+                Div(
+                    Div(session["auth"]),
+                    Div(
+                        A("chaos", href="https://github.com/pekrau/chaos"),
+                        " ",
+                        constants.__version__,
+                        cls="right",
+                    ),
+                    cls="grid",
+                ),
+            ),
+            cls="container",
+        ),
+    )
+
+
 def get_entries_table(entries, full=True):
     rows = []
-    for entry in entries:
+    for entry in entries[0:constants.MAX_PAGE_ENTRIES]:
         keywords = sorted(entry.keywords)
         keywords = [str(A(kw, href=f"/keywords/{kw}")) for kw in keywords]
         if len(keywords) > constants.MAX_ROW_ITEMS:
@@ -205,7 +276,9 @@ def get_entries_table(entries, full=True):
                     Tr(
                         Td(
                             A(
-                                get_mimetype_icon(entry.file_mimetype, title="View or download file"),
+                                get_mimetype_icon(
+                                    entry.file_mimetype, title="View or download file"
+                                ),
                                 href=f"{entry.url}/data",
                             ),
                             A(entry.title, href=entry.url),
@@ -216,28 +289,12 @@ def get_entries_table(entries, full=True):
                 )
             case _:
                 raise NotImplementedError
-    return Table(Tbody(*rows), cls="striped compressed")
-
-
-def get_icon(filename, title=""):
-    return Img(
-        src=f"/{filename}",
-        title=title,
-        cls="icon",
-    )
-
-
-def get_mimetype_icon(mimetype, title=""):
-    if mimetype in constants.IMAGE_MIMETYPES:
-        return get_icon("file-earmark-image.svg", title=title)
-    match mimetype:
-        case constants.PDF_MIMETYPE:
-            return get_icon("file-earmark-pdf.svg", title=title)
-        case constants.DOCX_MIMETYPE:
-            return get_icon("file-earmark-word.svg", title=title)
-        case constants.EPUB_MIMETYPE:
-            return get_icon("file-earmark-text.svg", title=title)
-    return get_icon("file-earmark-binary.svg", title=title)
+    if rows:
+        if len(entries) > constants.MAX_PAGE_ENTRIES:
+            rows.append(Tr(Td(I("Others not shown..."), colspan=3)))
+        return Table(Tbody(*rows), cls="striped compressed")
+    else:
+        return Article(I("No entries."))
 
 
 def get_table_pager(current_page, total_entries, href):
@@ -245,7 +302,7 @@ def get_table_pager(current_page, total_entries, href):
     if total_entries <= constants.MAX_PAGE_ENTRIES:
         return ""
     pages = [1]
-    total_pages = entries.total_pages(total_entries)
+    total_pages = get_total_pages(total_entries)
     for page in range(2, total_pages):
         if abs(current_page - page) < 2:
             pages.append(page)
@@ -279,23 +336,16 @@ def get_table_pager(current_page, total_entries, href):
     return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=href)
 
 
+def get_total_pages(total_entries=None):
+    "Return the total number of table pages for the given number of entries."
+    if total_entries is None:
+        total_entries = total()
+    return (total_entries - 1) // constants.MAX_PAGE_ENTRIES + 1
+
+
 def get_keywords_links(entry):
     return NotStr(
         "; ".join([str(A(kw, href=f"/keywords/{kw}")) for kw in entry.keywords])
-    )
-
-
-def get_footer(first="", second=""):
-    return Footer(
-        Hr(),
-        Small(
-            Div(
-                Div(first),
-                Div(second, cls="right"),
-                cls="grid",
-            ),
-        ),
-        cls="container",
     )
 
 

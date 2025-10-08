@@ -12,7 +12,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get():
+def get(request):
     "Form for adding a note."
     return (
         Title("Add note"),
@@ -47,6 +47,15 @@ def get():
                 action="/note/",
                 method="POST",
             ),
+            Form(
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
+                ),
+                action=request.headers.get("Referer", "/"),
+                method="GET",
+            ),
             cls="container",
         ),
     )
@@ -77,16 +86,12 @@ def get(note: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li(components.get_entry_clipboard(note), Strong(note.title)),
+                    Li(components.get_entry_clipboard(note), note.title),
                     Li(
-                        components.get_dropdown_menu(
+                        components.get_nav_menu(
                             A("Edit", href=f"{note.url}/edit"),
                             A("Copy", href=f"{note.url}/copy"),
                             A("Delete", href=f"{note.url}/delete"),
-                            A("Add note...", href="/note/"),
-                            A("Add link...", href="/link/"),
-                            A("Add file...", href="/file/"),
-                            A("Keywords", href="/keywords/"),
                         ),
                     ),
                     Li(components.search_form()),
@@ -105,7 +110,17 @@ def get(note: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(note.modified_local, f"{note.size} bytes"),
+        Footer(
+            Hr(),
+            Small(
+                Div(
+                    Div(note.modified_local),
+                    Div(f"{note.size} bytes", cls="right"),
+                    cls="grid",
+                ),
+            ),
+            cls="container",
+        ),
     )
 
 
@@ -119,8 +134,7 @@ def get(note: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li(f"Edit"),
-                    Li(Strong(note.title)),
+                    Li(f"Edit '{note.title}'"),
                 ),
                 cls="note",
             ),
@@ -190,8 +204,7 @@ def get(note: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li("Copy"),
-                    Li(Strong(note.title)),
+                    Li(f"Copy '{note.title}')"),
                 ),
                 cls="note",
             ),
@@ -241,8 +254,7 @@ def get(note: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li("Delete"),
-                    Li(Strong(note.title)),
+                    Li(f"Delete '{note.title}'"),
                 ),
                 cls="note",
             ),
@@ -269,7 +281,6 @@ def get(note: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(note.modified_local, f"{note.size} bytes"),
     )
 
 

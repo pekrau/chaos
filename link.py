@@ -12,7 +12,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get():
+def get(request):
     "Form for adding a link."
     return (
         Title("Add link"),
@@ -55,6 +55,15 @@ def get():
                 action="/link/",
                 method="POST",
             ),
+            Form(
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
+                ),
+                action=request.headers.get("Referer", "/"),
+                method="GET",
+            ),
             cls="container",
         ),
     )
@@ -86,16 +95,12 @@ def get(link: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li(components.get_entry_clipboard(link), Strong(link.title)),
+                    Li(components.get_entry_clipboard(link), link.title),
                     Li(
-                        components.get_dropdown_menu(
+                        components.get_nav_menu(
                             A("Edit", href=f"{link.url}/edit"),
                             A("Copy", href=f"{link.url}/copy"),
                             A("Delete", href=f"{link.url}/delete"),
-                            A("Add note...", href="/note/"),
-                            A("Add link...", href="/link/"),
-                            A("Add file...", href="/file/"),
-                            A("Keywords", href="/keywords"),
                         ),
                     ),
                     Li(components.search_form()),
@@ -117,7 +122,17 @@ def get(link: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(link.modified_local, f"{link.size} bytes"),
+        Footer(
+            Hr(),
+            Small(
+                Div(
+                    Div(link.modified_local),
+                    Div(f"{link.size} bytes", cls="right"),
+                    cls="grid",
+                ),
+            ),
+            cls="container",
+        ),
     )
 
 
@@ -131,8 +146,7 @@ def get(link: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li(f"Edit"),
-                    Li(Strong(link.title)),
+                    Li(f"Edit '{link.title}'"),
                 ),
                 cls="link",
             ),
@@ -212,8 +226,7 @@ def get(link: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li("Copy"),
-                    Li(Strong(link.title)),
+                    Li(f"Copy '{link.title}'"),
                 ),
                 cls="link",
             ),
@@ -270,8 +283,7 @@ def get(link: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li("Delete"),
-                    Li(Strong(link.title)),
+                    Li(f"Delete '{link.title}'"),
                 ),
                 cls="link",
             ),
@@ -298,7 +310,6 @@ def get(link: entries.Entry):
             ),
             cls="container",
         ),
-        components.get_footer(link.modified_local, f"{link.size} bytes"),
     )
 
 

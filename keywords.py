@@ -20,6 +20,7 @@ def get(session):
                 Ul(
                     Li(components.get_chaos_icon()),
                     Li("Keywords"),
+                    Li(components.get_nav_menu()),
                     Li(components.search_form()),
                 ),
                 cls="keyword",
@@ -36,7 +37,7 @@ def get(session):
                                 " ",
                                 Small(", ".join([k for k in list(kws) if k != kw])),
                             ),
-                            Td(f"{entries.count(kw)} entries"),
+                            Td(f"{entries.get_total_keyword_entries(kw)} entries"),
                             Td(
                                 A(
                                     "Delete",
@@ -73,7 +74,6 @@ def get(session):
             ),
             cls="container",
         ),
-        components.get_footer(),
     )
 
 
@@ -131,43 +131,13 @@ def get(session, keyword: str, page: int = 1):
             ]
         ]
     )
-    page = max(1, page)
-    return (
-        Title("chaos"),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_chaos_icon()),
-                    Li(Strong(keyword)),
-                    Li(
-                        components.get_dropdown_menu(
-                            A("Add note...", href="/note/"),
-                            A("Add link...", href="/link/"),
-                            A("Add file...", href="/file/"),
-                            A("Keywords", href="/keywords"),
-                        ),
-                    ),
-                    Li(components.search_form()),
-                ),
-                cls="keyword",
-            ),
-            cls="container",
-        ),
-        Main(
-            Table(Tbody(*rows)),
-            components.get_entries_table(
-                entries.get_keyword_entries(
-                    keyword,
-                    start=(page - 1) * constants.MAX_PAGE_ENTRIES,
-                    end=page * constants.MAX_PAGE_ENTRIES,
-                )
-            ),
-            components.get_table_pager(
-                page, entries.count(keyword), f"/keywords/{keyword}"
-            ),
-            cls="container",
-        ),
-        components.get_footer(),
+    return components.get_entries_table_page(
+        session,
+        f"Keyword '{keyword}'",
+        entries.get_keyword_entries(keyword),
+        page,
+        f"/keywords/{keyword}",
+        after=Article(Header("Synonyms"), Table(Tbody(*rows))),
     )
 
 
@@ -185,15 +155,14 @@ def get(session, keyword: str):
             Nav(
                 Ul(
                     Li(components.get_chaos_icon()),
-                    Li("Delete"),
-                    Li(Strong(keyword)),
+                    Li(f"Delete {keyword}?"),
                 ),
                 cls="keyword",
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the keyword?"),
+            P(f"Really delete the keyword '{keyword}'?"),
             Form(
                 Fieldset(
                     Input(
@@ -213,7 +182,6 @@ def get(session, keyword: str):
             ),
             cls="container",
         ),
-        components.get_footer(),
     )
 
 

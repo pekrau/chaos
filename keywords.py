@@ -48,8 +48,10 @@ def get(session):
                                 cls="right",
                             ),
                         )
-                        for kw, syn in sorted(settings.canonical_keywords.items(),
-                                              key=lambda k: k[0].casefold())
+                        for kw, syn in sorted(
+                            settings.canonical_keywords.items(),
+                            key=lambda k: k[0].casefold(),
+                        )
                     ],
                 ),
                 cls="compressed",

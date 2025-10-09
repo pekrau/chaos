@@ -318,7 +318,10 @@ def get():
                     cls="right",
                 ),
             ),
-            *[Tr(Td(k), Td(v, cls="right")) for k, v in entries.get_statistics().items()]
+            *[
+                Tr(Td(k), Td(v, cls="right"))
+                for k, v in entries.get_statistics().items()
+            ],
         ),
     )
     return (

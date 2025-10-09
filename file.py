@@ -106,10 +106,13 @@ async def post(session, title: str, upfile: UploadFile, text: str, extract: str 
 def get(file: entries.Entry):
     "View the metadata for the file."
     assert isinstance(file, entries.File)
-    if file.is_image:
-        image = Img(src=f"{file.url}/data", cls="display")
+    if file.is_image():
+        display = A(
+            Img(src=f"{file.url}/data", title=file.filename, cls="display"),
+            href=f"{file.url}/data",
+        )
     else:
-        image = ""
+        display = Strong(A(file.filename, href=f"{file.url}/data"))
     return (
         Title(file.title),
         Script(src="/clipboard.min.js"),
@@ -133,10 +136,7 @@ def get(file: entries.Entry):
             cls="container",
         ),
         Main(
-            Card(
-                P(Strong(A(file.filename, href=f"{file.url}/data"))),
-                P(image),
-            ),
+            Card(display),
             NotStr(marko.convert(file.text)),
             Small(
                 Card(

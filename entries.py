@@ -218,16 +218,15 @@ class File(Entry):
             return kind.mime
 
     @property
-    def is_image(self):
-        return self.file_mimetype in constants.IMAGE_MIMETYPES
-
-    @property
     def file_modified(self):
         "Modified timestamp in UTC ISO format."
         return timestamp_utc(self.filepath.stat().st_mtime)
 
+    def is_image(self):
+        return self.file_mimetype in constants.IMAGE_MIMETYPES
+
     def delete(self):
-        "Delete the entry from the file system and its file and remove from the lookup."
+        "Delete the entry and file from the file system and remove from the lookup."
         self.filepath.unlink()
         super().delete()
 

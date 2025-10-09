@@ -47,7 +47,8 @@ def extract(url, apikey):
         return {}
 
     # Process at most one page of entries in one go.
-    file_entries = file_entries[0 : constants.MAX_PAGE_ENTRIES]
+    while len(file_entries) > constants.MAX_PAGE_ENTRIES:
+        file_entries.popitem()
 
     failed = set()
     import easyocr  # Saves time doing this here, if no entries.

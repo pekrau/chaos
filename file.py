@@ -51,9 +51,7 @@ def get(request):
                     Option("Extract...", selected=True, disabled=True, value=""),
                     Option("Text from image", value="text"),
                     Option("Keywords from PDF, DOCX or EPUB", value="keywords"),
-                    Option(
-                        "Markdown text from PDF, DOCX or EPUB", value="markdown"
-                    ),
+                    Option("Markdown text from PDF, DOCX or EPUB", value="markdown"),
                     name="extract",
                 ),
                 Input(

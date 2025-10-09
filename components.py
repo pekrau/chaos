@@ -149,7 +149,7 @@ def search_form(term=None):
         Input(
             name="term",
             type="search",
-            placeholder="Search...",
+            placeholder="Search term...",
             aria_label="Search",
             value=term or "",
             autofocus=True,
@@ -157,6 +157,7 @@ def search_form(term=None):
         cls="search",
         role="search",
         action="/search",
+        method="GET",
     )
 
 
@@ -214,7 +215,7 @@ def get_entries_table_page(session, title, entries, page, href, after=""):
 
 def get_entries_table(entries, full=True):
     rows = []
-    for entry in entries[0:constants.MAX_PAGE_ENTRIES]:
+    for entry in entries[0 : constants.MAX_PAGE_ENTRIES]:
         keywords = sorted(entry.keywords)
         keywords = [str(A(kw, href=f"/keywords/{kw}")) for kw in keywords]
         if len(keywords) > constants.MAX_ROW_ITEMS:

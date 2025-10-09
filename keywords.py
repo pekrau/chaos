@@ -51,6 +51,7 @@ def get(session):
                         for kw, kws in sorted(settings.canonical_keywords.items())
                     ],
                 ),
+                cls="compressed",
             ),
             Div(
                 Div(

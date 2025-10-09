@@ -195,10 +195,13 @@ def get(session):
 
 
 @rt("/search")
-def get(term: str):
+def get(term: str, keywords: list[str] = []):
     "Search the entries."
+    keywords = set(keywords)
     result = []
     for entry in entries.lookup.values():
+        if not keywords.issubset(entry.keywords):
+            continue
         if score := entry.score(term):
             if score:
                 result.append((score, entry.modified_local, entry))
@@ -211,13 +214,47 @@ def get(term: str):
                     Li(components.get_chaos_icon()),
                     Li("Search"),
                     Li(components.get_nav_menu()),
-                    Li(components.search_form(term)),
                 ),
                 cls="search",
             ),
             cls="container",
         ),
         Main(
+            Form(
+                Fieldset(
+                    Input(
+                        type="text",
+                        name="term",
+                        placeholder="Term...",
+                        value=term or "",
+                        autofocus=True,
+                    ),
+                    Details(
+                        Summary("Keywords..."),
+                        Ul(
+                            *[
+                                Li(
+                                    Label(
+                                        Input(
+                                            type="checkbox",
+                                            name="keywords",
+                                            checked=kw in keywords,
+                                            value=kw,
+                                        ),
+                                        kw,
+                                    )
+                                )
+                                for kw in sorted(settings.canonical_keywords)
+                            ]
+                        ),
+                        cls="dropdown",
+                    ),
+                    Input(type="submit", value="Search"),
+                    cls="grid",
+                ),
+                action="/search",
+                method="GET",
+            ),
             components.get_entries_table([e for s, m, e in result]),
             components.get_after_buttons(),
             cls="container",

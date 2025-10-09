@@ -59,11 +59,14 @@ def get(session):
             Div(
                 Div(
                     Form(
-                        Input(
-                            type="text",
-                            name="keyword",
-                            placeholder="Add keyword...",
-                            required=True,
+                        Fieldset(
+                            Input(
+                                type="text",
+                                name="keyword",
+                                placeholder="Add keyword...",
+                                required=True,
+                            ),
+                            Small("keyword: synonym [optional]"),
                         ),
                         Input(
                             type="submit",

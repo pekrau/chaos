@@ -53,7 +53,6 @@ def get(session, page: int = 1):
             entries.get_entries(),
             page,
             "/",
-            after=components.get_after_buttons(),
         )
     else:
         return (
@@ -125,7 +124,6 @@ def get(session, page: int = 1):
         entries.get_notes(),
         page,
         "/notes",
-        after=components.get_after_buttons(),
     )
 
 
@@ -138,7 +136,6 @@ def get(session, page: int = 1):
         entries.get_links(),
         page,
         "/links",
-        after=components.get_after_buttons(),
     )
 
 
@@ -151,7 +148,6 @@ def get(session, page: int = 1):
         entries.get_files(),
         page,
         "/files",
-        after=components.get_after_buttons(),
     )
 
 
@@ -164,7 +160,6 @@ def get(session, page: int = 1):
         entries.get_no_keyword_entries(),
         page,
         "/nokeywords",
-        after=components.get_after_buttons(),
     )
 
 
@@ -177,7 +172,6 @@ def get(session, page: int = 1):
         entries.get_unrelated_entries(),
         page,
         "/unrelated",
-        after=components.get_after_buttons(),
     )
 
 
@@ -190,7 +184,6 @@ def get(session):
         entries.get_random_entries(),
         1,
         "/random",
-        after=components.get_after_buttons(),
     )
 
 
@@ -256,7 +249,6 @@ def get(term: str, keywords: list[str] = []):
                 method="GET",
             ),
             components.get_entries_table([e for s, m, e in result]),
-            components.get_after_buttons(),
             cls="container",
         ),
     )
@@ -331,12 +323,13 @@ def get():
                 Ul(
                     Li(components.get_chaos_icon()),
                     Li("System"),
+                    Li(components.get_nav_menu()),
                 ),
                 cls="main",
             ),
             cls="container",
         ),
-        Main(software, usage, components.get_after_buttons(), cls="container"),
+        Main(software, usage, cls="container"),
     )
 
 

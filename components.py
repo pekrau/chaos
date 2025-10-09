@@ -124,23 +124,17 @@ def get_nav_menu(*links):
             Li(A("Add link...", href="/link/")),
             Li(A("Add file...", href="/file/")),
             Li(A("Keywords", href="/keywords")),
+            Li(A("Notes", href="/notes")),
+            Li(A("Links", href="/links")),
+            Li(A("Files", href="/files")),
+            Li(A("No keywords", href="/nokeywords")),
+            Li(A("Unrelated", href="/unrelated")),
+            Li(A("Random", href="/random")),
+            Li(A("System", href="/system")),
+            Li(A("Logout", href="/logout")),
         ),
         title="Menu",
         cls="dropdown",
-    )
-
-
-def get_after_buttons():
-    return Div(
-        Div(A("Notes", href="/notes", role="button", cls="thin")),
-        Div(A("Links", href="/links", role="button", cls="thin")),
-        Div(A("Files", href="/files", role="button", cls="thin")),
-        Div(A("No keywords", href="/nokeywords", role="button", cls="thin")),
-        Div(A("Unrelated", href="/unrelated", role="button", cls="thin")),
-        Div(A("Random", href="/random", role="button", cls="thin")),
-        Div(A("System", href="/system", role="button", cls="outline thin")),
-        Div(A("Logout", href="/logout", role="button", cls="secondary thin")),
-        cls="grid",
     )
 
 

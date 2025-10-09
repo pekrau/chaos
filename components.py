@@ -227,8 +227,8 @@ def get_entries_table(entries, full=True):
                 if full:
                     cells = [
                         Td(entry.size, cls="right"),
-                        Td(entry.owner),
-                        Td(entry.modified_local),
+                        Td(),
+                        Td(Small(entry.modified_local)),
                     ]
                 else:
                     cells = []
@@ -243,8 +243,8 @@ def get_entries_table(entries, full=True):
                 if full:
                     cells = [
                         Td(entry.size, cls="right"),
-                        Td(entry.owner),
-                        Td(entry.modified_local),
+                        Td(),
+                        Td(Small(entry.modified_local)),
                     ]
                 else:
                     cells = []
@@ -264,12 +264,9 @@ def get_entries_table(entries, full=True):
             case "File":
                 if full:
                     cells = [
-                        Td(
-                            f"{entry.size} + {entry.file_size}",
-                            cls="right",
-                        ),
-                        Td(entry.owner),
-                        Td(entry.modified_local),
+                        Td(entry.size, cls="right"),
+                        Td(entry.file_size, cls="right"),
+                        Td(Small(entry.modified_local)),
                     ]
                 else:
                     cells = []

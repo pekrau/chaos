@@ -115,6 +115,7 @@ def get(note: entries.Entry):
             Small(
                 Div(
                     Div(note.modified_local),
+                    Div(note.owner),
                     Div(f"{note.size} bytes", cls="right"),
                     cls="grid",
                 ),

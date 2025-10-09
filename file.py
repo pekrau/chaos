@@ -151,6 +151,7 @@ def get(file: entries.Entry):
             Small(
                 Div(
                     Div(file.modified_local),
+                    Div(file.owner),
                     Div(f"{file.size:,d} + {file.file_size:,d} bytes", cls="right"),
                     cls="grid",
                 ),

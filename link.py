@@ -127,6 +127,7 @@ def get(link: entries.Entry):
             Small(
                 Div(
                     Div(link.modified_local),
+                    Div(link.owner),
                     Div(f"{link.size} bytes", cls="right"),
                     cls="grid",
                 ),

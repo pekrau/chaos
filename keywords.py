@@ -35,9 +35,9 @@ def get(session):
                             Td(
                                 A(kw, href=f"/keywords/{kw}"),
                                 " ",
-                                Small(", ".join([k for k in list(kws) if k != kw])),
+                                Small(", ".join([s for s in list(syn) if s != kw])),
                             ),
-                            Td(f"{entries.get_total_keyword_entries(kw)} entries"),
+                            Td(entries.get_total_keyword_entries(kw)),
                             Td(
                                 A(
                                     "Delete",
@@ -48,7 +48,8 @@ def get(session):
                                 cls="right",
                             ),
                         )
-                        for kw, kws in sorted(settings.canonical_keywords.items())
+                        for kw, syn in sorted(settings.canonical_keywords.items(),
+                                              key=lambda k: k[0].casefold())
                     ],
                 ),
                 cls="compressed",

@@ -388,3 +388,16 @@ def get_all():
 def timestamp_utc(timestamp):
     dt = datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC)
     return dt.strftime(constants.DATETIME_ISO_FORMAT)
+
+
+def get_statistics():
+    result = {"# entries": len(lookup), "# notes": 0, "# links": 0, "# files": 0}
+    for entry in lookup.values():
+        if isinstance(entry, Note):
+            result["# notes"] += 1
+        elif isinstance(entry, Link):
+            result["# links"] += 1
+        elif isinstance(entry, File):
+            result["# files"] += 1
+    result["# keywords"] = len(settings.canonical_keywords)
+    return result

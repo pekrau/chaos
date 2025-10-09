@@ -296,6 +296,7 @@ def get():
         for filename in filenames:
             fp = dp / filename
             disk_usage += os.path.getsize(fp)
+    statistics = entries.get_statistics
     usage = Table(
         Thead(Tr(Th("System usage", Th("Bytes", cls="right")))),
         Tbody(
@@ -317,6 +318,7 @@ def get():
                     cls="right",
                 ),
             ),
+            *[Tr(Td(k), Td(v, cls="right")) for k, v in entries.get_statistics().items()]
         ),
     )
     return (

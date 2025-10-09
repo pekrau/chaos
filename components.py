@@ -79,21 +79,6 @@ def redirect(href):
     return RedirectResponse(href, status_code=HTTP.SEE_OTHER)
 
 
-def get_chaos_icon():
-    return A(
-        Img(
-            src="/chaos.png",
-            height=24,
-            width=24,
-            cls="white",
-        ),
-        title="chaos: Web service for a repository of notes, links and files with no intrinsic order.",
-        role="button",
-        cls="secondary outline no_margin",
-        href="/",
-    )
-
-
 def get_icon(filename, title=""):
     return Img(
         src=f"/{filename}",
@@ -116,29 +101,6 @@ def get_mimetype_icon(mimetype, title=""):
 
 
 def get_nav_menu(*links):
-    return Details(
-        Summary(Img(src="/Hamburger_icon.svg", width=24)),
-        Ul(
-            *[Li(l) for l in links],
-            Li(A("Add note...", href="/note/")),
-            Li(A("Add link...", href="/link/")),
-            Li(A("Add file...", href="/file/")),
-            Li(A("Keywords", href="/keywords")),
-            Li(A("Notes", href="/notes")),
-            Li(A("Links", href="/links")),
-            Li(A("Files", href="/files")),
-            Li(A("No keywords", href="/nokeywords")),
-            Li(A("Unrelated", href="/unrelated")),
-            Li(A("Random", href="/random")),
-            Li(A("System", href="/system")),
-            Li(A("Logout", href="/logout")),
-        ),
-        title="Menu",
-        cls="dropdown",
-    )
-
-
-def get_nav_menu2(*links):
     return Details(
         Summary(
             Img(
@@ -209,9 +171,8 @@ def get_entries_table_page(session, title, entries, page, href, after=""):
         Header(
             Nav(
                 Ul(
-                    Li(get_nav_menu2()),
-                    Li(title),
                     Li(get_nav_menu()),
+                    Li(title),
                     Li(search_form()),
                 ),
                 cls="main",

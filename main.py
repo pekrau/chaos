@@ -60,7 +60,20 @@ def get(session, page: int = 1):
             Header(
                 Nav(
                     Ul(
-                        Li(components.get_nav_menu2()),
+                        Li(
+                            A(
+                                Img(
+                                    src="/chaos.png",
+                                    height=24,
+                                    width=24,
+                                    cls="white",
+                                ),
+                                title="chaos: Web service for a repository of notes, links and files with no intrinsic order.",
+                                role="button",
+                                cls="secondary outline no_margin",
+                                href="/",
+                            )
+                        ),
                         Li("Login"),
                     ),
                     cls="login",
@@ -204,9 +217,8 @@ def get(term: str, keywords: list[str] = []):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
-                    Li("Search"),
                     Li(components.get_nav_menu()),
+                    Li("Search"),
                 ),
                 cls="search",
             ),
@@ -321,7 +333,7 @@ def get():
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li("System"),
                 ),
                 cls="main",

@@ -19,7 +19,7 @@ def get(request):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li("Add note"),
                 ),
                 cls="note",
@@ -85,15 +85,14 @@ def get(note: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
-                    Li(components.get_entry_clipboard(note), note.title),
                     Li(
                         components.get_nav_menu(
-                            A("Edit", href=f"{note.url}/edit"),
-                            A("Copy", href=f"{note.url}/copy"),
-                            A("Delete", href=f"{note.url}/delete"),
-                        ),
+                            A(Strong("Edit"), href=f"{note.url}/edit"),
+                            A(Strong("Copy"), href=f"{note.url}/copy"),
+                            A(Strong("Delete"), href=f"{note.url}/delete"),
+                        )
                     ),
+                    Li(components.get_entry_clipboard(note), note.title),
                     Li(components.search_form()),
                 ),
                 cls="note",
@@ -134,7 +133,7 @@ def get(note: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li(f"Edit '{note.title}'"),
                 ),
                 cls="note",
@@ -204,7 +203,7 @@ def get(note: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li(f"Copy '{note.title}')"),
                 ),
                 cls="note",
@@ -254,7 +253,7 @@ def get(note: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li(f"Delete '{note.title}'"),
                 ),
                 cls="note",

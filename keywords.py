@@ -18,9 +18,8 @@ def get(session):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_chaos_icon()),
-                    Li("Keywords"),
                     Li(components.get_nav_menu()),
+                    Li("Keywords"),
                     Li(components.search_form()),
                 ),
                 cls="keyword",
@@ -161,7 +160,7 @@ def get(session, keyword: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_chaos_icon()),
+                    Li(components.get_nav_menu()),
                     Li(f"Delete {keyword}?"),
                 ),
                 cls="keyword",

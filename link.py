@@ -19,7 +19,7 @@ def get(request):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li("Add link"),
                 ),
                 cls="link",
@@ -94,15 +94,14 @@ def get(link: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
-                    Li(components.get_entry_clipboard(link), link.title),
                     Li(
                         components.get_nav_menu(
-                            A("Edit", href=f"{link.url}/edit"),
-                            A("Copy", href=f"{link.url}/copy"),
-                            A("Delete", href=f"{link.url}/delete"),
-                        ),
+                            A(Strong("Edit"), href=f"{link.url}/edit"),
+                            A(Strong("Copy"), href=f"{link.url}/copy"),
+                            A(Strong("Delete"), href=f"{link.url}/delete"),
+                        )
                     ),
+                    Li(components.get_entry_clipboard(link), link.title),
                     Li(components.search_form()),
                 ),
                 cls="link",
@@ -146,7 +145,7 @@ def get(link: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li(f"Edit '{link.title}'"),
                 ),
                 cls="link",
@@ -226,7 +225,7 @@ def get(link: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li(f"Copy '{link.title}'"),
                 ),
                 cls="link",
@@ -283,7 +282,7 @@ def get(link: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li(f"Delete '{link.title}'"),
                 ),
                 cls="link",

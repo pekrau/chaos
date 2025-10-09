@@ -21,7 +21,7 @@ def get(request):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li("Add file"),
                 ),
                 cls="file",
@@ -120,15 +120,14 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
-                    Li(components.get_entry_clipboard(file), file.title),
                     Li(
                         components.get_nav_menu(
-                            A("Edit", href=f"{file.url}/edit"),
-                            A("Copy", href=f"{file.url}/copy"),
-                            A("Delete", href=f"{file.url}/delete"),
-                        ),
+                            A(Strong("Edit"), href=f"{file.url}/edit"),
+                            A(Strong("Copy"), href=f"{file.url}/copy"),
+                            A(Strong("Delete"), href=f"{file.url}/delete"),
+                        )
                     ),
+                    Li(components.get_entry_clipboard(file), file.title),
                     Li(components.search_form()),
                 ),
                 cls="file",
@@ -179,7 +178,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li(f"Edit '{file.title}'"),
                 ),
                 cls="file",
@@ -289,7 +288,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li(f"Copy '{file.title}'"),
                 ),
                 cls="file",
@@ -381,7 +380,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu2()),
+                    Li(components.get_nav_menu()),
                     Li(f"Delete '{file.title}'"),
                 ),
                 cls="file",

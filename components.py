@@ -138,6 +138,37 @@ def get_nav_menu(*links):
     )
 
 
+def get_nav_menu2(*links):
+    return Details(
+        Summary(
+            Img(
+                src="/chaos.png",
+                height=24,
+                width=24,
+                cls="white",
+            ),
+        ),
+        Ul(
+            *[Li(l) for l in links],
+            Li(A("Home", href="/")),
+            Li(A("Add note...", href="/note/")),
+            Li(A("Add link...", href="/link/")),
+            Li(A("Add file...", href="/file/")),
+            Li(A("Keywords", href="/keywords")),
+            Li(A("Notes", href="/notes")),
+            Li(A("Links", href="/links")),
+            Li(A("Files", href="/files")),
+            Li(A("No keywords", href="/nokeywords")),
+            Li(A("Unrelated", href="/unrelated")),
+            Li(A("Random", href="/random")),
+            Li(A("System", href="/system")),
+            Li(A("Logout", href="/logout")),
+        ),
+        title="chaos: Web service for a repository of notes, links and files with no intrinsic order.",
+        cls="dropdown",
+    )
+
+
 def search_form(term=None):
     return Form(
         Input(
@@ -178,7 +209,7 @@ def get_entries_table_page(session, title, entries, page, href, after=""):
         Header(
             Nav(
                 Ul(
-                    Li(get_chaos_icon()),
+                    Li(get_nav_menu2()),
                     Li(title),
                     Li(get_nav_menu()),
                     Li(search_form()),

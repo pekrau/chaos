@@ -60,7 +60,7 @@ def get(session, page: int = 1):
             Header(
                 Nav(
                     Ul(
-                        Li(components.get_chaos_icon()),
+                        Li(components.get_nav_menu2()),
                         Li("Login"),
                     ),
                     cls="login",
@@ -204,7 +204,7 @@ def get(term: str, keywords: list[str] = []):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_chaos_icon()),
+                    Li(components.get_nav_menu2()),
                     Li("Search"),
                     Li(components.get_nav_menu()),
                 ),
@@ -321,9 +321,8 @@ def get():
         Header(
             Nav(
                 Ul(
-                    Li(components.get_chaos_icon()),
+                    Li(components.get_nav_menu2()),
                     Li("System"),
-                    Li(components.get_nav_menu()),
                 ),
                 cls="main",
             ),

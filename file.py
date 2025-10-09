@@ -21,7 +21,7 @@ def get(request):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_chaos_icon()),
+                    Li(components.get_nav_menu2()),
                     Li("Add file"),
                 ),
                 cls="file",
@@ -120,7 +120,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_chaos_icon()),
+                    Li(components.get_nav_menu2()),
                     Li(components.get_entry_clipboard(file), file.title),
                     Li(
                         components.get_nav_menu(
@@ -179,7 +179,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_chaos_icon()),
+                    Li(components.get_nav_menu2()),
                     Li(f"Edit '{file.title}'"),
                 ),
                 cls="file",
@@ -289,7 +289,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_chaos_icon()),
+                    Li(components.get_nav_menu2()),
                     Li(f"Copy '{file.title}'"),
                 ),
                 cls="file",
@@ -381,7 +381,7 @@ def get(file: entries.Entry):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_chaos_icon()),
+                    Li(components.get_nav_menu2()),
                     Li(f"Delete '{file.title}'"),
                 ),
                 cls="file",

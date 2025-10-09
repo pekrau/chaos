@@ -111,8 +111,8 @@ def get_nav_menu(*links):
             ),
         ),
         Ul(
-            *[Li(l) for l in links],
             Li(A("Home", href="/")),
+            *[Li(l) for l in links],
             Li(A("Add note...", href="/note/")),
             Li(A("Add link...", href="/link/")),
             Li(A("Add file...", href="/file/")),

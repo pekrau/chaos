@@ -53,17 +53,14 @@ def set_auth_before(request, session):
         return redirect("/")
 
 
-beforeware = Beforeware(
-    set_auth_before,
-    skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods\.css", r"/ping"],
-)
-
-
 def get_app_rt(routes=None):
     app, rt = fast_app(
         live=constants.DEVELOPMENT,
         static_path="static",
-        before=beforeware,
+        before=Beforeware(
+            set_auth_before,
+            skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods\.css", r"/ping"],
+        ),
         hdrs=(Link(rel="stylesheet", href="/mods.css", type="text/css"),),
         exception_handlers={
             Error: error_handler,
@@ -182,97 +179,53 @@ def get_entries_table_page(session, title, entries, page, href, after=""):
         Main(table, pager, after, cls="container"),
         Footer(
             Hr(),
-            Small(
+            Div(
+                Div(session["auth"]),
                 Div(
-                    Div(session["auth"]),
-                    Div(
-                        A("chaos", href="https://github.com/pekrau/chaos"),
-                        " ",
-                        constants.__version__,
-                        cls="right",
-                    ),
-                    cls="grid",
+                    A("chaos", href="https://github.com/pekrau/chaos"),
+                    " ",
+                    constants.__version__,
+                    cls="right",
                 ),
+                cls="grid",
             ),
             cls="container",
         ),
     )
 
 
-def get_entries_table(entries, full=True):
+def get_entries_table(entries):
     rows = []
     for entry in entries[0 : constants.MAX_PAGE_ENTRIES]:
         keywords = sorted(entry.keywords)
         keywords = [str(A(kw, href=f"/keywords/{kw}")) for kw in keywords]
         if len(keywords) > constants.MAX_ROW_ITEMS:
-            keywords = NotStr("; ".join(keywords[0 : constants.MAX_ROW_ITEMS]) + "...")
+            keywords = NotStr(", ".join(keywords[0 : constants.MAX_ROW_ITEMS]) + "...")
         else:
-            keywords = NotStr("; ".join(keywords))
+            keywords = NotStr(", ".join(keywords))
         match entry.__class__.__name__:
             case "Note":
-                if full:
-                    cells = [
-                        Td(entry.size, cls="right"),
-                        Td(),
-                        Td(Small(entry.modified_local)),
-                    ]
-                else:
-                    cells = []
-                rows.append(
-                    Tr(
-                        Td(A(entry.title, href=entry.url)),
-                        Td(keywords),
-                        *cells,
-                    )
-                )
+                icon = ""
             case "Link":
-                if full:
-                    cells = [
-                        Td(entry.size, cls="right"),
-                        Td(),
-                        Td(Small(entry.modified_local)),
-                    ]
-                else:
-                    cells = []
-                rows.append(
-                    Tr(
-                        Td(
-                            A(
-                                get_icon("box-arrow-up-right.svg", title="Go to page"),
-                                href=entry.href,
-                            ),
-                            A(entry.title, href=entry.url),
-                        ),
-                        Td(keywords),
-                        *cells,
-                    )
+                icon = A(
+                    get_icon("box-arrow-up-right.svg", title="Follow link..."),
+                    href=entry.href,
                 )
             case "File":
-                if full:
-                    cells = [
-                        Td(entry.size, cls="right"),
-                        Td(entry.file_size, cls="right"),
-                        Td(Small(entry.modified_local)),
-                    ]
-                else:
-                    cells = []
-                rows.append(
-                    Tr(
-                        Td(
-                            A(
-                                get_mimetype_icon(
-                                    entry.file_mimetype, title="View or download file"
-                                ),
-                                href=f"{entry.url}/data",
-                            ),
-                            A(entry.title, href=entry.url),
-                        ),
-                        Td(keywords),
-                        *cells,
-                    )
+                icon = A(
+                    get_mimetype_icon(
+                        entry.file_mimetype, title="View or download file"
+                    ),
+                    href=f"{entry.url}/data",
                 )
             case _:
                 raise NotImplementedError
+        rows.append(
+            Tr(
+                Td(icon, A(entry.title, href=entry.url)),
+                Td(keywords),
+            )
+        )
     if rows:
         if len(entries) > constants.MAX_PAGE_ENTRIES:
             rows.append(Tr(Td(I("Others not shown..."), colspan=3)))
@@ -329,7 +282,7 @@ def get_total_pages(total_entries=None):
 
 def get_keywords_links(entry):
     return NotStr(
-        "; ".join([str(A(kw, href=f"/keywords/{kw}")) for kw in entry.keywords])
+        ", ".join([str(A(kw, href=f"/keywords/{kw}")) for kw in entry.keywords])
     )
 
 

@@ -116,20 +116,18 @@ def get(link: entries.Entry):
             Small(
                 Card(
                     Header("Keywords: ", components.get_keywords_links(link)),
-                    components.get_entries_table(link.related(), full=False),
+                    components.get_entries_table(link.related()),
                 ),
             ),
             cls="container",
         ),
         Footer(
             Hr(),
-            Small(
-                Div(
-                    Div(link.modified_local),
-                    Div(link.owner),
-                    Div(f"{link.size} bytes", cls="right"),
-                    cls="grid",
-                ),
+            Div(
+                Div(link.modified_local),
+                Div(f"{link.size} bytes"),
+                Div(link.owner),
+                cls="grid",
             ),
             cls="container",
         ),
@@ -322,3 +320,10 @@ def post(link: entries.Entry, action: str):
         return components.redirect(f"/")
     else:
         return components.redirect(link.url)
+
+
+@rt("/{link:Entry}/follow")
+def get(link: entries.Entry):
+    "Redirect to the link href."
+    assert isinstance(link, entries.Link)
+    return components.redirect(link.href)

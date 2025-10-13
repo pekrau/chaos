@@ -140,20 +140,18 @@ def get(file: entries.Entry):
             Small(
                 Card(
                     Header("Keywords: ", components.get_keywords_links(file)),
-                    components.get_entries_table(file.related(), full=False),
+                    components.get_entries_table(file.related()),
                 ),
             ),
             cls="container",
         ),
         Footer(
             Hr(),
-            Small(
-                Div(
-                    Div(file.modified_local),
-                    Div(file.owner),
-                    Div(f"{file.size:,d} + {file.file_size:,d} bytes", cls="right"),
-                    cls="grid",
-                ),
+            Div(
+                Div(file.modified_local),
+                Div(f"{file.size:,d} + {file.file_size:,d} bytes"),
+                Div(file.owner),
+                cls="grid",
             ),
             cls="container",
         ),

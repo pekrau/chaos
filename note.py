@@ -104,20 +104,18 @@ def get(note: entries.Entry):
             Small(
                 Card(
                     Header("Keywords: ", components.get_keywords_links(note)),
-                    components.get_entries_table(note.related(), full=False),
+                    components.get_entries_table(note.related()),
                 ),
             ),
             cls="container",
         ),
         Footer(
             Hr(),
-            Small(
-                Div(
-                    Div(note.modified_local),
-                    Div(note.owner),
-                    Div(f"{note.size} bytes", cls="right"),
-                    cls="grid",
-                ),
+            Div(
+                Div(note.modified_local),
+                Div(f"{note.size} bytes"),
+                Div(note.owner),
+                cls="grid",
             ),
             cls="container",
         ),

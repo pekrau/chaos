@@ -7,19 +7,14 @@ import string
 
 import babel.dates
 
-VERSION = (0, 11, 25)
+VERSION = (0, 11, 26)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
 
-DEVELOPMENT = bool(os.environ.get("CHAOS_DEVELOPMENT"))
-
-if DEVELOPMENT:
-    DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR_DEVELOPMENT"])
-else:
-    DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
+DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
 if not DATA_DIR.exists():
-    raise OSError(f"DATA_DIR {constants.DATA_DIR} does not exist")
+    raise OSError(f"DATA_DIR {DATA_DIR} does not exist")
 
 FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 

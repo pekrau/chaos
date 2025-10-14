@@ -2,11 +2,6 @@
 for entries in the www instance that request it.
 """
 
-# Done first, to measure all work including loading modules.
-from timer import Timer
-
-timer = Timer()
-
 from http import HTTPStatus as HTTP
 import io
 import mimetypes
@@ -14,19 +9,21 @@ import os
 from pathlib import Path
 import sys
 
-import pymupdf4llm
 import requests
 
 # This must be done before importing 'constants'.
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+load_dotenv()
 
 # Allow finding chaos modules.
 sys.path.insert(0, str(Path(sys.path[0]).parent))
 
 import constants
 import settings
+from timer import Timer
+
+timer = Timer()
 
 
 def extract(url, apikey):
@@ -34,8 +31,11 @@ def extract(url, apikey):
     Return a dictionary with statistics.
     """
     response = requests.get(url + "/api/keywords", headers=dict(apikey=apikey))
-    if response.status_code != HTTP.OK:
+    if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
+        raise IOError(f"invalid response: {response.status_code=}")
+    elif response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
+
     if response.text:
         keywords = response.json()
     else:
@@ -44,7 +44,9 @@ def extract(url, apikey):
     response = requests.get(
         url + "/api/keyword/extract_markdown", headers=dict(apikey=apikey)
     )
-    if response.status_code != HTTP.OK:
+    if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
+        raise IOError(f"invalid response: {response.status_code=}")
+    elif response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
     # Remove entries not having a file attached.
@@ -60,6 +62,9 @@ def extract(url, apikey):
 
     # Process at most one page of entries in one go.
     file_entries = file_entries[0 : constants.MAX_PAGE_ENTRIES]
+
+    # Saves time doing this here, if no entries.
+    import pymupdf4llm
 
     failed = set()
     headers = dict(apikey=apikey)

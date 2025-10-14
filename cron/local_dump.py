@@ -1,4 +1,4 @@
-"chaos: Tar dump of local production directory."
+"chaos: Create a tar dump of the local production directory."
 
 import datetime
 import os
@@ -9,7 +9,7 @@ import tarfile
 # This must be done before importing 'constants'.
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+load_dotenv()
 
 # Allow finding chaos modules.
 sys.path.insert(0, str(Path(sys.path[0]).parent))
@@ -33,4 +33,4 @@ def dump(source_dir, target_dir):
 
 
 if __name__ == "__main__":
-    dump(os.environ["CHAOS_DIR"], "/home/pekrau/Dropbox/dumps/chaos")
+    dump(os.environ["CHAOS_DIR"], os.environ["CHAOS_DUMP_DIR"])

@@ -1,10 +1,5 @@
 "chaos: Perform OCR text extraction for entries in the www instance that request it."
 
-# Done first, to measure all work including loading modules.
-from timer import Timer
-
-timer = Timer()
-
 from http import HTTPStatus as HTTP
 import io
 import mimetypes
@@ -17,12 +12,15 @@ import requests
 # This must be done before importing 'constants'.
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+load_dotenv()
 
 # Allow finding chaos modules.
 sys.path.insert(0, str(Path(sys.path[0]).parent))
 
 import constants
+from timer import Timer
+
+timer = Timer()
 
 
 def extract(url, apikey):
@@ -32,7 +30,9 @@ def extract(url, apikey):
     response = requests.get(
         url + "/api/keyword/extract_text", headers=dict(apikey=apikey)
     )
-    if response.status_code != HTTP.OK:
+    if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
+        raise IOError(f"invalid response: {response.status_code=}")
+    elif response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
     # Remove entries not having a file attached.
@@ -50,10 +50,12 @@ def extract(url, apikey):
     while len(file_entries) > constants.MAX_PAGE_ENTRIES:
         file_entries.popitem()
 
-    failed = set()
-    import easyocr  # Saves time doing this here, if no entries.
+    # Saves time doing this here, if no entries.
+    import easyocr
 
     reader = easyocr.Reader(constants.OCR_LANGUAGES, gpu=constants.OCR_GPU)
+
+    failed = set()
     headers = dict(apikey=apikey)
 
     for entry in file_entries:
@@ -92,8 +94,7 @@ def extract(url, apikey):
             failed.add(filename + ": could not update text")
             continue
 
-    result = {"file_entries": len(file_entries), "failed": list(failed)}
-    result["time"] = str(timer)
+    result = {"file_entries": len(file_entries), "failed": list(failed), "time": str(timer)}
     return result
 
 

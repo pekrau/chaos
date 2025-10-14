@@ -1,10 +1,5 @@
 "chaos: Update the local directory from the www instance."
 
-# Done first, to measure all work including loading modules.
-from timer import Timer
-
-timer = Timer()
-
 from http import HTTPStatus as HTTP
 import io
 import os
@@ -17,21 +12,26 @@ import requests
 # This must be done before importing 'constants'.
 from dotenv import load_dotenv
 
-load_dotenv(override=True)
+load_dotenv()
 
 # Allow finding chaos modules.
 sys.path.insert(0, str(Path(sys.path[0]).parent))
 
 import constants
 import entries
+from timer import Timer
+
+timer = Timer()
 
 
 def update(url, apikey):
     """Get the current state of the remote site and update the local data.
     Return a dictionary with statistics.
     """
-    response = requests.get(url + "/api/", headers=dict(apikey=apikey))
-    if response.status_code != HTTP.OK:
+    response = requests.get(url.rstrip("/") + "/api/", headers=dict(apikey=apikey))
+    if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
+        raise IOError(f"invalid response: {response.status_code=}")
+    elif response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
     remote_entries = response.json()
@@ -51,12 +51,16 @@ def update(url, apikey):
             json={"entries": list(download_entries)},
             headers=dict(apikey=apikey),
         )
-        if response.status_code != HTTP.OK:
+        if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
+            raise IOError(f"invalid response: {response.status_code=}")
+        elif response.status_code != HTTP.OK:
             raise IOError(
                 f"invalid response: {response.status_code=} {response.content=}"
             )
+
         if response.headers["Content-Type"] != constants.GZIP_MIMETYPE:
             raise IOError("invalid file type from remote")
+
         content = response.content
         if not content:
             raise IOError("empty TGZ file from remote")
@@ -82,8 +86,8 @@ def update(url, apikey):
             "remote": len(remote_entries),
             "downloaded": len(download_entries),
             "deleted": len(delete_entries),
+            "time": str(timer)
         }
-        result["time"] = str(timer)
     return result
 
 

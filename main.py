@@ -1,12 +1,8 @@
 "Chaos notebook."
 
-import constants
+from icecream import install
 
-if constants.DEVELOPMENT:
-    from icecream import install
-
-    install()
-    ic(constants.DEVELOPMENT)
+install()
 
 import os
 import shutil
@@ -17,6 +13,11 @@ import marko
 import psutil
 import yaml
 
+# This must be done before importing 'constants'.
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import components
 import constants
 import settings
@@ -26,7 +27,6 @@ import note
 import link
 import file
 import api
-
 
 settings.read()
 
@@ -268,32 +268,7 @@ def get(term: str, keywords: list[str] = []):
 
 @rt("/system")
 def get():
-    "Displaysystem information."
-    software = Table(
-        Thead(Tr(Th("Software", Th("Version", cls="right")))),
-        Tbody(
-            Tr(
-                Td(A("chaos", href=constants.GITHUB_URL)),
-                Td(constants.__version__, cls="right"),
-            ),
-            Tr(
-                Td(A("Python", href="https://www.python.org/")),
-                Td(f"{'.'.join([str(v) for v in sys.version_info[0:3]])}", cls="right"),
-            ),
-            Tr(
-                Td(A("fastHTML", href="https://fastht.ml/")),
-                Td(fasthtml.__version__, cls="right"),
-            ),
-            Tr(
-                Td(A("Marko", href="https://marko-py.readthedocs.io/")),
-                Td(marko.__version__, cls="right"),
-            ),
-            Tr(
-                Td(A("PyYAML", href="https://pypi.org/project/PyYAML/")),
-                Td(yaml.__version__, cls="right"),
-            ),
-        ),
-    )
+    "Display system information."
     disk_usage = 0
     for dirpath, dirnames, filenames in os.walk(constants.DATA_DIR):
         dp = Path(dirpath)
@@ -302,7 +277,7 @@ def get():
             disk_usage += os.path.getsize(fp)
     statistics = entries.get_statistics
     usage = Table(
-        Thead(Tr(Th("System usage", Th("Bytes", cls="right")))),
+        Thead(Tr(Th("Resource usage", Th("Bytes or #", cls="right")))),
         Tbody(
             Tr(
                 Td("RAM"),
@@ -328,6 +303,31 @@ def get():
             ],
         ),
     )
+    software = Table(
+        Thead(Tr(Th("Software", Th("Version", cls="right")))),
+        Tbody(
+            Tr(
+                Td(A("chaos", href=constants.GITHUB_URL)),
+                Td(constants.__version__, cls="right"),
+            ),
+            Tr(
+                Td(A("Python", href="https://www.python.org/")),
+                Td(f"{'.'.join([str(v) for v in sys.version_info[0:3]])}", cls="right"),
+            ),
+            Tr(
+                Td(A("fastHTML", href="https://fastht.ml/")),
+                Td(fasthtml.__version__, cls="right"),
+            ),
+            Tr(
+                Td(A("Marko", href="https://marko-py.readthedocs.io/")),
+                Td(marko.__version__, cls="right"),
+            ),
+            Tr(
+                Td(A("PyYAML", href="https://pypi.org/project/PyYAML/")),
+                Td(yaml.__version__, cls="right"),
+            ),
+        ),
+    )
     return (
         Title("System"),
         Header(
@@ -340,7 +340,7 @@ def get():
             ),
             cls="container",
         ),
-        Main(software, usage, cls="container"),
+        Main(usage, software, cls="container"),
     )
 
 

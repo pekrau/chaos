@@ -2,7 +2,7 @@
 
 import time
 
-DATETIME_ISO_FORMAT = "%Y-%m-%d %H:%M:%S"
+import constants
 
 
 class Timer:
@@ -24,7 +24,7 @@ class Timer:
 
     @property
     def now(self):
-        return time.strftime(DATETIME_ISO_FORMAT)
+        return time.strftime(constants.DATETIME_ISO_FORMAT)
 
 
 if __name__ == "__main__":

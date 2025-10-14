@@ -6,6 +6,11 @@ from pathlib import Path
 import sys
 import tarfile
 
+# This must be done before importing 'constants'.
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
 # Allow finding chaos modules.
 sys.path.insert(0, str(Path(sys.path[0]).parent))
 
@@ -22,8 +27,9 @@ def dump(source_dir, target_dir):
             abspath = Path(dirpath)
             relpath = Path(dirpath).relative_to(source_dir)
             for filename in filenames:
-                outfile.add(abspath.joinpath(filename),
-                            arcname=relpath.joinpath(filename))
+                outfile.add(
+                    abspath.joinpath(filename), arcname=relpath.joinpath(filename)
+                )
 
 
 if __name__ == "__main__":

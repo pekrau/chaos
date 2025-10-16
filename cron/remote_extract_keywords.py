@@ -117,13 +117,13 @@ def extract(url, apikey):
             continue
 
     result = {"file_entries": len(file_entries), "failed": list(failed)}
-    result["time"] = str(timer)
+    result.update(timer.current)
     return result
 
 
 if __name__ == "__main__":
     url = os.environ["CHAOS_REMOTE_URL"]
-    print(f"chaos {timer.now}, instance {url}")
     result = extract(url, os.environ["CHAOS_APIKEY"])
     if result:
+        print(f"{timer.now}, instance {url}")
         print(", ".join([f"{k}={v}" for k, v in result.items()]))

@@ -48,11 +48,17 @@ def get(request):
                     placeholder="Text...",
                 ),
                 Select(
-                    Option("Extract...", selected=True, disabled=True, value=""),
-                    Option("Text from image", value="text"),
-                    Option("Keywords from PDF, DOCX or EPUB", value="keywords"),
-                    Option("Markdown text from PDF, DOCX or EPUB", value="markdown"),
-                    name="extract",
+                    Option("Process...", selected=True, disabled=True, value=""),
+                    Option("Extract text from image", value="extract_text"),
+                    Option(
+                        "Extract keywords from PDF, DOCX or EPUB",
+                        value="extract_keywords",
+                    ),
+                    Option(
+                        "Extract Markdown text from PDF, DOCX or EPUB",
+                        value="extract_markdown",
+                    ),
+                    name="process",
                 ),
                 Input(
                     type="submit",
@@ -76,7 +82,7 @@ def get(request):
 
 
 @rt("/")
-async def post(session, title: str, upfile: UploadFile, text: str, extract: str = ""):
+async def post(session, title: str, upfile: UploadFile, text: str, process: str = ""):
     "Actually add the file."
     filename = pathlib.Path(upfile.filename)
     ext = filename.suffix
@@ -86,8 +92,8 @@ async def post(session, title: str, upfile: UploadFile, text: str, extract: str 
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
-    if extract:
-        text += f" extract_{extract}"
+    if process:
+        text += " " + process
     file.text = text.strip()
     filecontent = await upfile.read()
     filename = str(file) + ext
@@ -213,15 +219,19 @@ def get(file: entries.Entry):
                         ),
                     ),
                     Label(
-                        "Extract",
+                        "Process",
                         Select(
                             Option("None", selected=True, disabled=True, value=""),
-                            Option("Text from image", value="text"),
-                            Option("Keywords from PDF, DOCX or EPUB", value="keywords"),
+                            Option("Extract text from image", value="extract_text"),
                             Option(
-                                "Markdown text from PDF, DOCX or EPUB", value="markdown"
+                                "Extract keywords from PDF, DOCX or EPUB",
+                                value="extract_keywords",
                             ),
-                            name="extract",
+                            Option(
+                                "Extract Markdown text from PDF, DOCX or EPUB",
+                                value="extract_markdown",
+                            ),
+                            name="process",
                         ),
                     ),
                 ),
@@ -248,7 +258,7 @@ def get(file: entries.Entry):
 
 @rt("/{file:Entry}/edit")
 async def post(
-    file: entries.Entry, title: str, upfile: UploadFile, text: str, extract: str = None
+    file: entries.Entry, title: str, upfile: UploadFile, text: str, process: str = None
 ):
     "Actually edit the file."
     assert isinstance(file, entries.File)
@@ -265,12 +275,8 @@ async def post(
             raise components.Error(error)
     file.title = title.strip() or file.filename.stem
     text = text.strip()
-    if extract:
-        # Remove old extracted text if new is to be done.
-        pos = text.find("## Extracted")
-        if pos >= 0:
-            text = text[:pos]
-        text += f" extract_{extract}"
+    if process:
+        text += " " + process
     file.text = text
     file.write()
     entries.set_keywords_relations(file)

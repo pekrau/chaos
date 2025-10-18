@@ -48,7 +48,7 @@ def get(request):
                     placeholder="Text...",
                 ),
                 Select(
-                    Option("Process...", selected=True, disabled=True, value=""),
+                    Option("Process request", selected=True, disabled=True, value=""),
                     Option("Extract text from image", value="extract_text"),
                     Option(
                         "Extract keywords from PDF, DOCX or EPUB",
@@ -92,8 +92,6 @@ async def post(session, title: str, upfile: UploadFile, text: str, process: str 
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
-    if process:
-        text += " " + process
     file.text = text.strip()
     filecontent = await upfile.read()
     filename = str(file) + ext
@@ -103,6 +101,8 @@ async def post(session, title: str, upfile: UploadFile, text: str, process: str 
     except OSError as error:
         raise components.Error(error)
     file.frontmatter["filename"] = filename
+    if process:
+        file.frontmatter["process"] = process
     file.write()
     entries.set_keywords_relations(file)
     return components.redirect(file.url)
@@ -119,6 +119,8 @@ def get(file: entries.Entry):
         )
     else:
         display = Strong(A(file.filename, href=f"{file.url}/data"))
+    if process := file.frontmatter.get("process", ""):
+        process = Card(f"Process request: {process}")
     return (
         Title(file.title),
         Script(src="/clipboard.min.js"),
@@ -141,6 +143,7 @@ def get(file: entries.Entry):
             cls="container",
         ),
         Main(
+            process,
             Card(display),
             NotStr(marko.convert(file.text)),
             Small(
@@ -219,7 +222,7 @@ def get(file: entries.Entry):
                         ),
                     ),
                     Label(
-                        "Process",
+                        "Process request",
                         Select(
                             Option("None", selected=True, disabled=True, value=""),
                             Option("Extract text from image", value="extract_text"),
@@ -275,9 +278,9 @@ async def post(
             raise components.Error(error)
     file.title = title.strip() or file.filename.stem
     text = text.strip()
-    if process:
-        text += " " + process
     file.text = text
+    if process:
+        file.frontmatter["process"] = process
     file.write()
     entries.set_keywords_relations(file)
     return components.redirect(file.url)

@@ -42,7 +42,7 @@ def extract(url, apikey):
         keywords = {}
 
     response = requests.get(
-        url + "/api/keyword/extract_markdown", headers=dict(apikey=apikey)
+        url + "/api/process/extract_markdown", headers=dict(apikey=apikey)
     )
     if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
         raise IOError(f"invalid response: {response.status_code=}")
@@ -100,7 +100,7 @@ def extract(url, apikey):
         text = text.replace("extract_markdown", "")
         text = f"{text}\n\n## Extracted Markdown from file\n\n{md_text}"
         response = requests.post(
-            url + f"/api/entry/{entry}", headers=headers, data={"text": text}
+            url + f"/api/entry/{entry}", headers=headers, data={"text": text, "process": "extract_markdown"}
         )
         if response.status_code != HTTP.OK:
             failed.add(filename + ": could not update text")

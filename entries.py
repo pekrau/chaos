@@ -371,6 +371,12 @@ def get_random_entries():
         return random.sample(entries, constants.MAX_PAGE_ENTRIES)
 
 
+def get_process_entries(process):
+    "Get the set of entries with the specified process request."
+    global lookup
+    return [e for e in lookup.values() if e.frontmatter.get("process") == process]
+
+
 def get_all():
     "Get a map of entry paths and filepaths with their modified timestamps."
     global lookup

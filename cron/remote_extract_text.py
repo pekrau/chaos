@@ -28,7 +28,7 @@ def extract(url, apikey):
     Return a dictionary with statistics.
     """
     response = requests.get(
-        url + "/api/keyword/extract_text", headers=dict(apikey=apikey)
+        url + "/api/process/extract_text", headers=dict(apikey=apikey)
     )
     if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
         raise IOError(f"invalid response: {response.status_code=}")
@@ -86,9 +86,9 @@ def extract(url, apikey):
             failed.add(filename + ": no entry text in response")
             continue
         text = text.replace("extract_text", "")
-        text = f"{text}\n\n## Extracteded text from image\n\n{image_text}"
+        text = f"{text}\n\n## Extracted text from image\n\n{image_text}"
         response = requests.post(
-            url + f"/api/entry/{entry}", headers=headers, data={"text": text}
+            url + f"/api/entry/{entry}", headers=headers, data={"text": text, "process": "extract_text"}
         )
         if response.status_code != HTTP.OK:
             failed.add(filename + ": could not update text")

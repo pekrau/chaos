@@ -235,7 +235,7 @@ def get(term: str, keywords: list[str] = []):
                         autofocus=True,
                     ),
                     Details(
-                        Summary("Keywords..."),
+                        Summary("Filter by keywords..."),
                         Ul(
                             *[
                                 Li(
@@ -249,7 +249,8 @@ def get(term: str, keywords: list[str] = []):
                                         kw,
                                     )
                                 )
-                                for kw in sorted(settings.canonical_keywords)
+                                for kw in sorted(settings.canonical_keywords,
+                                                 key=lambda k: k.casefold())
                             ]
                         ),
                         cls="dropdown",

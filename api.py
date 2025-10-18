@@ -60,6 +60,24 @@ def get(request, keyword: str):
     return result
 
 
+@rt("/process/{process}")
+def get(request, process: str):
+    """Return a JSON dictionary of items {name: filename}, where 'filename'
+    may be None, for all entries with the given process request.
+    """
+    try:
+        check_apikey(request)
+    except KeyError as error:
+        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
+    result = {}
+    for entry in entries.get_process_entries(process):
+        try:
+            result[str(entry)] = entry.filename
+        except AttributeError:
+            result[str(entry)] = None
+    return result
+
+
 @rt("/entry/{entry:Entry}")
 def get(request, entry: entries.Entry):
     "Return the contents of an entry."
@@ -67,25 +85,20 @@ def get(request, entry: entries.Entry):
         check_apikey(request)
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
-    result = {"title": entry.title, "text": entry.text}
-    try:
-        result["filename"] = entry.filename
-    except KeyError:
-        pass
-    return result
+    return {"frontmatter": entry.frontmatter, "text": entry.text}
 
 
 @rt("/entry/{entry:Entry}")
-def post(request, entry: entries.Entry, title: str = None, text: str = None):
-    "Set the text of an entry."
+def post(request, entry: entries.Entry, text: str = None, process: str = None):
+    "Set the text of an entry, optionally removing a process request."
     try:
         check_apikey(request)
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
-    if title is not None:
-        entry.title = title.strip() or "no title"
     if text is not None:
         entry.text = text.strip()
+    if process and process == entry.frontmatter.get("process"):
+        entry.frontmatter.pop("process")
     entry.write()
     entries.set_keywords_relations(entry)
     return Response(content="text updated", status_code=HTTP.OK)

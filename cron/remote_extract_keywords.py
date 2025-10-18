@@ -42,7 +42,7 @@ def extract(url, apikey):
         keywords = {}
 
     response = requests.get(
-        url + "/api/keyword/extract_keywords", headers=dict(apikey=apikey)
+        url + "/api/process/extract_keywords", headers=dict(apikey=apikey)
     )
     if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
         raise IOError(f"invalid response: {response.status_code=}")
@@ -93,8 +93,6 @@ def extract(url, apikey):
         found = settings.get_canonical_keywords(file_text, external_keywords=keywords)
         if found:
             found = ", ".join(sorted(found))
-        else:
-            found = "*none*"
         os.unlink(filepath)
 
         response = requests.get(url + f"/api/entry/{entry}", headers=headers)
@@ -110,7 +108,7 @@ def extract(url, apikey):
         text = text.replace("extract_keywords", "")
         text = f"{text}\n\n## Extracted keywords from file\n\n{found}"
         response = requests.post(
-            url + f"/api/entry/{entry}", headers=headers, data={"text": text}
+            url + f"/api/entry/{entry}", headers=headers, data={"text": text, "process": "extract_keywords"}
         )
         if response.status_code != HTTP.OK:
             failed.add(filename + ": could not update text")

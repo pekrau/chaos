@@ -88,7 +88,9 @@ def extract(url, apikey):
         text = text.replace("extract_text", "")
         text = f"{text}\n\n## Extracted text from image\n\n{image_text}"
         response = requests.post(
-            url + f"/api/entry/{entry}", headers=headers, data={"text": text, "process": "extract_text"}
+            url + f"/api/entry/{entry}",
+            headers=headers,
+            data={"text": text, "process": "extract_text"},
         )
         if response.status_code != HTTP.OK:
             failed.add(filename + ": could not update text")

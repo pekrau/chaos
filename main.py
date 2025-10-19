@@ -200,6 +200,64 @@ def get(session):
     )
 
 
+@rt("/gallery")
+def get(session):
+    "Display gallery of images."
+    images = [e for e in entries.lookup.values() if e.is_image()]
+    images.sort(key=lambda e: e.modified, reverse=True)
+    N_GALLERY_ROW_ITEMS = 4
+    rows = []
+    for chunk in [
+        images[i : i + N_GALLERY_ROW_ITEMS]
+        for i in range(0, len(images), N_GALLERY_ROW_ITEMS)
+    ]:
+        row = [
+            Div(
+                A(
+                    Img(src=f"{image.url}/data", cls="autoscale"),
+                    title=image.title,
+                    href=str(image.url),
+                )
+            )
+            for image in chunk
+        ]
+        while len(row) < N_GALLERY_ROW_ITEMS:
+            row.append(Div())
+        rows.append(Div(*row, cls="grid"))
+    return (
+        Title("Gallery"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li("Gallery"),
+                    Li(components.search_form()),
+                ),
+                cls="main",
+            ),
+            cls="container",
+        ),
+        Main(
+            *rows,
+            cls="container",
+        ),
+        Footer(
+            Hr(),
+            Div(
+                Div(session["auth"]),
+                Div(
+                    A("chaos", href="https://github.com/pekrau/chaos"),
+                    " ",
+                    constants.__version__,
+                    cls="right",
+                ),
+                cls="grid",
+            ),
+            cls="container",
+        ),
+    )
+
+
 @rt("/search")
 def get(term: str, keywords: list[str] = []):
     "Search the entries."
@@ -249,8 +307,10 @@ def get(term: str, keywords: list[str] = []):
                                         kw,
                                     )
                                 )
-                                for kw in sorted(settings.canonical_keywords,
-                                                 key=lambda k: k.casefold())
+                                for kw in sorted(
+                                    settings.canonical_keywords,
+                                    key=lambda k: k.casefold(),
+                                )
                             ]
                         ),
                         cls="dropdown",
@@ -343,11 +403,6 @@ def get():
         ),
         Main(usage, software, cls="container"),
     )
-
-
-@rt("/ping")
-def get(request):
-    return f"Hello from {request.url}, running chaos v{constants.__version__}."
 
 
 @rt("/logout")

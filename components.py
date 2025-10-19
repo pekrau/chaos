@@ -200,8 +200,10 @@ def get_entries_table(entries):
     for entry in entries[0 : constants.MAX_PAGE_ENTRIES]:
         keywords = sorted(entry.keywords)
         keywords = [str(A(kw, href=f"/keywords/{kw}")) for kw in keywords]
-        if len(keywords) > constants.MAX_ROW_ITEMS:
-            keywords = NotStr(", ".join(keywords[0 : constants.MAX_ROW_ITEMS]) + "...")
+        if len(keywords) > constants.MAX_ROW_KEYWORDS:
+            keywords = NotStr(
+                ", ".join(keywords[0 : constants.MAX_ROW_KEYWORDS]) + "..."
+            )
         else:
             keywords = NotStr(", ".join(keywords))
         match entry.__class__.__name__:

@@ -100,7 +100,9 @@ def extract(url, apikey):
         text = text.replace("extract_markdown", "")
         text = f"{text}\n\n## Extracted Markdown from file\n\n{md_text}"
         response = requests.post(
-            url + f"/api/entry/{entry}", headers=headers, data={"text": text, "process": "extract_markdown"}
+            url + f"/api/entry/{entry}",
+            headers=headers,
+            data={"text": text, "process": "extract_markdown"},
         )
         if response.status_code != HTTP.OK:
             failed.add(filename + ": could not update text")

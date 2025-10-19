@@ -162,6 +162,9 @@ class Entry:
         else:
             return len(self.related()) == 0
 
+    def is_image(self):
+        return False
+
 
 class Note(Entry):
     "Note entry class."

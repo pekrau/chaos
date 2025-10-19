@@ -180,6 +180,13 @@ def get(file: entries.Entry):
 def get(file: entries.Entry):
     "Form for editing metadata for a file."
     assert isinstance(file, entries.File)
+    if file.is_image():
+        display = A(
+            Img(src=f"{file.url}/data", title=file.filename, cls="display"),
+            href=f"{file.url}/data",
+        )
+    else:
+        display = Small(A(file.filename, href=f"{file.url}/data"))
     return (
         Title("Edit"),
         Header(
@@ -210,7 +217,7 @@ def get(file: entries.Entry):
                             type="file",
                             name="upfile",
                         ),
-                        Small(f"Current file: {file.filename}"),
+                        display,
                     ),
                     Label(
                         "Text",

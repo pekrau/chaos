@@ -118,6 +118,7 @@ def get_nav_menu(*links):
             Li(A("Notes", href="/notes")),
             Li(A("Links", href="/links")),
             Li(A("Files", href="/files")),
+            Li(A("Gallery", href="/gallery")),
             Li(A("No keywords", href="/nokeywords")),
             Li(A("Unrelated", href="/unrelated")),
             Li(A("Random", href="/random")),

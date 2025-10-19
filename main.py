@@ -201,27 +201,28 @@ def get(session):
 
 
 @rt("/gallery")
-def get(session):
+def get(session, page: int = 1):
     "Display gallery of images."
     images = [e for e in entries.lookup.values() if e.is_image()]
+    total_entries =len(images)
+    images = list(images[(page - 1) * constants.MAX_PAGE_ENTRIES : page * constants.MAX_PAGE_ENTRIES])
     images.sort(key=lambda e: e.modified, reverse=True)
-    N_GALLERY_ROW_ITEMS = 4
     rows = []
     for chunk in [
-        images[i : i + N_GALLERY_ROW_ITEMS]
-        for i in range(0, len(images), N_GALLERY_ROW_ITEMS)
+        images[i : i + constants.N_GALLERY_ROW_ITEMS]
+        for i in range(0, len(images), constants.N_GALLERY_ROW_ITEMS)
     ]:
         row = [
             Div(
                 A(
-                    Img(src=f"{image.url}/data", cls="autoscale"),
+                    Img(src=f"{image.url}/data", cls="autoscale display"),
                     title=image.title,
                     href=str(image.url),
                 )
             )
             for image in chunk
         ]
-        while len(row) < N_GALLERY_ROW_ITEMS:
+        while len(row) < constants.N_GALLERY_ROW_ITEMS:
             row.append(Div())
         rows.append(Div(*row, cls="grid"))
     return (
@@ -239,6 +240,7 @@ def get(session):
         ),
         Main(
             *rows,
+            components.get_table_pager(page, total_entries, "/gallery"),
             cls="container",
         ),
         Footer(

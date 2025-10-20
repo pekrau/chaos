@@ -1,6 +1,7 @@
 "Entry class and functions."
 
 import datetime
+import mimetypes
 import os
 import pathlib
 import random
@@ -162,16 +163,13 @@ class Entry:
         else:
             return len(self.related()) == 0
 
-    def is_image(self):
-        return False
-
 
 class Note(Entry):
     "Note entry class."
 
 
 class Link(Entry):
-    "Link entry class"
+    "Link entry class."
 
     @property
     def href(self):
@@ -182,8 +180,8 @@ class Link(Entry):
         self.frontmatter["href"] = href.strip() or "/"
 
 
-class File(Entry):
-    "File entry class."
+class GenericFile(Entry):
+    "Generic file entry class."
 
     @property
     def filename(self):
@@ -225,13 +223,22 @@ class File(Entry):
         "Modified timestamp in UTC ISO format."
         return timestamp_utc(self.filepath.stat().st_mtime)
 
-    def is_image(self):
-        return self.file_mimetype in constants.IMAGE_MIMETYPES
-
     def delete(self):
         "Delete the entry and file from the file system and remove from the lookup."
         self.filepath.unlink()
         super().delete()
+
+
+class Image(GenericFile):
+    "Image entry class."
+
+    pass
+
+
+class File(GenericFile):
+    "File entry class."
+
+    pass
 
 
 def get(entryid):
@@ -239,8 +246,8 @@ def get(entryid):
     return lookup[entryid]
 
 
-def read_entry_files(dirpath=None):
-    """Recursively read all entries from from files in the given directory.
+def read_entries(dirpath=None):
+    """Recursively read all entries from files in the given directory.
     If no directory is given, start with the data dir.
     Create the data dir if it does not exist.
     """
@@ -249,7 +256,7 @@ def read_entry_files(dirpath=None):
         lookup.clear()
     for path in constants.DATA_DIR.iterdir():
         if path.is_dir():
-            read_entry_files(path)
+            read_entries(path)
         elif path.is_file() and path.suffix == ".md":
             content = path.read_text()
             match = constants.FRONTMATTER.match(content)
@@ -266,7 +273,13 @@ def read_entry_files(dirpath=None):
             if "href" in frontmatter:
                 entry = Link(path)
             elif "filename" in frontmatter:
-                entry = File(path)
+                if (
+                    mimetypes.guess_type(frontmatter["filename"])[0]
+                    in constants.IMAGE_MIMETYPES
+                ):
+                    entry = Image(path)
+                else:
+                    entry = File(path)
             else:
                 entry = Note(path)
             lookup[str(entry)] = entry
@@ -333,6 +346,14 @@ def get_files():
     return result
 
 
+def get_images():
+    "Get all image entries sorted by modified time."
+    global lookup
+    result = [e for e in lookup.values() if isinstance(e, Image)]
+    result.sort(key=lambda e: e.modified, reverse=True)
+    return result
+
+
 def get_keyword_entries(keyword):
     "Get the entries with the given keyword sorted by modified time."
     global lookup
@@ -386,7 +407,7 @@ def get_all():
     result = {}
     for entry in lookup.values():
         result[str(entry)] = entry.modified
-        if isinstance(entry, File):
+        if isinstance(entry, (File, Image)):
             result[str(entry.filename)] = entry.file_modified
     result[".chaos.yaml"] = timestamp_utc(
         (constants.DATA_DIR / ".chaos.yaml").stat().st_mtime
@@ -400,13 +421,22 @@ def timestamp_utc(timestamp):
 
 
 def get_statistics():
-    result = {"# entries": len(lookup), "# notes": 0, "# links": 0, "# files": 0}
+    result = {
+        "# entries": len(lookup),
+        "# notes": 0,
+        "# links": 0,
+        "# images": 0,
+        "# files": 0,
+    }
     for entry in lookup.values():
-        if isinstance(entry, Note):
-            result["# notes"] += 1
-        elif isinstance(entry, Link):
-            result["# links"] += 1
-        elif isinstance(entry, File):
-            result["# files"] += 1
+        match entry.__class__.__name__:
+            case "Note":
+                result["# notes"] += 1
+            case "Link":
+                result["# links"] += 1
+            case "Image":
+                result["# images"] += 1
+            case "File":
+                result["# files"] += 1
     result["# keywords"] = len(settings.canonical_keywords)
     return result

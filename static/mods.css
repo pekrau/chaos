@@ -44,7 +44,7 @@ nav.login {
 }
 
 nav.note {
-    outline-color: mediumseagreen;
+    outline-color: cyan;
 }
 
 nav.link {
@@ -55,11 +55,15 @@ nav.file {
     outline-color: mediumpurple;
 }
 
-nav.search {
-    outline-color: orange;
+nav.image {
+    outline-color: mediumseagreen;
 }
 
 nav.keyword {
+    outline-color: orange;
+}
+
+nav.search {
     outline-color: tomato;
 }
 

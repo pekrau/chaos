@@ -66,7 +66,7 @@ def extract(url, apikey):
 
         mimetype = response.headers["Content-Type"]
         if mimetype not in constants.IMAGE_MIMETYPES:
-            failed.add(filename + ": not image file")
+            failed.add(filename + ": not image")
             continue
 
         filename = entry + (mimetypes.guess_extension(mimetype) or ".bin")

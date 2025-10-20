@@ -1,5 +1,6 @@
-"File entry pages."
+"Image entry pages."
 
+import mimetypes
 import pathlib
 
 from fasthtml.common import *
@@ -15,16 +16,16 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get(request):
-    "Form for adding a file."
+    "Form for adding an image."
     return (
-        Title("Add file"),
+        Title("Add image"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add file"),
+                    Li("Add image"),
                 ),
-                cls="file",
+                cls="image",
             ),
             cls="container",
         ),
@@ -39,8 +40,9 @@ def get(request):
                 Input(
                     type="file",
                     name="upfile",
-                    placeholder="File...",
+                    placeholder="image...",
                     required=True,
+                    accept=",".join(constants.IMAGE_MIMETYPES),
                 ),
                 Textarea(
                     name="text",
@@ -49,21 +51,14 @@ def get(request):
                 ),
                 Select(
                     Option("Process request", selected=True, disabled=True, value=""),
-                    Option(
-                        "Extract keywords from PDF, DOCX or EPUB",
-                        value="extract_keywords",
-                    ),
-                    Option(
-                        "Extract Markdown text from PDF, DOCX or EPUB",
-                        value="extract_markdown",
-                    ),
+                    Option("Extract text from image", value="extract_text"),
                     name="process",
                 ),
                 Input(
                     type="submit",
                     value="Save",
                 ),
-                action="/file/",
+                action="/image/",
                 method="POST",
             ),
             Form(
@@ -82,39 +77,41 @@ def get(request):
 
 @rt("/")
 async def post(session, title: str, upfile: UploadFile, text: str, process: str = ""):
-    "Actually add the file."
+    "Actually add the image."
     filename = pathlib.Path(upfile.filename)
+    if upfile.content_type not in constants.IMAGE_MIMETYPES:
+        raise components.Error("Cannot upload non-image file.")
     ext = filename.suffix
     if ext == ".md":
         raise components.Error("Upload of Markdown file is disallowed.")
-    file = entries.File()
+    image = entries.Image()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
-    file.owner = session["auth"]
-    file.title = title.strip() or filename.stem
-    file.text = text.strip()
+    image.owner = session["auth"]
+    image.title = title.strip() or filename.stem
+    image.text = text.strip()
     filecontent = await upfile.read()
-    filename = str(file) + ext
+    filename = str(image) + ext
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise components.Error(error)
-    file.frontmatter["filename"] = filename
+    image.frontmatter["filename"] = filename
     if process:
-        file.frontmatter["process"] = process
-    file.write()
-    entries.set_keywords_relations(file)
-    return components.redirect(file.url)
+        image.frontmatter["process"] = process
+    image.write()
+    entries.set_keywords_relations(image)
+    return components.redirect(image.url)
 
 
-@rt("/{file:Entry}")
-def get(file: entries.Entry):
-    "View the metadata for the file."
-    assert isinstance(file, entries.File)
-    if process := file.frontmatter.get("process", ""):
+@rt("/{image:Entry}")
+def get(image: entries.Entry):
+    "View the metadata for the image."
+    assert isinstance(image, entries.Image)
+    if process := image.frontmatter.get("process", ""):
         process = Card(f"Process request: {process}")
     return (
-        Title(file.title),
+        Title(image.title),
         Script(src="/clipboard.min.js"),
         Script("new ClipboardJS('.to_clipboard');"),
         Header(
@@ -122,26 +119,31 @@ def get(file: entries.Entry):
                 Ul(
                     Li(
                         components.get_nav_menu(
-                            A(Strong("Edit"), href=f"{file.url}/edit"),
-                            A(Strong("Copy"), href=f"{file.url}/copy"),
-                            A(Strong("Delete"), href=f"{file.url}/delete"),
+                            A(Strong("Edit"), href=f"{image.url}/edit"),
+                            A(Strong("Copy"), href=f"{image.url}/copy"),
+                            A(Strong("Delete"), href=f"{image.url}/delete"),
                         )
                     ),
-                    Li(components.get_entry_clipboard(file), file.title),
+                    Li(components.get_entry_clipboard(image), image.title),
                     Li(components.search_form()),
                 ),
-                cls="file",
+                cls="image",
             ),
             cls="container",
         ),
         Main(
             process,
-            Card(Strong(A(file.filename, href=f"{file.url}/data"))),
-            NotStr(marko.convert(file.text)),
+            Card(
+                A(
+                    Img(src=f"{image.url}/data", title=image.filename, cls="display"),
+                    href=f"{image.url}/data",
+                )
+            ),
+            NotStr(marko.convert(image.text)),
             Small(
                 Card(
-                    Header("Keywords: ", components.get_keywords_links(file)),
-                    components.get_entries_table(file.related()),
+                    Header("Keywords: ", components.get_keywords_links(image)),
+                    components.get_entries_table(image.related()),
                 ),
             ),
             cls="container",
@@ -149,9 +151,9 @@ def get(file: entries.Entry):
         Footer(
             Hr(),
             Div(
-                Div(file.modified_local),
-                Div(f"{file.size:,d} + {file.file_size:,d} bytes"),
-                Div(file.owner),
+                Div(image.modified_local),
+                Div(f"{image.size:,d} + {image.file_size:,d} bytes"),
+                Div(image.owner),
                 cls="grid",
             ),
             cls="container",
@@ -159,29 +161,29 @@ def get(file: entries.Entry):
     )
 
 
-@rt("/{file:Entry}/data")
-def get(file: entries.Entry):
-    "Return the file data."
-    assert isinstance(file, entries.File)
+@rt("/{image:Entry}/data")
+def get(image: entries.Entry):
+    "Return the image data."
+    assert isinstance(image, entries.Image)
     return Response(
-        content=file.filepath.read_bytes(),
-        media_type=file.file_mimetype or constants.BINARY_MIMETYPE,
+        content=image.filepath.read_bytes(),
+        media_type=image.file_mimetype or constants.BINARY_MIMETYPE,
     )
 
 
-@rt("/{file:Entry}/edit")
-def get(file: entries.Entry):
-    "Form for editing metadata for the file."
-    assert isinstance(file, entries.File)
+@rt("/{image:Entry}/edit")
+def get(image: entries.Entry):
+    "Form for editing metadata for the image."
+    assert isinstance(image, entries.Image)
     return (
         Title("Edit"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{file.title}'"),
+                    Li(f"Edit '{image.title}'"),
                 ),
-                cls="file",
+                cls="image",
             ),
             cls="container",
         ),
@@ -193,22 +195,29 @@ def get(file: entries.Entry):
                         Input(
                             type="text",
                             name="title",
-                            value=file.title,
+                            value=image.title,
                             required=True,
                         ),
                     ),
                     Label(
-                        "File",
+                        "Image",
                         Input(
                             type="file",
                             name="upfile",
                         ),
-                        Small(A(file.filename, href=f"{file.url}/data")),
+                        A(
+                            Img(
+                                src=f"{image.url}/data",
+                                title=image.filename,
+                                cls="display",
+                            ),
+                            href=f"{image.url}/data",
+                        ),
                     ),
                     Label(
                         "Text",
                         Textarea(
-                            file.text,
+                            image.text,
                             name="text",
                             rows=10,
                             autofocus=True,
@@ -218,14 +227,7 @@ def get(file: entries.Entry):
                         "Process request",
                         Select(
                             Option("None", selected=True, disabled=True, value=""),
-                            Option(
-                                "Extract keywords from PDF, DOCX or EPUB",
-                                value="extract_keywords",
-                            ),
-                            Option(
-                                "Extract Markdown text from PDF, DOCX or EPUB",
-                                value="extract_markdown",
-                            ),
+                            Option("Extract text from image", value="extract_text"),
                             name="process",
                         ),
                     ),
@@ -234,7 +236,7 @@ def get(file: entries.Entry):
                     type="submit",
                     value="Save",
                 ),
-                action=f"{file.url}/edit",
+                action=f"{image.url}/edit",
                 method="POST",
             ),
             Form(
@@ -243,7 +245,7 @@ def get(file: entries.Entry):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=file.url,
+                action=image.url,
                 method="GET",
             ),
             cls="container",
@@ -251,46 +253,46 @@ def get(file: entries.Entry):
     )
 
 
-@rt("/{file:Entry}/edit")
+@rt("/{image:Entry}/edit")
 async def post(
-    file: entries.Entry, title: str, upfile: UploadFile, text: str, process: str = None
+    image: entries.Entry, title: str, upfile: UploadFile, text: str, process: str = None
 ):
-    "Actually edit the file."
-    assert isinstance(file, entries.File)
+    "Actually edit the image."
+    assert isinstance(image, entries.Image)
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
             raise components.Error("Upload of Markdown file is disallowed.")
         filecontent = await upfile.read()
-        filename = str(file) + ext  # The mimetype may change on file contents update.
+        filename = str(image) + ext  # The mimetype may change on file contents update.
         try:
             with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
                 outfile.write(filecontent)
         except OSError as error:
             raise components.Error(error)
-    file.title = title.strip() or file.filename.stem
+    image.title = title.strip() or image.filename.stem
     text = text.strip()
-    file.text = text
+    image.text = text
     if process:
-        file.frontmatter["process"] = process
-    file.write()
-    entries.set_keywords_relations(file)
-    return components.redirect(file.url)
+        image.frontmatter["process"] = process
+    image.write()
+    entries.set_keywords_relations(image)
+    return components.redirect(image.url)
 
 
-@rt("/{file:Entry}/copy")
-def get(file: entries.Entry):
-    "Form for making a copy of the file."
-    assert isinstance(file, entries.File)
+@rt("/{image:Entry}/copy")
+def get(image: entries.Entry):
+    "Form for making a copy of the image."
+    assert isinstance(image, entries.Image)
     return (
         Title("Copy"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Copy '{file.title}'"),
+                    Li(f"Copy '{image.title}'"),
                 ),
-                cls="file",
+                cls="image",
             ),
             cls="container",
         ),
@@ -302,15 +304,15 @@ def get(file: entries.Entry):
                         Input(
                             type="text",
                             name="title",
-                            value=file.title,
+                            value=image.title,
                             required=True,
                         ),
                     ),
                     Label(
-                        "File",
+                        "Image",
                         Input(
                             type="text",
-                            value=file.filename,
+                            value=image.filename,
                             readonly=True,
                         ),
                         Small("Cannot be changed."),
@@ -318,7 +320,7 @@ def get(file: entries.Entry):
                     Label(
                         "Text",
                         Textarea(
-                            file.text,
+                            image.text,
                             name="text",
                             rows=10,
                             autofocus=True,
@@ -329,7 +331,7 @@ def get(file: entries.Entry):
                     type="submit",
                     value="Save",
                 ),
-                action=f"/file/{file}/copy",
+                action=f"/image/{image}/copy",
                 method="POST",
             ),
             Form(
@@ -338,7 +340,7 @@ def get(file: entries.Entry):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=file.url,
+                action=image.url,
                 method="GET",
             ),
             cls="container",
@@ -348,46 +350,46 @@ def get(file: entries.Entry):
 
 @rt("/{source:Entry}/copy")
 def post(session, source: entries.File, title: str, text: str):
-    "Actually copy the file."
-    assert isinstance(source, entries.File)
+    "Actually copy the image."
+    assert isinstance(source, entries.Image)
     filename = pathlib.Path(source.filename)
-    file = entries.File()
+    image = entries.Image()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
-    file.owner = session["auth"]
-    file.title = title.strip() or filename.stem
-    file.text = text.strip()
+    image.owner = session["auth"]
+    image.title = title.strip() or filename.stem
+    image.text = text.strip()
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
-    filename = str(file) + filename.suffix
+    filename = str(image) + filename.suffix
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise components.Error(error)
-    file.frontmatter["filename"] = filename
-    file.write()
-    entries.set_keywords_relations(file)
-    return components.redirect(file.url)
+    image.frontmatter["filename"] = filename
+    image.write()
+    entries.set_keywords_relations(image)
+    return components.redirect(image.url)
 
 
-@rt("/{file:Entry}/delete")
-def get(file: entries.Entry):
-    "Ask for confirmation to delete the file."
-    assert isinstance(file, entries.File)
+@rt("/{image:Entry}/delete")
+def get(image: entries.Entry):
+    "Ask for confirmation to delete the file image."
+    assert isinstance(image, entries.Image)
     return (
         Title("Delete"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{file.title}'"),
+                    Li(f"Delete '{image.title}'"),
                 ),
-                cls="file",
+                cls="image",
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the file? All data will be lost."),
+            P("Really delete the image? All data will be lost."),
             Form(
                 Fieldset(
                     Input(
@@ -402,7 +404,7 @@ def get(file: entries.Entry):
                         cls="secondary",
                     ),
                 ),
-                action=f"{file.url}/delete",
+                action=f"{image.url}/delete",
                 method="POST",
             ),
             cls="container",
@@ -410,12 +412,12 @@ def get(file: entries.Entry):
     )
 
 
-@rt("/{file:Entry}/delete")
-def post(file: entries.Entry, action: str):
-    "Actually delete the file."
-    assert isinstance(file, entries.File)
+@rt("/{image:Entry}/delete")
+def post(image: entries.Entry, action: str):
+    "Actually delete the image."
+    assert isinstance(image, entries.Image)
     if "yes" in action.casefold():
-        file.delete()
+        image.delete()
         return components.redirect(f"/")
     else:
-        return components.redirect(file.url)
+        return components.redirect(image.url)

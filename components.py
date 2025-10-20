@@ -113,19 +113,20 @@ def get_nav_menu(*links):
             *[Li(l) for l in links],
             Li(A("Add note...", href="/note/")),
             Li(A("Add link...", href="/link/")),
+            Li(A("Add image...", href="/image/")),
             Li(A("Add file...", href="/file/")),
             Li(A("Keywords", href="/keywords")),
             Li(A("Notes", href="/notes")),
             Li(A("Links", href="/links")),
+            Li(A("Images", href="/images")),
             Li(A("Files", href="/files")),
-            Li(A("Gallery", href="/gallery")),
             Li(A("No keywords", href="/nokeywords")),
             Li(A("Unrelated", href="/unrelated")),
             Li(A("Random", href="/random")),
             Li(A("System", href="/system")),
             Li(A("Logout", href="/logout")),
         ),
-        title="chaos: Web service for a repository of notes, links and files with no intrinsic order.",
+        title="chaos: Web service for a repository of notes, links, images and files with no intrinsic order.",
         cls="dropdown",
     )
 
@@ -148,16 +149,19 @@ def search_form(term=None):
 
 
 def get_entry_clipboard(entry):
-    return Img(
-        src="/clipboard.svg",
-        title="Link to clipboard",
-        cls="to_clipboard white",
-        data_clipboard_action="copy",
-        data_clipboard_text=f"[{entry.title}]({entry.url})",
+    return Span(
+        Img(
+            src="/clipboard.svg",
+            title="Link to clipboard",
+            cls="to_clipboard white",
+            data_clipboard_action="copy",
+            data_clipboard_text=f"[{entry.title}]({entry.url})",
+        ),
+        NotStr("&nbsp;"),
     )
 
 
-def get_entries_table_page(session, title, entries, page, href, after=""):
+def get_entries_table_page(title, entries, page, href, after=""):
     "Get the page displaying a table of the given entries."
     total_entries = len(entries)
     page = min(max(1, page), get_total_pages(total_entries))
@@ -179,20 +183,6 @@ def get_entries_table_page(session, title, entries, page, href, after=""):
             cls="container",
         ),
         Main(table, pager, after, cls="container"),
-        Footer(
-            Hr(),
-            Div(
-                Div(session["auth"]),
-                Div(
-                    A("chaos", href="https://github.com/pekrau/chaos"),
-                    " ",
-                    constants.__version__,
-                    cls="right",
-                ),
-                cls="grid",
-            ),
-            cls="container",
-        ),
     )
 
 
@@ -215,7 +205,7 @@ def get_entries_table(entries):
                     get_icon("box-arrow-up-right.svg", title="Follow link..."),
                     href=entry.href,
                 )
-            case "File":
+            case "File" | "Image":
                 icon = A(
                     get_mimetype_icon(
                         entry.file_mimetype, title="View or download file"
@@ -227,7 +217,7 @@ def get_entries_table(entries):
         rows.append(
             Tr(
                 Td(icon, A(entry.title, href=entry.url)),
-                Td(keywords),
+                Td(get_keywords_links(entry, limit=True)),
             )
         )
     if rows:
@@ -277,17 +267,19 @@ def get_table_pager(current_page, total_entries, href):
     return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=href)
 
 
+def get_keywords_links(entry, limit=False):
+    result = [str(A(kw, href=f"/keywords/{kw}")) for kw in sorted(entry.keywords)]
+    if limit and len(result) > constants.MAX_ROW_KEYWORDS:
+        return NotStr(", ".join(result[0 : constants.MAX_ROW_KEYWORDS]) + "...")
+    else:
+        return NotStr(", ".join(result))
+
+
 def get_total_pages(total_entries=None):
     "Return the total number of table pages for the given number of entries."
     if total_entries is None:
         total_entries = total()
     return (total_entries - 1) // constants.MAX_PAGE_ENTRIES + 1
-
-
-def get_keywords_links(entry):
-    return NotStr(
-        ", ".join([str(A(kw, href=f"/keywords/{kw}")) for kw in entry.keywords])
-    )
 
 
 def numerical(n):

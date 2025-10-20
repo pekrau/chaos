@@ -11,10 +11,10 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(session):
+def get():
     "List of keywords."
     return (
-        Title("chaos"),
+        Title("Keywords"),
         Header(
             Nav(
                 Ul(
@@ -28,6 +28,13 @@ def get(session):
         ),
         Main(
             Table(
+                Thead(
+                    Tr(
+                        Th("Keyword, synonyms"),
+                        Th("# total entries"),
+                        Th(),
+                    ),
+                ),
                 Tbody(
                     *[
                         Tr(
@@ -84,7 +91,7 @@ def get(session):
 
 
 @rt("/")
-def post(session, keyword: str):
+def post(keyword: str):
     "Actually add a keyword."
     keyword = keyword.strip()
     if not keyword:
@@ -99,7 +106,7 @@ def post(session, keyword: str):
 
 
 @rt("/{keyword}")
-def get(session, keyword: str, page: int = 1):
+def get(keyword: str, page: int = 1):
     "Display list of entries containing the provided keyword."
     keyword = keyword.strip()
     if not keyword:
@@ -138,7 +145,6 @@ def get(session, keyword: str, page: int = 1):
         ]
     )
     return components.get_entries_table_page(
-        session,
         f"Keyword '{keyword}'",
         entries.get_keyword_entries(keyword),
         page,
@@ -148,7 +154,7 @@ def get(session, keyword: str, page: int = 1):
 
 
 @rt("/{keyword}/delete")
-def get(session, keyword: str):
+def get(keyword: str):
     "Ask for confirmation to delete the keyword."
     keyword = keyword.strip()
     if not keyword:
@@ -192,7 +198,7 @@ def get(session, keyword: str):
 
 
 @rt("/{keyword}/delete")
-def post(session, keyword: str, action: str):
+def post(keyword: str, action: str):
     "Actually delete a keyword."
     if "yes" in action.casefold():
         # The given keyword is a canonical keyword: remove all its text keywords.

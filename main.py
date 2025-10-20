@@ -25,18 +25,20 @@ import entries
 import keywords
 import note
 import link
+import image
 import file
 import api
 
 settings.read()
 
-entries.read_entry_files()
+entries.read_entries()
 entries.set_all_keywords_relations()
 
 app, rt = components.get_app_rt(
     routes=[
         Mount("/note", note.app),
         Mount("/link", link.app),
+        Mount("/image", image.app),
         Mount("/file", file.app),
         Mount("/keywords", keywords.app),
         Mount("/api", api.app),
@@ -48,7 +50,6 @@ app, rt = components.get_app_rt(
 def get(session, page: int = 1):
     if session.get("auth"):
         return components.get_entries_table_page(
-            session,
             "chaos",
             entries.get_entries(),
             page,
@@ -68,7 +69,7 @@ def get(session, page: int = 1):
                                     width=24,
                                     cls="white",
                                 ),
-                                title="chaos: Web service for a repository of notes, links and files with no intrinsic order.",
+                                title="chaos: Web service for a repository of notes, links, images and files with no intrinsic order.",
                                 role="button",
                                 cls="secondary outline no_margin",
                                 href="/",
@@ -129,10 +130,9 @@ def post(session, username: str, password: str):
 
 
 @rt("/notes")
-def get(session, page: int = 1):
+def get(page: int = 1):
     "Display note entries."
     return components.get_entries_table_page(
-        session,
         "Notes",
         entries.get_notes(),
         page,
@@ -141,10 +141,9 @@ def get(session, page: int = 1):
 
 
 @rt("/links")
-def get(session, page: int = 1):
-    "Display note entries."
+def get(page: int = 1):
+    "Display link entries."
     return components.get_entries_table_page(
-        session,
         "Links",
         entries.get_links(),
         page,
@@ -152,61 +151,17 @@ def get(session, page: int = 1):
     )
 
 
-@rt("/files")
-def get(session, page: int = 1):
-    "Display note entries."
-    return components.get_entries_table_page(
-        session,
-        "Files",
-        entries.get_files(),
-        page,
-        "/files",
-    )
-
-
-@rt("/nokeywords")
-def get(session, page: int = 1):
-    "Display entries without keywords."
-    return components.get_entries_table_page(
-        session,
-        "No keywords",
-        entries.get_no_keyword_entries(),
-        page,
-        "/nokeywords",
-    )
-
-
-@rt("/unrelated")
-def get(session, page: int = 1):
-    "Display entries having no relations."
-    return components.get_entries_table_page(
-        session,
-        "Unrelated",
-        entries.get_unrelated_entries(),
-        page,
-        "/unrelated",
-    )
-
-
-@rt("/random")
-def get(session):
-    "Display a page of random entries."
-    return components.get_entries_table_page(
-        session,
-        "Random",
-        entries.get_random_entries(),
-        1,
-        "/random",
-    )
-
-
-@rt("/gallery")
-def get(session, page: int = 1):
-    "Display gallery of images."
-    images = [e for e in entries.lookup.values() if e.is_image()]
-    total_entries =len(images)
-    images = list(images[(page - 1) * constants.MAX_PAGE_ENTRIES : page * constants.MAX_PAGE_ENTRIES])
+@rt("/images")
+def get(page: int = 1):
+    "Display image entries."
+    images = [e for e in entries.lookup.values() if isinstance(e, entries.Image)]
     images.sort(key=lambda e: e.modified, reverse=True)
+    total_entries = len(images)
+    images = list(
+        images[
+            (page - 1) * constants.MAX_PAGE_ENTRIES : page * constants.MAX_PAGE_ENTRIES
+        ]
+    )
     rows = []
     for chunk in [
         images[i : i + constants.N_GALLERY_ROW_ITEMS]
@@ -218,7 +173,8 @@ def get(session, page: int = 1):
                     Img(src=f"{image.url}/data", cls="autoscale display"),
                     title=image.title,
                     href=str(image.url),
-                )
+                ),
+                components.get_keywords_links(image),
             )
             for image in chunk
         ]
@@ -226,12 +182,12 @@ def get(session, page: int = 1):
             row.append(Div())
         rows.append(Div(*row, cls="grid"))
     return (
-        Title("Gallery"),
+        Title("Images"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Gallery"),
+                    Li("Images"),
                     Li(components.search_form()),
                 ),
                 cls="main",
@@ -240,32 +196,68 @@ def get(session, page: int = 1):
         ),
         Main(
             *rows,
-            components.get_table_pager(page, total_entries, "/gallery"),
-            cls="container",
-        ),
-        Footer(
-            Hr(),
-            Div(
-                Div(session["auth"]),
-                Div(
-                    A("chaos", href="https://github.com/pekrau/chaos"),
-                    " ",
-                    constants.__version__,
-                    cls="right",
-                ),
-                cls="grid",
-            ),
+            components.get_table_pager(page, total_entries, "/images"),
             cls="container",
         ),
     )
 
 
+@rt("/files")
+def get(page: int = 1):
+    "Display file entries."
+    return components.get_entries_table_page(
+        "Files",
+        entries.get_files(),
+        page,
+        "/files",
+    )
+
+
+@rt("/nokeywords")
+def get(page: int = 1):
+    "Display entries without keywords."
+    return components.get_entries_table_page(
+        "No keywords",
+        entries.get_no_keyword_entries(),
+        page,
+        "/nokeywords",
+    )
+
+
+@rt("/unrelated")
+def get(page: int = 1):
+    "Display entries having no relations."
+    return components.get_entries_table_page(
+        "Unrelated",
+        entries.get_unrelated_entries(),
+        page,
+        "/unrelated",
+    )
+
+
+@rt("/random")
+def get():
+    "Display a page of random entries."
+    return components.get_entries_table_page(
+        "Random",
+        entries.get_random_entries(),
+        1,
+        "/random",
+    )
+
+
 @rt("/search")
-def get(term: str, keywords: list[str] = []):
+def get(term: str, keywords: list[str] = [], type: str = None):
     "Search the entries."
     keywords = set(keywords)
+    if type:
+        type = type.capitalize()
+        if type not in ("Note", "Link", "Image", "File"):
+            type = None
     result = []
     for entry in entries.lookup.values():
+        if type and entry.__class__.__name__ != type:
+            continue
         if not keywords.issubset(entry.keywords):
             continue
         if score := entry.score(term):
@@ -313,6 +305,26 @@ def get(term: str, keywords: list[str] = []):
                                     settings.canonical_keywords,
                                     key=lambda k: k.casefold(),
                                 )
+                            ]
+                        ),
+                        cls="dropdown",
+                    ),
+                    Details(
+                        Summary("Filter by type..."),
+                        Ul(
+                            *[
+                                Li(
+                                    Label(
+                                        Input(
+                                            type="radio",
+                                            name="type",
+                                            value=t,
+                                            checked=t == type,
+                                        ),
+                                        t,
+                                    )
+                                )
+                                for t in ["Any", "Note", "Link", "Image", "File"]
                             ]
                         ),
                         cls="dropdown",

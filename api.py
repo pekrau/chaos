@@ -80,7 +80,7 @@ def get(request, process: str):
 
 @rt("/entry/{entry:Entry}")
 def get(request, entry: entries.Entry):
-    "Return the contents of an entry."
+    "Return the text contents of an entry."
     try:
         check_apikey(request)
     except KeyError as error:

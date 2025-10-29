@@ -72,12 +72,12 @@ def extract(url, apikey):
     for entry in file_entries:
         response = requests.get(url + f"/file/{entry}/data", headers=headers)
         if response.status_code != HTTP.OK:
-            failed.add(filename + ": could not fetch file data")
+            failed.add(entry + ": could not fetch file data")
             continue
 
         mimetype = response.headers["Content-Type"]
         if mimetype not in constants.TEXTUAL_MIMETYPES:
-            failed.add(filename + ": not textual file")
+            failed.add(entry + ": not textual file")
             continue
 
         filename = entry + (mimetypes.guess_extension(mimetype) or ".bin")
@@ -97,12 +97,12 @@ def extract(url, apikey):
 
         response = requests.get(url + f"/api/entry/{entry}", headers=headers)
         if response.status_code != HTTP.OK:
-            failed.add(filename + ": could not get text")
+            failed.add(entry + ": could not get text")
             continue
         try:
             text = response.json()["text"]
         except KeyError:
-            failed.add(filename + ": no text in response")
+            failed.add(entry + ": no text in response")
             continue
 
         text = text.replace("extract_keywords", "")
@@ -113,7 +113,7 @@ def extract(url, apikey):
             data={"text": text, "process": "extract_keywords"},
         )
         if response.status_code != HTTP.OK:
-            failed.add(filename + ": could not update text")
+            failed.add(entry + ": could not update text")
             continue
 
     result = {"file_entries": len(file_entries), "failed": list(failed)}

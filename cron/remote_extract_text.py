@@ -59,14 +59,14 @@ def extract(url, apikey):
     headers = dict(apikey=apikey)
 
     for entry in file_entries:
-        response = requests.get(url + f"/file/{entry}/data", headers=headers)
+        response = requests.get(url + f"/image/{entry}/data", headers=headers)
         if response.status_code != HTTP.OK:
-            failed.add(filename + ": could not fetch file data")
+            failed.add(entry + ": could not fetch file data")
             continue
 
         mimetype = response.headers["Content-Type"]
         if mimetype not in constants.IMAGE_MIMETYPES:
-            failed.add(filename + ": not image")
+            failed.add(entry + ": not image")
             continue
 
         filename = entry + (mimetypes.guess_extension(mimetype) or ".bin")
@@ -78,12 +78,12 @@ def extract(url, apikey):
 
         response = requests.get(url + f"/api/entry/{entry}", headers=headers)
         if response.status_code != HTTP.OK:
-            failed.add(filename + ": could not get entry")
+            failed.add(entry + ": could not get entry")
             continue
         try:
             text = response.json()["text"]
         except KeyError:
-            failed.add(filename + ": no entry text in response")
+            failed.add(entry + ": no entry text in response")
             continue
         text = text.replace("extract_text", "")
         text = f"{text}\n\n## Extracted text from image\n\n{image_text}"
@@ -93,7 +93,7 @@ def extract(url, apikey):
             data={"text": text, "process": "extract_text"},
         )
         if response.status_code != HTTP.OK:
-            failed.add(filename + ": could not update text")
+            failed.add(entry + ": could not update text")
             continue
 
     result = {

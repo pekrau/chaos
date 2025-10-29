@@ -68,7 +68,7 @@ shapely==2.1.2
 six==1.17.0
 sniffio==1.3.1
 soupsieve==2.8
-starlette==0.48.0
+starlette==0.49.1
 sympy==1.14.0
 tifffile==2025.9.30
 torch==2.8.0

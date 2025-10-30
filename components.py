@@ -56,7 +56,6 @@ def set_auth_before(request, session):
 
 def get_app_rt(routes=None):
     app, rt = fast_app(
-        live=bool(os.environ.get("CHAOS_DEVELOPMENT")),
         static_path="static",
         before=Beforeware(
             set_auth_before,

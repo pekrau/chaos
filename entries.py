@@ -158,10 +158,7 @@ class Entry:
 
     def is_unrelated(self):
         "Is this entry not related to any other?"
-        if not self.keywords:
-            return True
-        else:
-            return len(self.related()) == 0
+        return len(self.related()) == 0
 
 
 class Note(Entry):
@@ -300,6 +297,20 @@ def set_all_keywords_relations():
                 entry1.relations[str(entry2)] = relation
                 entry2.relations[str(entry1)] = relation
 
+
+def save_all_keywords():
+    "XXX Save all keywords to entry frontmatter."
+    global lookup
+    for entry in lookup.values():
+        entry.frontmatter["keywords"] = list(entry.keywords)
+        info = os.stat(str(entry.path))
+        orig = (info.st_atime, info.st_mtime)
+        lines = entry.text.strip().split("\n")
+        if settings.get_canonical_keywords(lines[-1]):
+            entry.text = "\n".join(lines[:-1])
+        entry.write()
+        os.utime(str(entry.path), times=orig)
+    print("saved all keywords")
 
 def set_keywords_relations(entry):
     "Update the keywords and relations involving the provided entry."

@@ -9,6 +9,7 @@ import marko
 import components
 import constants
 import entries
+import settings
 
 
 app, rt = components.get_app_rt()
@@ -31,28 +32,64 @@ def get(request):
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="title",
-                    placeholder="Title...",
-                    autofocus=True,
+                Fieldset(
+                    Input(
+                        type="text",
+                        name="title",
+                        placeholder="Title...",
+                        required=True,
+                        autofocus=True,
+                    ),
+                    Details(
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(keywords=[])),
+                        cls="dropdown",
+                    ),
+                    cls="grid",
                 ),
-                Input(
-                    type="file",
-                    name="upfile",
-                    placeholder="image...",
-                    required=True,
-                    accept=",".join(constants.IMAGE_MIMETYPES),
+                Fieldset(
+                    Input(
+                        type="file",
+                        name="upfile",
+                        placeholder="image...",
+                        required=True,
+                        accept=",".join(constants.IMAGE_MIMETYPES),
+                    ),
+                    Details(
+                        Summary("Process request..."),
+                        Ul(
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="process",
+                                        value="none",
+                                        checked=True,
+                                    ),
+                                    "None",
+                                ),
+                            ),
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="process",
+                                        value="extract_text",
+                                    ),
+                                    "Extract text from image",
+                                ),
+                            ),
+                        ),
+                        cls="dropdown",
+                    ),
+                    cls="grid",
                 ),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
-                Select(
-                    Option("Process request", selected=True, disabled=True, value=""),
-                    Option("Extract text from image", value="extract_text"),
-                    name="process",
+                Fieldset(
+                    Textarea(
+                        name="text",
+                        rows=10,
+                        placeholder="Text...",
+                    ),
                 ),
                 Input(
                     type="submit",
@@ -76,7 +113,7 @@ def get(request):
 
 
 @rt("/")
-async def post(session, title: str, upfile: UploadFile, text: str, process: str = ""):
+async def post(session, title: str, upfile: UploadFile, text: str, keywords: list[str] = [], process: str = ""):
     "Actually add the image."
     filename = pathlib.Path(upfile.filename)
     if upfile.content_type not in constants.IMAGE_MIMETYPES:
@@ -88,19 +125,19 @@ async def post(session, title: str, upfile: UploadFile, text: str, process: str 
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     image.owner = session["auth"]
     image.title = title.strip() or filename.stem
-    image.text = text.strip()
     filecontent = await upfile.read()
     filename = str(image) + ext
+    image.frontmatter["filename"] = filename
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise components.Error(error)
-    image.frontmatter["filename"] = filename
-    if process:
+    image.text = text.strip()
+    image.keywords = keywords
+    if process and process != "none":
         image.frontmatter["process"] = process
     image.write()
-    entries.set_keywords_relations(image)
     return components.redirect(image.url)
 
 
@@ -190,46 +227,68 @@ def get(image: entries.Entry):
         Main(
             Form(
                 Fieldset(
-                    Label(
-                        "Title",
-                        Input(
-                            type="text",
-                            name="title",
-                            value=image.title,
-                            required=True,
-                        ),
+                    Input(
+                        type="text",
+                        name="title",
+                        value=image.title,
+                        required=True,
+                        placeholder="Title...",
                     ),
-                    Label(
-                        "Image",
+                    Details(
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(image.keywords)),
+                        cls="dropdown",
+                    ),
+                    cls="grid",
+                ),
+                Fieldset(
+                    Div(
                         Input(
                             type="file",
                             name="upfile",
                         ),
-                        A(
-                            Img(
-                                src=f"{image.url}/data",
-                                title=image.filename,
-                                cls="display",
+                        Img(
+                            src=f"{image.url}/data",
+                            title=image.filename,
+                            cls="display",
+                        ),
+                    ),
+                    Details(
+                        Summary("Process request..."),
+                        Ul(
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="process",
+                                        value="none",
+                                        checked=True,
+                                    ),
+                                    "None",
+                                ),
                             ),
-                            href=f"{image.url}/data",
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="process",
+                                        value="extract_text",
+                                    ),
+                                    "Extract text from image",
+                                ),
+                            ),
                         ),
+                        cls="dropdown",
                     ),
-                    Label(
-                        "Text",
-                        Textarea(
-                            image.text,
-                            name="text",
-                            rows=10,
-                            autofocus=True,
-                        ),
-                    ),
-                    Label(
-                        "Process request",
-                        Select(
-                            Option("None", selected=True, disabled=True, value=""),
-                            Option("Extract text from image", value="extract_text"),
-                            name="process",
-                        ),
+                    cls="grid",
+                ),
+                Fieldset(
+                    Textarea(
+                        image.text,
+                        name="text",
+                        rows=10,
+                        placeholder="Text...",
+                        autofocus=True,
                     ),
                 ),
                 Input(
@@ -255,10 +314,11 @@ def get(image: entries.Entry):
 
 @rt("/{image:Entry}/edit")
 async def post(
-    image: entries.Entry, title: str, upfile: UploadFile, text: str, process: str = None
+        image: entries.Entry, title: str, upfile: UploadFile, text: str, keywords: list[str] = [], process: str = None
 ):
     "Actually edit the image."
     assert isinstance(image, entries.Image)
+    image.title = title.strip() or image.filename.stem
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
@@ -270,13 +330,13 @@ async def post(
                 outfile.write(filecontent)
         except OSError as error:
             raise components.Error(error)
-    image.title = title.strip() or image.filename.stem
-    text = text.strip()
-    image.text = text
-    if process:
+    image.text = text.strip()
+    image.keywords = keywords
+    if process and process != "none":
         image.frontmatter["process"] = process
+    else:
+        image.frontmatter.pop("process", None)
     image.write()
-    entries.set_keywords_relations(image)
     return components.redirect(image.url)
 
 
@@ -299,37 +359,18 @@ def get(image: entries.Entry):
         Main(
             Form(
                 Fieldset(
-                    Label(
-                        "Title",
-                        Input(
-                            type="text",
-                            name="title",
-                            value=image.title,
-                            required=True,
-                        ),
-                    ),
-                    Label(
-                        "Image",
-                        Input(
-                            type="text",
-                            value=image.filename,
-                            readonly=True,
-                        ),
-                        Small("Cannot be changed."),
-                    ),
-                    Label(
-                        "Text",
-                        Textarea(
-                            image.text,
-                            name="text",
-                            rows=10,
-                            autofocus=True,
-                        ),
+                    Input(
+                        type="text",
+                        name="title",
+                        value=image.title,
+                        placeholder="Title...",
+                        required=True,
+                        autofocus=True,
                     ),
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Copy",
                 ),
                 action=f"/image/{image}/copy",
                 method="POST",
@@ -349,15 +390,15 @@ def get(image: entries.Entry):
 
 
 @rt("/{source:Entry}/copy")
-def post(session, source: entries.File, title: str, text: str):
+def post(session, source: entries.File, title: str):
     "Actually copy the image."
     assert isinstance(source, entries.Image)
     filename = pathlib.Path(source.filename)
     image = entries.Image()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     image.owner = session["auth"]
-    image.title = title.strip() or filename.stem
-    image.text = text.strip()
+    image.title = title.strip()
+    image.text = source.text
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
     filename = str(image) + filename.suffix
@@ -367,8 +408,8 @@ def post(session, source: entries.File, title: str, text: str):
     except OSError as error:
         raise components.Error(error)
     image.frontmatter["filename"] = filename
+    image.keywords = source.keywords
     image.write()
-    entries.set_keywords_relations(image)
     return components.redirect(image.url)
 
 

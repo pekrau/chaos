@@ -30,34 +30,73 @@ def get(request):
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="title",
-                    placeholder="Title...",
-                    autofocus=True,
-                ),
-                Input(
-                    type="file",
-                    name="upfile",
-                    placeholder="File...",
-                    required=True,
-                ),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
-                Select(
-                    Option("Process request", selected=True, disabled=True, value=""),
-                    Option(
-                        "Extract keywords from PDF, DOCX or EPUB",
-                        value="extract_keywords",
+                Fieldset(
+                    Input(
+                        type="text",
+                        name="title",
+                        placeholder="Title...",
+                        required=True,
+                        autofocus=True,
                     ),
-                    Option(
-                        "Extract Markdown text from PDF, DOCX or EPUB",
-                        value="extract_markdown",
+                    Details(
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(keywords=[])),
+                        cls="dropdown",
                     ),
-                    name="process",
+                    cls="grid",
+                ),
+                Fieldset(
+                    Input(
+                        type="file",
+                        name="upfile",
+                        placeholder="File...",
+                        required=True,
+                    ),
+                    Details(
+                        Summary("Process request..."),
+                        Ul(
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="process",
+                                        value="none",
+                                        checked=True,
+                                    ),
+                                    "None",
+                                ),
+                            ),
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="process",
+                                        value="extract_keywords",
+                                    ),
+                                    "Extract keywords from PDF, DOCX or EPUB",
+                                ),
+                            ),
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="process",
+                                        value="extract_markdown",
+                                    ),
+                                    "Extract Markdown text from PDF, DOCX or EPUB",
+                                ),
+                            ),
+                        ),
+                        cls="dropdown",
+                    ),
+                    cls="grid",
+                ),
+                Fieldset(
+                    Textarea(
+                        name="text",
+                        rows=10,
+                        placeholder="Text...",
+                    ),
                 ),
                 Input(
                     type="submit",
@@ -81,7 +120,7 @@ def get(request):
 
 
 @rt("/")
-async def post(session, title: str, upfile: UploadFile, text: str, process: str = ""):
+async def post(session, title: str, upfile: UploadFile, text: str, keywords: list[str] = [], process: str = ""):
     "Actually add the file."
     filename = pathlib.Path(upfile.filename)
     ext = filename.suffix
@@ -91,19 +130,19 @@ async def post(session, title: str, upfile: UploadFile, text: str, process: str 
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
-    file.text = text.strip()
     filecontent = await upfile.read()
     filename = str(file) + ext
+    file.frontmatter["filename"] = filename
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise components.Error(error)
-    file.frontmatter["filename"] = filename
-    if process:
+    file.text = text.strip()
+    file.keywords = keywords
+    if process and process != "none":
         file.frontmatter["process"] = process
     file.write()
-    entries.set_keywords_relations(file)
     return components.redirect(file.url)
 
 
@@ -188,23 +227,69 @@ def get(file: entries.Entry):
         Main(
             Form(
                 Fieldset(
-                    Label(
-                        "Title",
-                        Input(
-                            type="text",
-                            name="title",
-                            value=file.title,
-                            required=True,
-                        ),
+                    Input(
+                        type="text",
+                        name="title",
+                        value=file.title,
+                        required=True,
+                        placeholder="Title...",
                     ),
-                    Label(
-                        "File",
+                    Details(
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(file.keywords)),
+                        cls="dropdown",
+                    ),
+                    cls="grid",
+                ),
+                Fieldset(
+                    Div(
                         Input(
                             type="file",
                             name="upfile",
                         ),
-                        Small(A(file.filename, href=f"{file.url}/data")),
+                        Span("Current file: ",
+                             A(file.filename, href=f"{file.url}/data")),
                     ),
+                    Details(
+                        Summary("Process request..."),
+                        Ul(
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="process",
+                                        value="none",
+                                        checked=True,
+                                    ),
+                                    "None",
+                                ),
+                            ),
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="process",
+                                        value="extract_keywords",
+                                    ),
+                                    "Extract keywords from PDF, DOCX or EPUB",
+                                ),
+                            ),
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="process",
+                                        value="extract_markdown",
+                                    ),
+                                    "Extract Markdown text from PDF, DOCX or EPUB",
+                                ),
+                            ),
+                        ),
+                        cls="dropdown",
+                    ),
+                    cls="grid",
+                ),
+                Fieldset(
                     Label(
                         "Text",
                         Textarea(
@@ -212,21 +297,6 @@ def get(file: entries.Entry):
                             name="text",
                             rows=10,
                             autofocus=True,
-                        ),
-                    ),
-                    Label(
-                        "Process request",
-                        Select(
-                            Option("None", selected=True, disabled=True, value=""),
-                            Option(
-                                "Extract keywords from PDF, DOCX or EPUB",
-                                value="extract_keywords",
-                            ),
-                            Option(
-                                "Extract Markdown text from PDF, DOCX or EPUB",
-                                value="extract_markdown",
-                            ),
-                            name="process",
                         ),
                     ),
                 ),
@@ -253,10 +323,11 @@ def get(file: entries.Entry):
 
 @rt("/{file:Entry}/edit")
 async def post(
-    file: entries.Entry, title: str, upfile: UploadFile, text: str, process: str = None
+    file: entries.Entry, title: str, upfile: UploadFile, text: str, keywords: list[str] = [], process: str = None
 ):
     "Actually edit the file."
     assert isinstance(file, entries.File)
+    file.title = title.strip() or file.filename.stem
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
@@ -268,13 +339,13 @@ async def post(
                 outfile.write(filecontent)
         except OSError as error:
             raise components.Error(error)
-    file.title = title.strip() or file.filename.stem
-    text = text.strip()
-    file.text = text
-    if process:
+    file.text = text.strip()
+    file.keywords = keywords
+    if process and process != "none":
         file.frontmatter["process"] = process
+    else:
+        file.frontmatter.pop("process", None)
     file.write()
-    entries.set_keywords_relations(file)
     return components.redirect(file.url)
 
 
@@ -297,32 +368,13 @@ def get(file: entries.Entry):
         Main(
             Form(
                 Fieldset(
-                    Label(
-                        "Title",
-                        Input(
-                            type="text",
-                            name="title",
-                            value=file.title,
-                            required=True,
-                        ),
-                    ),
-                    Label(
-                        "File",
-                        Input(
-                            type="text",
-                            value=file.filename,
-                            readonly=True,
-                        ),
-                        Small("Cannot be changed."),
-                    ),
-                    Label(
-                        "Text",
-                        Textarea(
-                            file.text,
-                            name="text",
-                            rows=10,
-                            autofocus=True,
-                        ),
+                    Input(
+                        type="text",
+                        name="title",
+                        value=file.title,
+                        placeholder="Title...",
+                        required=True,
+                        autofocus=True,
                     ),
                 ),
                 Input(
@@ -347,7 +399,7 @@ def get(file: entries.Entry):
 
 
 @rt("/{source:Entry}/copy")
-def post(session, source: entries.File, title: str, text: str):
+def post(session, source: entries.File, title: str):
     "Actually copy the file."
     assert isinstance(source, entries.File)
     filename = pathlib.Path(source.filename)
@@ -355,7 +407,7 @@ def post(session, source: entries.File, title: str, text: str):
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
-    file.text = text.strip()
+    file.text = source.text
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
     filename = str(file) + filename.suffix
@@ -365,8 +417,8 @@ def post(session, source: entries.File, title: str, text: str):
     except OSError as error:
         raise components.Error(error)
     file.frontmatter["filename"] = filename
+    file.keywords = source.keywords
     file.write()
-    entries.set_keywords_relations(file)
     return components.redirect(file.url)
 
 

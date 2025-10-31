@@ -7,61 +7,44 @@ import yaml
 import constants
 
 
-keywords = {}  # Key: keyword in text; value: canonical keyword.
-canonical_keywords = {}  # Key: canonical keyword: set of keywords in text.
+keywords = set()
 
 
 def read():
     global keywords
-    global canonical_keywords
     try:
         with open(constants.DATA_DIR / ".chaos.yaml") as infile:
-            lookup = yaml.safe_load(infile)
+            data = yaml.safe_load(infile)
     except OSError:
-        lookup = {}
-    keywords = {}
-    canonical_keywords = {}
-    for keyword, canonical in lookup.get("keywords", {}).items():
-        add_keyword(keyword, canonical)
-
-
-def add_keyword_canonical(keyword):
-    "Add keyword specifying it as 'keyword: canonical'."
-    parts = keyword.split(":")
-    if len(parts) == 1:
-        canonical = keyword
+        data = {}
+    keywords = data.get("keywords", [])
+    if isinstance(keywords, dict):
+        keywords = set(keywords.values())
+        write()
     else:
-        keyword = parts[0].strip()
-        canonical = ":".join(parts[1:]).strip()
-    add_keyword(keyword, canonical)
-
-
-def add_keyword(keyword, canonical):
-    global keywords
-    global canonical_keywords
-    if keyword != canonical and keywords.get(canonical) == keyword:
-        raise ValueError("Circular definition of canonical keyword disallowed.")
-    keywords[keyword] = canonical
-    keywords[canonical] = canonical
-    canonical_keywords.setdefault(canonical, set()).add(keyword)
-    canonical_keywords[canonical].add(canonical)
+        keywords = set(keywords)
 
 
 def write():
     global keywords
     with open(constants.DATA_DIR / ".chaos.yaml", "w") as outfile:
-        yaml.safe_dump({"keywords": keywords}, outfile)
+        yaml.safe_dump({"keywords": list(keywords)}, outfile, allow_unicode=True)
 
 
-read()
+def get_all_keywords():
+    "Get the list of all keywords sorted lexically."
+    global keywords
+    result = list(keywords)
+    result.sort(key=lambda k: k.casefold())
+    return result
 
 
-def get_canonical_keywords(text, external_keywords=None):
-    "Get the set of canonical keywords in the given text."
+def get_keywords(text, external_keywords=None):
+    "Get the set of keywords found in the given text."
     global keywords
     kws = external_keywords or keywords
     result = set()
-    for keyword, canonical in kws.items():
+    for keyword in kws:
         if re.search(rf"\b{keyword}\S*\s?", text, re.IGNORECASE):
-            result.add(canonical)
+            result.add(keyword)
     return result

@@ -32,8 +32,6 @@ import api
 settings.read()
 
 entries.read_entries()
-entries.set_all_keywords_relations()
-entries.save_all_keywords()
 
 app, rt = components.get_app_rt(
     routes=[

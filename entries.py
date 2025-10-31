@@ -28,8 +28,7 @@ class Entry:
         self._path = path
         self.frontmatter = {}
         self.text = ""
-        self.keywords = set()
-        self.relations = {}
+        self.relations = {}  # Key: entry id; value: relation number.
 
     def __str__(self):
         return self._path.stem
@@ -84,6 +83,16 @@ class Entry:
             lookup[str(self)] = self
 
     @property
+    def keywords(self):
+        # This is a set, not a list.
+        return self.frontmatter["keywords"]
+
+    @keywords.setter
+    def keywords(self, keywords):
+        self.frontmatter["keywords"] = set(keywords).intersection(settings.keywords)
+        self.set_relations()
+
+    @property
     def size(self):
         "Size of the entry text, in bytes."
         return len(self.text)
@@ -109,40 +118,49 @@ class Entry:
         "Write the entry to file."
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
+                frontmatter = self.frontmatter.copy()
+                frontmatter["keywords"] = list(frontmatter.pop("keywords", []))
                 outfile.write("---\n")
-                outfile.write(yaml.safe_dump(self.frontmatter, allow_unicode=True))
+                outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
                 outfile.write("---\n")
             if self.text:
                 outfile.write(self.text)
 
     def delete(self):
-        "Delete the entry from the file system and remove from the lookup."
+        """Delete the entry from the file system.
+        Remove all relations to it.
+        Remove from the lookup.
+        """
         global lookup
-        self.remove_relations()
-        lookup.pop(str(self))
+        id = str(self)
+        for entry in lookup.values():
+            entry.relations.pop(id, None)
+        lookup.pop(id)
         self.path.unlink()
 
-    def remove_relations(self):
-        "Remove all relations from other entries to this one."
+    def remove_keyword(self, keyword):
+        "Remove the keyword from this entry, and write it if any change."
+        try:
+            self.keyword.remove(keyword)
+        except KeyError:
+            pass
+        else:
+            self.write()
+            self.set_relations()
+
+    def set_relations(self):
+        "Set the relations between this entry and all others."
         global lookup
-        entryid = str(self)
+        id = str(self)
+        self.relations = {}  # Key: entry id; value: relation number.
         for entry in lookup.values():
-            entry.relations.pop(entryid, None)
-
-    def score(self, term):
-        """Calculate the score for the term in the title or text of the entry.
-        Presence in the title is weighted heavier.
-        """
-        rx = re.compile(f"{term.strip()}.*", re.IGNORECASE)
-        return constants.SCORE_TITLE_WEIGHT * len(rx.findall(self.title)) + len(
-            rx.findall(self.text)
-        )
-
-    def set_keywords(self):
-        "Find the canonical keywords in the title and text of this entry."
-        self.keywords = settings.get_canonical_keywords(self.title).union(
-            settings.get_canonical_keywords(self.text)
-        )
+            if entry is self:
+                continue
+            if relation := self.relation(entry):
+                self.relations[str(entry)] = relation
+                entry.relations[id] = relation
+            else:
+                entry.relations.pop(id, None)
 
     def relation(self, other):
         "Return the relation number between this entry and the other."
@@ -156,9 +174,14 @@ class Entry:
             for k, v in sorted(self.relations.items(), key=lambda r: r[1], reverse=True)
         ]
 
-    def is_unrelated(self):
-        "Is this entry not related to any other?"
-        return len(self.related()) == 0
+    def score(self, term):
+        """Calculate the score for the term in the title or text of the entry.
+        Presence in the title is weighted heavier.
+        """
+        rx = re.compile(f"{term.strip()}.*", re.IGNORECASE)
+        return constants.SCORE_TITLE_WEIGHT * len(rx.findall(self.title)) + len(
+            rx.findall(self.text)
+        )
 
 
 class Note(Entry):
@@ -247,6 +270,7 @@ def read_entries(dirpath=None):
     """Recursively read all entries from files in the given directory.
     If no directory is given, start with the data dir.
     Create the data dir if it does not exist.
+    Compute relations between the entries based on the keywords.
     """
     global lookup
     if dirpath is None:
@@ -280,49 +304,23 @@ def read_entries(dirpath=None):
             else:
                 entry = Note(path)
             lookup[str(entry)] = entry
+            frontmatter["keywords"] = set(frontmatter.pop("keywords", []))
             entry.frontmatter = frontmatter
             entry.text = text
+    set_all_relations()
 
 
-def set_all_keywords_relations():
-    "Find keywords in all the entries and compute relations between them."
+def set_all_relations():
+    "Compute relations between the entries based on the keywords."
     global lookup
     entries = list(lookup.values())
     for entry in entries:
-        entry.set_keywords()
         entry.relations = {}  # Key: entry id; value: relation number.
     for pos, entry1 in enumerate(entries):
         for entry2 in entries[pos + 1 :]:
             if relation := entry1.relation(entry2):
                 entry1.relations[str(entry2)] = relation
                 entry2.relations[str(entry1)] = relation
-
-
-def save_all_keywords():
-    "XXX Save all keywords to entry frontmatter."
-    global lookup
-    for entry in lookup.values():
-        entry.frontmatter["keywords"] = list(entry.keywords)
-        info = os.stat(str(entry.path))
-        orig = (info.st_atime, info.st_mtime)
-        lines = entry.text.strip().split("\n")
-        if settings.get_canonical_keywords(lines[-1]):
-            entry.text = "\n".join(lines[:-1])
-        entry.write()
-        os.utime(str(entry.path), times=orig)
-    print("saved all keywords")
-
-def set_keywords_relations(entry):
-    "Update the keywords and relations involving the provided entry."
-    global lookup
-    entry.remove_relations()
-    entry.set_keywords()
-    for entry2 in lookup.values():
-        if entry2 is entry:
-            continue
-        if relation := entry.relation(entry2):
-            entry.relations[str(entry2)] = relation
-            entry2.relations[str(entry)] = relation
 
 
 def get_entries():
@@ -382,7 +380,7 @@ def get_total_keyword_entries(keyword):
 def get_unrelated_entries():
     "Get the unrelated entries sorted by modified time."
     global lookup
-    result = [e for e in lookup.values() if e.is_unrelated()]
+    result = [e for e in lookup.values() if len(e.related) == 0]
     result.sort(key=lambda e: e.modified, reverse=True)
     return result
 
@@ -449,5 +447,5 @@ def get_statistics():
                 result["# images"] += 1
             case "File":
                 result["# files"] += 1
-    result["# keywords"] = len(settings.canonical_keywords)
+    result["# keywords"] = len(settings.keywords)
     return result

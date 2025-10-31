@@ -36,12 +36,22 @@ def get(request):
                         required=True,
                         autofocus=True,
                     ),
+                    Details(
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(keywords=[])),
+                        cls="dropdown",
+                    ),
+                    cls="grid",
+                ),
+                Fieldset(
                     Input(
                         type="href",
                         name="href",
                         placeholder="Href...",
                         required=True,
                     ),
+                ),
+                Fieldset(
                     Textarea(
                         name="text",
                         rows=10,
@@ -70,7 +80,7 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, href: str, text: str):
+def post(session, title: str, href: str, text: str, keywords: list[str] = []):
     "Actually add the link."
     link = entries.Link()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
@@ -78,8 +88,8 @@ def post(session, title: str, href: str, text: str):
     link.title = title.strip() or "no title"
     link.href = href.strip() or "/"
     link.text = text.strip()
+    link.keywords = keywords
     link.write()
-    entries.set_keywords_relations(link)
     return components.redirect(link.url)
 
 
@@ -153,31 +163,36 @@ def get(link: entries.Entry):
         Main(
             Form(
                 Fieldset(
-                    Label(
-                        "Title",
-                        Input(
-                            type="text",
-                            name="title",
-                            value=link.title,
-                            required=True,
-                        ),
+                    Input(
+                        type="text",
+                        name="title",
+                        value=link.title,
+                        placeholder="Title...",
+                        required=True,
                     ),
-                    Label(
-                        "Href",
-                        Input(
-                            type="href",
-                            name="href",
-                            value=link.href,
-                        ),
+                    Details(
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(link.keywords)),
+                        cls="dropdown",
                     ),
-                    Label(
-                        "Text",
-                        Textarea(
-                            link.text,
-                            name="text",
-                            rows=10,
-                            autofocus=True,
-                        ),
+                    cls="grid",
+                ),
+                Fieldset(
+                    Input(
+                        type="href",
+                        name="href",
+                        value=link.href,
+                        placeholder="Href...",
+                        required=True,
+                    ),
+                ),
+                Fieldset(
+                    Textarea(
+                        link.text,
+                        name="text",
+                        rows=10,
+                        placeholder="Text...",
+                        autofocus=True,
                     ),
                 ),
                 Input(
@@ -202,14 +217,14 @@ def get(link: entries.Entry):
 
 
 @rt("/{link:Entry}/edit")
-def post(link: entries.Entry, title: str, href: str, text: str):
+def post(link: entries.Entry, title: str, href: str, text: str, keywords: list[str] = []):
     "Actually edit the link."
     assert isinstance(link, entries.Link)
     link.title = (title or "no title").strip()
     link.href = href.strip() or "/"
     link.text = text.strip()
+    link.keywords = keywords
     link.write()
-    entries.set_keywords_relations(link)
     return components.redirect(link.url)
 
 
@@ -217,7 +232,6 @@ def post(link: entries.Entry, title: str, href: str, text: str):
 def get(link: entries.Entry):
     "Form for making a copy of the link."
     assert isinstance(link, entries.Link)
-
     return (
         Title("Copy"),
         Header(
@@ -232,28 +246,21 @@ def get(link: entries.Entry):
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="title",
-                    value=link.title,
-                    required=True,
-                ),
-                Input(
-                    type="url",
-                    name="href",
-                    value=link.href,
-                ),
-                Textarea(
-                    link.text,
-                    name="text",
-                    rows=10,
-                    autofocus=True,
+                Fieldset(
+                    Input(
+                        type="text",
+                        name="title",
+                        value=link.title,
+                        placeholder="Title...",
+                        required=True,
+                        autofocus=True,
+                    ),
                 ),
                 Input(
                     type="submit",
                     value="Save",
                 ),
-                action=f"/link/",
+                action=f"/link/{link}/copy",
                 method="POST",
             ),
             Form(
@@ -268,6 +275,21 @@ def get(link: entries.Entry):
             cls="container",
         ),
     )
+
+
+@rt("/{source:Entry}/copy")
+def post(session, source: entries.File, title: str):
+    "Actually copy the link."
+    assert isinstance(source, entries.Link)
+    link = entries.Link()
+    # XXX For some reason, 'auth' is not set in 'request.scope'?
+    link.owner = session["auth"]
+    link.title = title.strip()
+    link.href = source.href
+    link.text = source.text
+    link.keywords = source.keywords
+    link.write()
+    return components.redirect(link.url)
 
 
 @rt("/{link:Entry}/delete")
@@ -320,10 +342,3 @@ def post(link: entries.Entry, action: str):
         return components.redirect(f"/")
     else:
         return components.redirect(link.url)
-
-
-@rt("/{link:Entry}/follow")
-def get(link: entries.Entry):
-    "Redirect to the link href."
-    assert isinstance(link, entries.Link)
-    return components.redirect(link.href)

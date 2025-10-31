@@ -6,6 +6,7 @@ import marko
 import components
 import constants
 import entries
+import settings
 
 
 app, rt = components.get_app_rt()
@@ -28,17 +29,27 @@ def get(request):
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="title",
-                    placeholder="Title...",
-                    required=True,
-                    autofocus=True,
+                Fieldset(
+                    Input(
+                        type="text",
+                        name="title",
+                        placeholder="Title...",
+                        required=True,
+                        autofocus=True,
+                    ),
+                    Details(
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(keywords=[])),
+                        cls="dropdown",
+                    ),
+                    cls="grid",
                 ),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
+                Fieldset(
+                    Textarea(
+                        name="text",
+                        rows=10,
+                        placeholder="Text...",
+                    ),
                 ),
                 Input(
                     type="submit",
@@ -62,15 +73,15 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, text: str):
+def post(session, title: str, text: str, keywords: list[str] = []):
     "Actually add the note."
     note = entries.Note()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     note.owner = session["auth"]
     note.title = title.strip() or "no title"
     note.text = text.strip()
+    note.keywords = keywords
     note.write()
-    entries.set_keywords_relations(note)
     return components.redirect(note.url)
 
 
@@ -141,23 +152,27 @@ def get(note: entries.Entry):
         Main(
             Form(
                 Fieldset(
-                    Label(
-                        "Title",
-                        Input(
-                            type="text",
-                            name="title",
-                            value=note.title,
-                            required=True,
-                        ),
+                    Input(
+                        type="text",
+                        name="title",
+                        value=note.title,
+                        placeholder="Title...",
+                        required=True,
                     ),
-                    Label(
-                        "Text",
-                        Textarea(
-                            note.text,
-                            name="text",
-                            rows=10,
-                            autofocus=True,
-                        ),
+                    Details(
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(note.keywords)),
+                        cls="dropdown",
+                    ),
+                    cls="grid",
+                ),
+                Fieldset(
+                    Textarea(
+                        note.text,
+                        name="text",
+                        rows=10,
+                        placeholder="Text...",
+                        autofocus=True,
                     ),
                 ),
                 Input(
@@ -182,13 +197,13 @@ def get(note: entries.Entry):
 
 
 @rt("/{note:Entry}/edit")
-def post(note: entries.Entry, title: str, text: str):
+def post(note: entries.Entry, title: str, text: str, keywords: list[str] = []):
     "Actually edit the note."
     assert isinstance(note, entries.Note)
     note.title = title or "no title"
-    note.text = text
+    note.text = text.strip()
+    note.keywords = keywords
     note.write()
-    entries.set_keywords_relations(note)
     return components.redirect(note.url)
 
 
@@ -210,22 +225,21 @@ def get(note: entries.Entry):
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="title",
-                    value=note.title,
-                ),
-                Textarea(
-                    note.text,
-                    name="text",
-                    rows=10,
-                    autofocus=True,
+                Fieldset(
+                    Input(
+                        type="text",
+                        name="title",
+                        value=note.title,
+                        placeholder="Title...",
+                        required=True,
+                        autofocus=True,
+                    ),
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Copy",
                 ),
-                action=f"/note/",
+                action=f"/note/{note}/copy",
                 method="POST",
             ),
             Form(
@@ -240,6 +254,20 @@ def get(note: entries.Entry):
             cls="container",
         ),
     )
+
+
+@rt("/{source:Entry}/copy")
+def post(session, source: entries.File, title: str):
+    "Actually copy the note."
+    assert isinstance(source, entries.Note)
+    note = entries.Note()
+    # XXX For some reason, 'auth' is not set in 'request.scope'?
+    note.owner = session["auth"]
+    note.title = title.strip()
+    note.text = source.text
+    note.keywords = source.keywords
+    note.write()
+    return components.redirect(note.url)
 
 
 @rt("/{note:Entry}/delete")

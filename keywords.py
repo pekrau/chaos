@@ -30,7 +30,7 @@ def get():
             Table(
                 Thead(
                     Tr(
-                        Th("Keyword, synonyms"),
+                        Th("Keyword"),
                         Th("# total entries"),
                         Th(),
                     ),
@@ -38,11 +38,7 @@ def get():
                 Tbody(
                     *[
                         Tr(
-                            Td(
-                                A(kw, href=f"/keywords/{kw}"),
-                                " ",
-                                Small(", ".join([s for s in list(syn) if s != kw])),
-                            ),
+                            Td(A(kw, href=f"/keywords/{kw}")),
                             Td(entries.get_total_keyword_entries(kw)),
                             Td(
                                 A(
@@ -54,10 +50,7 @@ def get():
                                 cls="right",
                             ),
                         )
-                        for kw, syn in sorted(
-                            settings.canonical_keywords.items(),
-                            key=lambda k: k[0].casefold(),
-                        )
+                        for kw in settings.get_all_keywords()
                     ],
                 ),
                 cls="compressed",
@@ -72,7 +65,6 @@ def get():
                                 placeholder="Add keyword...",
                                 required=True,
                             ),
-                            Small("keyword: synonym [optional]"),
                         ),
                         Input(
                             type="submit",
@@ -97,11 +89,10 @@ def post(keyword: str):
     if not keyword:
         raise components.Error("No new keyword provided.")
     try:
-        settings.add_keyword_canonical(keyword)
+        settings.keywords.add(keyword)
     except ValueError as error:
         raise components.Error(error)
     settings.write()
-    entries.set_all_keywords_relations()
     return components.redirect("/keywords")
 
 
@@ -124,26 +115,6 @@ def get(keyword: str, page: int = 1):
             ),
         )
     ]
-    rows.extend(
-        [
-            Tr(
-                Td(synonym, " (synonym)"),
-                Td(
-                    A(
-                        "Delete",
-                        role="button",
-                        href=f"/keywords/{synonym}/delete",
-                        cls="outline thin",
-                    )
-                ),
-            )
-            for synonym in [
-                kw
-                for kw in settings.canonical_keywords.get(keyword, [])
-                if kw != keyword
-            ]
-        ]
-    )
     return components.get_entries_table_page(
         f"Keyword '{keyword}'",
         entries.get_keyword_entries(keyword),
@@ -159,7 +130,7 @@ def get(keyword: str):
     keyword = keyword.strip()
     if not keyword:
         return components.redirect("/keywords")
-    if not (keyword in settings.keywords or keyword in settings.canonical_keywords):
+    if not (keyword in settings.keywords):
         return components.redirect("/keywords")
     return (
         Title(f"Delete {keyword}?"),
@@ -199,19 +170,13 @@ def get(keyword: str):
 
 @rt("/{keyword}/delete")
 def post(keyword: str, action: str):
-    "Actually delete a keyword."
+    "Actually delete a keyword. This will delete it from all entries."
     if "yes" in action.casefold():
-        # The given keyword is a canonical keyword: remove all its text keywords.
-        if keyword in settings.canonical_keywords:
-            for kw in settings.canonical_keywords[keyword]:
-                settings.keywords.pop(kw)
-            settings.canonical_keywords.pop(keyword)
-        # The given keyword is a text keyword; remove it.
-        elif keyword in settings.keywords:
-            canonical = settings.keywords.pop(keyword)
-            settings.canonical_keywords[canonical].remove(keyword)
+        settings.keywords.discard(keyword)
         settings.write()
-        entries.set_all_keywords_relations()
+        for entry in entries.lookup.values():
+            entry.remove_keyword(keyword)
+        entries.set_all_relations()
         return components.redirect("/keywords")
     else:
         return components.redirect(f"/keywords/{keyword}")

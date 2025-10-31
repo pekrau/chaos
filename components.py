@@ -266,7 +266,23 @@ def get_table_pager(current_page, total_entries, href):
     return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=href)
 
 
+def get_keywords_dropdown(keywords):
+    "Return a dropdown menu for keywords, with provides ones checked."
+    return [
+        Li(
+            Label(
+                Input(
+                    type="checkbox", name="keywords", value=kw,
+                    checked=kw in keywords
+                ),
+                kw,
+            )
+        )
+        for kw in settings.get_all_keywords()
+    ]
+
 def get_keywords_links(entry, limit=False):
+    "Return the list of keywords for the entry as links."
     result = [str(A(kw, href=f"/keywords/{kw}")) for kw in sorted(entry.keywords)]
     if limit and len(result) > constants.MAX_ROW_KEYWORDS:
         return NotStr(", ".join(result[0 : constants.MAX_ROW_KEYWORDS]) + "...")

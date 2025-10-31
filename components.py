@@ -148,15 +148,13 @@ def search_form(term=None):
 
 
 def get_entry_clipboard(entry):
-    return Span(
-        Img(
-            src="/clipboard.svg",
-            title="Link to clipboard",
-            cls="to_clipboard white",
-            data_clipboard_action="copy",
-            data_clipboard_text=f"[{entry.title}]({entry.url})",
-        ),
-        NotStr("&nbsp;"),
+    return Img(
+        src="/clipboard.svg",
+        title="Link to clipboard",
+        width=24,
+        cls="to_clipboard white",
+        data_clipboard_action="copy",
+        data_clipboard_text=f"[{entry.title}]({entry.url})",
     )
 
 

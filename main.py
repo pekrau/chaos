@@ -30,7 +30,6 @@ import file
 import api
 
 settings.read()
-
 entries.read_entries()
 
 app, rt = components.get_app_rt(
@@ -414,8 +413,25 @@ def get():
             ),
             cls="container",
         ),
-        Main(usage, software, cls="container"),
+        Main(
+            usage,
+            Form(
+                Input(type="submit", value="Reread data"),
+                action="/system/reread",
+                method="POST",
+            ),
+            software,
+            cls="container",
+        ),
     )
+
+
+@rt("/system/reread")
+def post():
+    "Reread all data from disk."
+    settings.read()
+    entries.read_entries()
+    return components.redirect("/system")
 
 
 @rt("/logout")

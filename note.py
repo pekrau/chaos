@@ -103,10 +103,13 @@ def get(note: entries.Entry):
                             A(Strong("Delete"), href=f"{note.url}/delete"),
                         )
                     ),
-                    Li(A(Img(src="/pencil.svg", title="Edit", width=24, cls="white"),
-                         href=f"{note.url}/edit")),
-                    Li(components.get_entry_clipboard(note)),
-                    Li(note.title),
+                    Li(
+                        components.get_entry_edit(note),
+                        " ",
+                        components.get_entry_clipboard(note),
+                        " ",
+                        note.title,
+                    ),
                 ),
                 Ul(Li(components.search_form())),
                 cls="note",

@@ -111,10 +111,13 @@ def get(link: entries.Entry):
                             A(Strong("Delete"), href=f"{link.url}/delete"),
                         )
                     ),
-                    Li(A(Img(src="/pencil.svg", title="Edit", width=24, cls="white"),
-                         href=f"{link.url}/edit")),
-                    Li(components.get_entry_clipboard(link)),
-                    Li(link.title),
+                    Li(
+                        components.get_entry_edit(link),
+                        " ",
+                        components.get_entry_clipboard(link),
+                        " ",
+                        link.title,
+                    ),
                 ),
                 Ul(Li(components.search_form())),
                 cls="link",
@@ -218,7 +221,9 @@ def get(link: entries.Entry):
 
 
 @rt("/{link:Entry}/edit")
-def post(link: entries.Entry, title: str, href: str, text: str, keywords: list[str] = []):
+def post(
+    link: entries.Entry, title: str, href: str, text: str, keywords: list[str] = []
+):
     "Actually edit the link."
     assert isinstance(link, entries.Link)
     link.title = (title or "no title").strip()

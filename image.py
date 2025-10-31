@@ -113,7 +113,14 @@ def get(request):
 
 
 @rt("/")
-async def post(session, title: str, upfile: UploadFile, text: str, keywords: list[str] = [], process: str = ""):
+async def post(
+    session,
+    title: str,
+    upfile: UploadFile,
+    text: str,
+    keywords: list[str] = [],
+    process: str = "",
+):
     "Actually add the image."
     filename = pathlib.Path(upfile.filename)
     if upfile.content_type not in constants.IMAGE_MIMETYPES:
@@ -161,10 +168,13 @@ def get(image: entries.Entry):
                             A(Strong("Delete"), href=f"{image.url}/delete"),
                         )
                     ),
-                    Li(A(Img(src="/pencil.svg", title="Edit", width=24, cls="white"),
-                         href=f"{image.url}/edit")),
-                    Li(components.get_entry_clipboard(image)),
-                    Li(image.title),
+                    Li(
+                        components.get_entry_edit(image),
+                        " ",
+                        components.get_entry_clipboard(image),
+                        " ",
+                        image.title,
+                    ),
                 ),
                 Ul(Li(components.search_form())),
                 cls="image",
@@ -317,7 +327,12 @@ def get(image: entries.Entry):
 
 @rt("/{image:Entry}/edit")
 async def post(
-        image: entries.Entry, title: str, upfile: UploadFile, text: str, keywords: list[str] = [], process: str = None
+    image: entries.Entry,
+    title: str,
+    upfile: UploadFile,
+    text: str,
+    keywords: list[str] = [],
+    process: str = None,
 ):
     "Actually edit the image."
     assert isinstance(image, entries.Image)

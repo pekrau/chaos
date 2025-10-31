@@ -22,6 +22,10 @@ img.autoscale {
     height: auto;
 };
 
+img.norescale {
+    max-width: none;
+};
+
 img.to_clipboard {
     cursor: pointer;
     background-color: white;
@@ -77,7 +81,7 @@ a.thin {
     margin: 2px;
 }
 
-a.no_margin {
+a.nomargin {
     margin: 0px;
 }
 

@@ -29,9 +29,6 @@ import image
 import file
 import api
 
-settings.read()
-entries.read_entries()
-
 app, rt = components.get_app_rt(
     routes=[
         Mount("/note", note.app),
@@ -42,6 +39,9 @@ app, rt = components.get_app_rt(
         Mount("/api", api.app),
     ],
 )
+
+settings.read()
+entries.read_entries()
 
 
 @rt("/")
@@ -69,7 +69,7 @@ def get(session, page: int = 1):
                                 ),
                                 title="chaos: Web service for a repository of notes, links, images and files with no intrinsic order.",
                                 role="button",
-                                cls="secondary outline no_margin",
+                                cls="secondary outline nomargin",
                                 href="/",
                             )
                         ),

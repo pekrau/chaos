@@ -120,7 +120,14 @@ def get(request):
 
 
 @rt("/")
-async def post(session, title: str, upfile: UploadFile, text: str, keywords: list[str] = [], process: str = ""):
+async def post(
+    session,
+    title: str,
+    upfile: UploadFile,
+    text: str,
+    keywords: list[str] = [],
+    process: str = "",
+):
     "Actually add the file."
     filename = pathlib.Path(upfile.filename)
     ext = filename.suffix
@@ -166,10 +173,13 @@ def get(file: entries.Entry):
                             A(Strong("Delete"), href=f"{file.url}/delete"),
                         )
                     ),
-                    Li(A(Img(src="/pencil.svg", title="Edit", width=24, cls="white"),
-                         href=f"{file.url}/edit")),
-                    Li(components.get_entry_clipboard(file)),
-                    Li(file.title),
+                    Li(
+                        components.get_entry_edit(file),
+                        " ",
+                        components.get_entry_clipboard(file),
+                        " ",
+                        file.title,
+                    ),
                 ),
                 Ul(Li(components.search_form())),
                 cls="file",
@@ -250,8 +260,9 @@ def get(file: entries.Entry):
                             type="file",
                             name="upfile",
                         ),
-                        Span("Current file: ",
-                             A(file.filename, href=f"{file.url}/data")),
+                        Span(
+                            "Current file: ", A(file.filename, href=f"{file.url}/data")
+                        ),
                     ),
                     Details(
                         Summary("Process request..."),
@@ -326,7 +337,12 @@ def get(file: entries.Entry):
 
 @rt("/{file:Entry}/edit")
 async def post(
-    file: entries.Entry, title: str, upfile: UploadFile, text: str, keywords: list[str] = [], process: str = None
+    file: entries.Entry,
+    title: str,
+    upfile: UploadFile,
+    text: str,
+    keywords: list[str] = [],
+    process: str = None,
 ):
     "Actually edit the file."
     assert isinstance(file, entries.File)

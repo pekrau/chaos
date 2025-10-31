@@ -102,8 +102,8 @@ def get_nav_menu(*links):
         Summary(
             Img(
                 src="/chaos.png",
-                height=24,
                 width=24,
+                height=24,
                 cls="white",
             ),
         ),
@@ -147,11 +147,21 @@ def search_form(term=None):
     )
 
 
+def get_entry_edit(entry):
+    return A(
+        Img(
+            src="/pencil.svg", title="Edit", width=24, height=24, cls="white norescale"
+        ),
+        href=f"{entry.url}/edit",
+    )
+
+
 def get_entry_clipboard(entry):
     return Img(
         src="/clipboard.svg",
         title="Link to clipboard",
         width=24,
+        height=24,
         cls="to_clipboard white",
         data_clipboard_action="copy",
         data_clipboard_text=f"[{entry.title}]({entry.url})",
@@ -270,14 +280,14 @@ def get_keywords_dropdown(keywords):
         Li(
             Label(
                 Input(
-                    type="checkbox", name="keywords", value=kw,
-                    checked=kw in keywords
+                    type="checkbox", name="keywords", value=kw, checked=kw in keywords
                 ),
                 kw,
             )
         )
         for kw in settings.get_all_keywords()
     ]
+
 
 def get_keywords_links(entry, limit=False):
     "Return the list of keywords for the entry as links."

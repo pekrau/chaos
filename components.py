@@ -133,9 +133,9 @@ def get_nav_menu(*links):
 def search_form(term=None):
     return Form(
         Input(
-            name="term",
             type="search",
-            placeholder="Search term...",
+            name="term",
+            placeholder="Search...",
             aria_label="Search",
             value=term or "",
             autofocus=True,

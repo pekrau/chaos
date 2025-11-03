@@ -37,7 +37,7 @@ def extract(url, apikey):
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
     if response.text:
-        keywords = response.json()
+        keywords = set(response.json()["keywords"])
     else:
         keywords = {}
 
@@ -90,7 +90,7 @@ def extract(url, apikey):
             file_text.append(page.get_text())
         doc.close()
         file_text = " ".join(file_text)
-        found = settings.get_canonical_keywords(file_text, external_keywords=keywords)
+        found = settings.get_keywords(file_text, external_keywords=keywords)
         if found:
             found = ", ".join(sorted(found))
         os.unlink(filepath)

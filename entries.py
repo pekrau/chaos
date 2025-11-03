@@ -277,6 +277,8 @@ def read_entries(dirpath=None):
         lookup.clear()
     for path in constants.DATA_DIR.iterdir():
         if path.is_dir():
+            if path.name == ".trash":
+                continue
             read_entries(path)
         elif path.is_file() and path.suffix == ".md":
             content = path.read_text()
@@ -413,20 +415,22 @@ def get_process_entries(process):
 def get_all():
     "Get a map of entry paths and filepaths with their modified timestamps."
     global lookup
-    result = {}
+    result = {
+        ".chaos.yaml": timestamp_utc(
+            (constants.DATA_DIR / ".chaos.yaml").stat().st_mtime
+        )
+    }
     for entry in lookup.values():
         result[str(entry)] = entry.modified
         if isinstance(entry, (File, Image)):
             result[str(entry.filename)] = entry.file_modified
-    result[".chaos.yaml"] = timestamp_utc(
-        (constants.DATA_DIR / ".chaos.yaml").stat().st_mtime
-    )
     return result
 
 
 def timestamp_utc(timestamp):
-    dt = datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC)
-    return dt.strftime(constants.DATETIME_ISO_FORMAT)
+    return datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC).strftime(
+        constants.DATETIME_ISO_FORMAT
+    )
 
 
 def get_statistics():

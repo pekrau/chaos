@@ -261,7 +261,7 @@ def get(term: str, keywords: list[str] = [], type: str = None):
         if score := entry.score(term):
             if score:
                 result.append((score, entry.modified_local, entry))
-    result.sort(key=lambda e: (-e[0], e[1]), reverse=True)
+    result.sort(key=lambda e: (e[0], e[1]), reverse=True)
     return (
         Title("Search"),
         Header(
@@ -299,10 +299,7 @@ def get(term: str, keywords: list[str] = [], type: str = None):
                                         kw,
                                     )
                                 )
-                                for kw in sorted(
-                                    settings.canonical_keywords,
-                                    key=lambda k: k.casefold(),
-                                )
+                                for kw in settings.get_all_keywords()
                             ]
                         ),
                         cls="dropdown",

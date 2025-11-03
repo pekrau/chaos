@@ -39,7 +39,7 @@ def get(request):
         check_apikey(request)
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
-    return settings.keywords
+    return {"keywords": list(settings.keywords)}
 
 
 @rt("/keyword/{keyword}")

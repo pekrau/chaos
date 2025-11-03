@@ -27,20 +27,9 @@ timer = Timer()
 
 
 def extract(url, apikey):
-    """Fetch which entries to extract keywords from, and upload the result.
+    """Fetch which entries to extract Markdown from, and upload the result.
     Return a dictionary with statistics.
     """
-    response = requests.get(url + "/api/keywords", headers=dict(apikey=apikey))
-    if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
-        raise IOError(f"invalid response: {response.status_code=}")
-    elif response.status_code != HTTP.OK:
-        raise IOError(f"invalid response: {response.status_code=} {response.content=}")
-
-    if response.text:
-        keywords = response.json()
-    else:
-        keywords = {}
-
     response = requests.get(
         url + "/api/process/extract_markdown", headers=dict(apikey=apikey)
     )

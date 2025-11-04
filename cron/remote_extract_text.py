@@ -59,7 +59,7 @@ def extract(url, apikey):
     headers = dict(apikey=apikey)
 
     for entry in file_entries:
-        response = requests.get(url + f"/image/{entry}/data", headers=headers)
+        response = requests.get(url + f"/data/{entry}", headers=headers)
         if response.status_code != HTTP.OK:
             failed.add(entry + ": could not fetch file data")
             continue

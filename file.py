@@ -188,7 +188,7 @@ def get(file: entries.Entry):
         ),
         Main(
             process,
-            Card(Strong(A(file.filename, href=f"{file.url}/data"))),
+            Card(Strong(A(file.filename, href=file.data_url))),
             NotStr(marko.convert(file.text)),
             Small(
                 Card(
@@ -208,16 +208,6 @@ def get(file: entries.Entry):
             ),
             cls="container",
         ),
-    )
-
-
-@rt("/{file:Entry}/data")
-def get(file: entries.Entry):
-    "Return the file data."
-    assert isinstance(file, entries.File)
-    return Response(
-        content=file.filepath.read_bytes(),
-        media_type=file.file_mimetype or constants.BINARY_MIMETYPE,
     )
 
 
@@ -261,7 +251,7 @@ def get(file: entries.Entry):
                             name="upfile",
                         ),
                         Span(
-                            "Current file: ", A(file.filename, href=f"{file.url}/data")
+                            "Current file: ", A(file.filename, href=file.data_url)
                         ),
                     ),
                     Details(

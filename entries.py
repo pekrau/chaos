@@ -217,20 +217,9 @@ class GenericFile(Entry):
         return self.filepath.stat().st_size
 
     @property
-    def file_extension(self):
-        """Return file extension or None if not recognized.
-        Determined from file data, not explicit file extension.
-        """
-        kind = filetype.guess(self.filepath)
-        if kind is None:
-            return (None, None)
-        else:
-            return (kind.extension, kind.mime)
-
-    @property
     def file_mimetype(self):
         """Return MIME type, or None if not recognized.
-        Determined from file data, not explicit file extension.
+        Determined from the file data, not from the explicit file extension.
         """
         kind = filetype.guess(self.filepath)
         if kind is None:
@@ -242,6 +231,10 @@ class GenericFile(Entry):
     def file_modified(self):
         "Modified timestamp in UTC ISO format."
         return timestamp_utc(self.filepath.stat().st_mtime)
+
+    @property
+    def data_url(self):
+        return f"/data/{self}"
 
     def delete(self):
         "Delete the entry and file from the file system and remove from the lookup."

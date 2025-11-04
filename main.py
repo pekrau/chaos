@@ -127,6 +127,16 @@ def post(session, username: str, password: str):
     return components.redirect(session.pop("path", None) or "/")
 
 
+@rt("/data/{file:Entry}")
+def get(file: entries.Entry):
+    "Return the data of the file or image entry."
+    assert isinstance(file, entries.GenericFile)
+    return Response(
+        content=file.filepath.read_bytes(),
+        media_type=file.file_mimetype or constants.BINARY_MIMETYPE,
+    )
+
+
 @rt("/notes")
 def get(page: int = 1):
     "Display note entries."
@@ -168,7 +178,7 @@ def get(page: int = 1):
         row = [
             Div(
                 A(
-                    Img(src=f"{image.url}/data", cls="autoscale display"),
+                    Img(src=image.data_url, cls="autoscale display"),
                     title=image.title,
                     href=str(image.url),
                 ),
@@ -413,7 +423,7 @@ def get():
         Main(
             usage,
             Form(
-                Input(type="submit", value="Reread data"),
+                Input(type="submit", value="Reread entries"),
                 action="/system/reread",
                 method="POST",
             ),
@@ -425,7 +435,7 @@ def get():
 
 @rt("/system/reread")
 def post():
-    "Reread all data from disk."
+    "Reread all entries from disk."
     settings.read()
     entries.read_entries()
     return components.redirect("/system")

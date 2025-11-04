@@ -1,5 +1,6 @@
 "Image entry pages."
 
+from http import HTTPStatus as HTTP
 import mimetypes
 import pathlib
 
@@ -185,8 +186,8 @@ def get(image: entries.Entry):
             process,
             Card(
                 A(
-                    Img(src=f"{image.url}/data", title=image.filename, cls="display"),
-                    href=f"{image.url}/data",
+                    Img(src=image.data_url, title=image.filename, cls="display"),
+                    href=image.data_url,
                 )
             ),
             NotStr(marko.convert(image.text)),
@@ -208,16 +209,6 @@ def get(image: entries.Entry):
             ),
             cls="container",
         ),
-    )
-
-
-@rt("/{image:Entry}/data")
-def get(image: entries.Entry):
-    "Return the image data."
-    assert isinstance(image, entries.Image)
-    return Response(
-        content=image.filepath.read_bytes(),
-        media_type=image.file_mimetype or constants.BINARY_MIMETYPE,
     )
 
 
@@ -261,7 +252,7 @@ def get(image: entries.Entry):
                             name="upfile",
                         ),
                         Img(
-                            src=f"{image.url}/data",
+                            src=image.data_url,
                             title=image.filename,
                             cls="display",
                         ),

@@ -59,7 +59,7 @@ def get_app_rt(routes=None):
         static_path="static",
         before=Beforeware(
             set_auth_before,
-            skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods\.css", r"/ping"],
+            skip=[r"favicon\.ico", r"/chaos\.png", r"/mods\.css", r"/ping"],
         ),
         hdrs=(Link(rel="stylesheet", href="/mods.css", type="text/css"),),
         exception_handlers={
@@ -217,7 +217,7 @@ def get_entries_table(entries):
                     get_mimetype_icon(
                         entry.file_mimetype, title="View or download file"
                     ),
-                    href=f"{entry.url}/data",
+                    href=entry.data_url,
                 )
             case _:
                 raise NotImplementedError

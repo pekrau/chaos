@@ -1,3 +1,5 @@
+/* Style modifications. */
+
 .right {
     text-align: right;
 }
@@ -26,10 +28,8 @@ img.norescale {
     max-width: none;
 };
 
-img.to_clipboard {
+span.to_clipboard {
     cursor: pointer;
-    background-color: white;
-    margin: 2px 8px;
 }
 
 nav {

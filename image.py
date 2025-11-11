@@ -172,9 +172,7 @@ def get(image: entries.Entry):
                     Li(
                         components.get_entry_edit(image),
                         " ",
-                        components.get_entry_clipboard(image),
-                        " ",
-                        image.title,
+                        components.get_entry_link_to_clipboard(image),
                     ),
                 ),
                 Ul(Li(components.search_form())),
@@ -191,12 +189,7 @@ def get(image: entries.Entry):
                 )
             ),
             NotStr(marko.convert(image.text)),
-            Small(
-                Card(
-                    Header("Keywords: ", components.get_keywords_links(image)),
-                    components.get_entries_table(image.related()),
-                ),
-            ),
+            components.get_keywords_entries_card(image),
             cls="container",
         ),
         Footer(

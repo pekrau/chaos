@@ -106,9 +106,7 @@ def get(note: entries.Entry):
                     Li(
                         components.get_entry_edit(note),
                         " ",
-                        components.get_entry_clipboard(note),
-                        " ",
-                        note.title,
+                        components.get_entry_link_to_clipboard(note),
                     ),
                 ),
                 Ul(Li(components.search_form())),
@@ -118,12 +116,7 @@ def get(note: entries.Entry):
         ),
         Main(
             NotStr(marko.convert(note.text)),
-            Small(
-                Card(
-                    Header("Keywords: ", components.get_keywords_links(note)),
-                    components.get_entries_table(note.related()),
-                ),
-            ),
+            components.get_keywords_entries_card(note),
             cls="container",
         ),
         Footer(

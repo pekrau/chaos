@@ -156,13 +156,11 @@ def get_entry_edit(entry):
     )
 
 
-def get_entry_clipboard(entry):
-    return Img(
-        src="/clipboard.svg",
-        title="Link to clipboard",
-        width=24,
-        height=24,
-        cls="to_clipboard white",
+def get_entry_link_to_clipboard(entry):
+    return Span(
+        entry.title,
+        title="Copy link to clipboard",
+        cls="to_clipboard",
         data_clipboard_action="copy",
         data_clipboard_text=f"[{entry.title}]({entry.url})",
     )
@@ -193,6 +191,13 @@ def get_entries_table_page(title, entries, page, href, after=""):
     )
 
 
+def get_keywords_entries_card(entry):
+    return Card(
+        Header("Keywords: ", get_keywords_links(entry) or "-"),
+        get_entries_table(entry.related()),
+    )
+
+
 def get_entries_table(entries):
     rows = []
     for entry in entries[0 : constants.MAX_PAGE_ENTRIES]:
@@ -206,7 +211,10 @@ def get_entries_table(entries):
             keywords = NotStr(", ".join(keywords))
         match entry.__class__.__name__:
             case "Note":
-                icon = ""
+                icon = A(
+                    get_icon("clipboard.svg", title="Note"),
+                    href=entry.url,
+                )
             case "Link":
                 icon = A(
                     get_icon("box-arrow-up-right.svg", title="Follow link..."),

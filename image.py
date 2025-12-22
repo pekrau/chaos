@@ -170,9 +170,8 @@ def get(image: entries.Entry):
                         )
                     ),
                     Li(
-                        components.get_entry_edit(image),
-                        " ",
                         components.get_entry_link_to_clipboard(image),
+                        components.get_entry_edit(image),
                     ),
                 ),
                 Ul(Li(components.search_form())),

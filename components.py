@@ -84,6 +84,14 @@ def get_icon(filename, title=""):
     )
 
 
+def get_note_icon():
+    return get_icon("clipboard.svg", title="Note")
+
+
+def get_link_icon():
+    return get_icon("box-arrow-up-right.svg", title="Follow link...")
+
+
 def get_mimetype_icon(mimetype, title=""):
     if mimetype in constants.IMAGE_MIMETYPES:
         return get_icon("file-earmark-image.svg", title=title)
@@ -153,6 +161,7 @@ def get_entry_edit(entry):
             src="/pencil.svg", title="Edit", width=24, height=24, cls="white norescale"
         ),
         href=f"{entry.url}/edit",
+        cls="button",
     )
 
 
@@ -211,15 +220,9 @@ def get_entries_table(entries):
             keywords = NotStr(", ".join(keywords))
         match entry.__class__.__name__:
             case "Note":
-                icon = A(
-                    get_icon("clipboard.svg", title="Note"),
-                    href=entry.url,
-                )
+                icon = A(get_note_icon(), href=entry.url)
             case "Link":
-                icon = A(
-                    get_icon("box-arrow-up-right.svg", title="Follow link..."),
-                    href=entry.href,
-                )
+                icon = A(get_link_icon(), href=entry.href)
             case "File" | "Image":
                 icon = A(
                     get_mimetype_icon(

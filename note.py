@@ -104,9 +104,8 @@ def get(note: entries.Entry):
                         )
                     ),
                     Li(
-                        components.get_entry_edit(note),
-                        " ",
                         components.get_entry_link_to_clipboard(note),
+                        components.get_entry_edit(note),
                     ),
                 ),
                 Ul(Li(components.search_form())),

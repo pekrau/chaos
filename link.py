@@ -112,9 +112,8 @@ def get(link: entries.Entry):
                         )
                     ),
                     Li(
-                        components.get_entry_edit(link),
-                        " ",
                         components.get_entry_link_to_clipboard(link),
+                        components.get_entry_edit(link),
                     ),
                 ),
                 Ul(Li(components.search_form())),
@@ -123,7 +122,13 @@ def get(link: entries.Entry):
             cls="container",
         ),
         Main(
-            Card(Strong(A(link.href, href=link.href))),
+            Card(
+                Strong(
+                    A(
+                        components.get_link_icon(),
+                        link.href, href=link.href)
+                )
+            ),
             NotStr(marko.convert(link.text)),
             components.get_keywords_entries_card(link),
             cls="container",

@@ -174,9 +174,8 @@ def get(file: entries.Entry):
                         )
                     ),
                     Li(
-                        components.get_entry_edit(file),
-                        " ",
                         components.get_entry_link_to_clipboard(file),
+                        components.get_entry_edit(file),
                     ),
                 ),
                 Ul(Li(components.search_form())),
@@ -186,7 +185,13 @@ def get(file: entries.Entry):
         ),
         Main(
             process,
-            Card(Strong(A(file.filename, href=file.data_url))),
+            Card(
+                Strong(
+                    A(
+                        components.get_mimetype_icon(file.file_mimetype),
+                        file.filename, href=file.data_url)
+                )
+            ),
             NotStr(marko.convert(file.text)),
             components.get_keywords_entries_card(file),
             cls="container",

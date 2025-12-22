@@ -85,6 +85,12 @@ a.nomargin {
     margin: 0px;
 }
 
+a.button {
+    border: 1px solid #ddd;
+    padding: 2px 8px;
+    margin: 6px;
+}
+
 table.compressed > tbody > tr > td {
     padding-bottom: 0px;
     padding-top: 2px;

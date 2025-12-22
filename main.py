@@ -371,6 +371,10 @@ def get():
                 Td(components.numerical(disk_usage), cls="right"),
             ),
             Tr(
+                Td("Data directory"),
+                Td(constants.DATA_DIR, cls="right"),
+            ),
+            Tr(
                 Td("Disk free"),
                 Td(
                     components.numerical(shutil.disk_usage(constants.DATA_DIR).free),

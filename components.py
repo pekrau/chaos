@@ -59,7 +59,7 @@ def get_app_rt(routes=None):
         static_path="static",
         before=Beforeware(
             set_auth_before,
-            skip=[r"favicon\.ico", r"/chaos\.png", r"/mods\.css", r"/ping"],
+            skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods\.css", r"/ping"],
         ),
         hdrs=(Link(rel="stylesheet", href="/mods.css", type="text/css"),),
         exception_handlers={

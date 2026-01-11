@@ -39,7 +39,7 @@ def get(request):
                     ),
                     Details(
                         Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=[])),
+                        Ul(*components.get_keywords_dropdown(keywords=list())),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -64,7 +64,7 @@ def get(request):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=request.headers.get("Referer", "/"),
+                action=request.headers["Referer"],
                 method="GET",
             ),
             cls="container",
@@ -73,14 +73,14 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, text: str, keywords: list[str] = []):
+def post(session, title: str, text: str, keywords: list[str] = None):
     "Actually add the note."
     note = entries.Note()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     note.owner = session["auth"]
     note.title = title.strip() or "no title"
     note.text = text.strip()
-    note.keywords = keywords
+    note.keywords = keywords or list()
     note.write()
     return components.redirect(note.url)
 
@@ -132,7 +132,7 @@ def get(note: entries.Entry):
 
 
 @rt("/{note:Entry}/edit")
-def get(note: entries.Entry):
+def get(request, note: entries.Entry):
     "Form for editing a note."
     assert isinstance(note, entries.Note)
     return (
@@ -186,7 +186,7 @@ def get(note: entries.Entry):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=note.url,
+                action=request.headers["Referer"],
                 method="GET",
             ),
             cls="container",
@@ -195,18 +195,18 @@ def get(note: entries.Entry):
 
 
 @rt("/{note:Entry}/edit")
-def post(note: entries.Entry, title: str, text: str, keywords: list[str] = []):
+def post(note: entries.Entry, title: str, text: str, keywords: list[str] = None):
     "Actually edit the note."
     assert isinstance(note, entries.Note)
     note.title = title or "no title"
     note.text = text.strip()
-    note.keywords = keywords
+    note.keywords = keywords or list()
     note.write()
     return components.redirect(note.url)
 
 
 @rt("/{note:Entry}/copy")
-def get(note: entries.Entry):
+def get(request, note: entries.Entry):
     "Form for making a copy of the note."
     assert isinstance(note, entries.Note)
     return (
@@ -246,7 +246,7 @@ def get(note: entries.Entry):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=note.url,
+                action=request.headers["Referer"],
                 method="GET",
             ),
             cls="container",
@@ -269,7 +269,7 @@ def post(session, source: entries.File, title: str):
 
 
 @rt("/{note:Entry}/delete")
-def get(note: entries.Entry):
+def get(request, note: entries.Entry):
     "Ask for confirmation to delete the note."
     assert isinstance(note, entries.Note)
     return (
@@ -290,18 +290,27 @@ def get(note: entries.Entry):
                 Fieldset(
                     Input(
                         type="submit",
-                        name="action",
                         value="Yes, delete",
                     ),
                     Input(
-                        type="submit",
-                        name="action",
-                        value="Cancel",
-                        cls="secondary",
+                        type="hidden",
+                        name="target",
+                        value=request.headers["Referer"],
                     ),
                 ),
                 action=f"{note.url}/delete",
                 method="POST",
+            ),
+            Form(
+                Fieldset(
+                    Input(
+                        type="submit",
+                        value="Cancel",
+                        cls="secondary",
+                    ),
+                ),
+                action=request.headers["Referer"],
+                method="GET",
             ),
             cls="container",
         ),
@@ -309,11 +318,8 @@ def get(note: entries.Entry):
 
 
 @rt("/{note:Entry}/delete")
-def post(note: entries.Entry, action: str):
+def post(note: entries.Entry, target: str):
     "Actually delete the note."
     assert isinstance(note, entries.Note)
-    if "yes" in action.casefold():
-        note.delete()
-        return components.redirect(f"/")
-    else:
-        return components.redirect(note.url)
+    note.delete()
+    return components.redirect(target)

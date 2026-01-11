@@ -1,4 +1,4 @@
-"Link entry pages."
+"Listset (ordered set) entry pages."
 
 from fasthtml.common import *
 import marko
@@ -13,16 +13,16 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get(request):
-    "Form for adding a link."
+    "Form for adding an listset."
     return (
-        Title("Add link"),
+        Title("Add listset"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add link"),
+                    Li("Add listset"),
                 ),
-                cls="link",
+                cls="listset",
             ),
             cls="container",
         ),
@@ -44,14 +44,6 @@ def get(request):
                     cls="grid",
                 ),
                 Fieldset(
-                    Input(
-                        type="href",
-                        name="href",
-                        placeholder="Href...",
-                        required=True,
-                    ),
-                ),
-                Fieldset(
                     Textarea(
                         name="text",
                         rows=10,
@@ -62,7 +54,7 @@ def get(request):
                     type="submit",
                     value="Save",
                 ),
-                action="/link/",
+                action="/listset/",
                 method="POST",
             ),
             Form(
@@ -80,25 +72,25 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, href: str, text: str, keywords: list[str] = None):
-    "Actually add the link."
-    link = entries.Link()
+def post(session, title: str, text:str, keywords: list[str] = None):
+    "Actually add the listset."
+    listset = entries.Listset()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
-    link.owner = session["auth"]
-    link.title = title.strip() or "no title"
-    link.href = href.strip() or "/"
-    link.text = text.strip()
-    link.keywords = keywords or list()
-    link.write()
-    return components.redirect(link.url)
+    listset.owner = session["auth"]
+    listset.title = title.strip() or "no title"
+    listset.text = text.strip()
+    listset.keywords = keywords or list()
+    listset.frontmatter["items"] = list()
+    listset.write()
+    return components.redirect(listset.url)
 
 
-@rt("/{link:Entry}")
-def get(link: entries.Entry):
-    "View the metadata for the link."
-    assert isinstance(link, entries.Link)
+@rt("/{listset:Entry}")
+def get(listset: entries.Entry):
+    "View the metadata for the listset."
+    assert isinstance(listset, entries.Listset)
     return (
-        Title(link.title),
+        Title(listset.title),
         Script(src="/clipboard.min.js"),
         Script("new ClipboardJS('.to_clipboard');"),
         Header(
@@ -106,39 +98,34 @@ def get(link: entries.Entry):
                 Ul(
                     Li(
                         components.get_nav_menu(
-                            A(Strong("Edit"), href=f"{link.url}/edit"),
-                            A(Strong("Copy"), href=f"{link.url}/copy"),
-                            A(Strong("Delete"), href=f"{link.url}/delete"),
+                            A(Strong("Edit"), href=f"{listset.url}/edit"),
+                            A(Strong("Copy"), href=f"{listset.url}/copy"),
+                            A(Strong("Delete"), href=f"{listset.url}/delete"),
                         )
                     ),
                     Li(
-                        components.get_entry_link_to_clipboard(link),
-                        components.get_entry_edit(link),
+                        components.get_entry_link_to_clipboard(listset),
+                        components.get_entry_edit(listset),
                     ),
                 ),
                 Ul(Li(components.search_form())),
-                cls="link",
+                cls="listset",
             ),
             cls="container",
         ),
         Main(
-            Card(
-                Strong(
-                    A(
-                        components.get_link_icon(),
-                        link.href, href=link.href)
-                )
+            NotStr(marko.convert(listset.text)),
+            Card("List of items..."
             ),
-            NotStr(marko.convert(link.text)),
-            components.get_keywords_entries_card(link),
+            components.get_keywords_entries_card(listset),
             cls="container",
         ),
         Footer(
             Hr(),
             Div(
-                Div(link.modified_local),
-                Div(f"{link.size} bytes"),
-                Div(link.owner),
+                Div(listset.modified_local),
+                Div(f"{listset.size} bytes"),
+                Div(listset.owner),
                 cls="grid",
             ),
             cls="container",
@@ -146,19 +133,19 @@ def get(link: entries.Entry):
     )
 
 
-@rt("/{link:Entry}/edit")
-def get(request, link: entries.Entry):
-    "Form for editing a link."
-    assert isinstance(link, entries.Link)
+@rt("/{listset:Entry}/edit")
+def get(request, listset: entries.Entry):
+    "Form for editing a listset."
+    assert isinstance(listset, entries.Listset)
     return (
         Title("Edit"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{link.title}'"),
+                    Li(f"Edit '{listset.title}'"),
                 ),
-                cls="link",
+                cls="listset",
             ),
             cls="container",
         ),
@@ -168,29 +155,20 @@ def get(request, link: entries.Entry):
                     Input(
                         type="text",
                         name="title",
-                        value=link.title,
+                        value=listset.title,
                         placeholder="Title...",
                         required=True,
                     ),
                     Details(
                         Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(link.keywords)),
+                        Ul(*components.get_keywords_dropdown(listset.keywords)),
                         cls="dropdown",
                     ),
                     cls="grid",
                 ),
                 Fieldset(
-                    Input(
-                        type="href",
-                        name="href",
-                        value=link.href,
-                        placeholder="Href...",
-                        required=True,
-                    ),
-                ),
-                Fieldset(
                     Textarea(
-                        link.text,
+                        listset.text,
                         name="text",
                         rows=10,
                         placeholder="Text...",
@@ -201,7 +179,7 @@ def get(request, link: entries.Entry):
                     type="submit",
                     value="Save",
                 ),
-                action=f"{link.url}/edit",
+                action=f"{listset.url}/edit",
                 method="POST",
             ),
             Form(
@@ -218,33 +196,32 @@ def get(request, link: entries.Entry):
     )
 
 
-@rt("/{link:Entry}/edit")
+@rt("/{listset:Entry}/edit")
 def post(
-    link: entries.Entry, title: str, href: str, text: str, keywords: list[str] = None
+    listset: entries.Entry, title: str, text: str, keywords: list[str] = None
 ):
-    "Actually edit the link."
-    assert isinstance(link, entries.Link)
-    link.title = (title or "no title").strip()
-    link.href = href.strip() or "/"
-    link.text = text.strip()
-    link.keywords = keywords or list()
-    link.write()
-    return components.redirect(link.url)
+    "Actually edit the listset."
+    assert isinstance(listset, entries.Listset)
+    listset.title = (title or "no title").strip()
+    listset.text = text.strip()
+    listset.keywords = keywords or list()
+    listset.write()
+    return components.redirect(listset.url)
 
 
-@rt("/{link:Entry}/copy")
-def get(request, link: entries.Entry):
-    "Form for making a copy of the link."
-    assert isinstance(link, entries.Link)
+@rt("/{listset:Entry}/copy")
+def get(request, listset: entries.Entry):
+    "Form for making a copy of the listset."
+    assert isinstance(listset, entries.Listset)
     return (
         Title("Copy"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Copy '{link.title}'"),
+                    Li(f"Copy '{listset.title}'"),
                 ),
-                cls="link",
+                cls="listset",
             ),
             cls="container",
         ),
@@ -254,7 +231,7 @@ def get(request, link: entries.Entry):
                     Input(
                         type="text",
                         name="title",
-                        value=link.title,
+                        value=listset.title,
                         placeholder="Title...",
                         required=True,
                         autofocus=True,
@@ -264,7 +241,7 @@ def get(request, link: entries.Entry):
                     type="submit",
                     value="Save",
                 ),
-                action=f"/link/{link}/copy",
+                action=f"/listset/{listset}/copy",
                 method="POST",
             ),
             Form(
@@ -283,23 +260,22 @@ def get(request, link: entries.Entry):
 
 @rt("/{source:Entry}/copy")
 def post(session, source: entries.File, title: str):
-    "Actually copy the link."
-    assert isinstance(source, entries.Link)
-    link = entries.Link()
+    "Actually copy the listset."
+    assert isinstance(source, entries.Listset)
+    listset = entries.Listset()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
-    link.owner = session["auth"]
-    link.title = title.strip()
-    link.href = source.href
-    link.text = source.text
-    link.keywords = source.keywords
-    link.write()
-    return components.redirect(link.url)
+    listset.owner = session["auth"]
+    listset.title = title.strip()
+    listset.text = source.text
+    listset.keywords = source.keywords
+    listset.write()
+    return components.redirect(listset.url)
 
 
-@rt("/{link:Entry}/delete")
-def get(request, link: entries.Entry):
-    "Ask for confirmation to delete the link."
-    assert isinstance(link, entries.Link)
+@rt("/{listset:Entry}/delete")
+def get(request, listset: entries.Entry):
+    "Ask for confirmation to delete the listset."
+    assert isinstance(listset, entries.Listset)
 
     return (
         Title("Delete"),
@@ -307,14 +283,14 @@ def get(request, link: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{link.title}'"),
+                    Li(f"Delete '{listset.title}'"),
                 ),
-                cls="link",
+                cls="listset",
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the link? All data will be lost."),
+            P("Really delete the listset? All data will be lost."),
             Form(
                 Fieldset(
                     Input(
@@ -327,7 +303,7 @@ def get(request, link: entries.Entry):
                         value=request.headers["Referer"],
                     ),
                 ),
-                action=f"{link.url}/delete",
+                action=f"{listset.url}/delete",
                 method="POST",
             ),
             Form(
@@ -346,9 +322,10 @@ def get(request, link: entries.Entry):
     )
 
 
-@rt("/{link:Entry}/delete")
-def post(link: entries.Entry, target: str):
-    "Actually delete the link."
-    assert isinstance(link, entries.Link)
-    link.delete()
+@rt("/{listset:Entry}/delete")
+def post(listset: entries.Entry, target: str):
+    "Actually delete the listset."
+    assert isinstance(listset, entries.Listset)
+    # XXX Remove from lookup lists in other items.
+    listset.delete()
     return components.redirect(target)

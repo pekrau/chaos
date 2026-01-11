@@ -60,7 +60,11 @@ nav.file {
 }
 
 nav.image {
-    outline-color: mediumseagreen;
+    outline-color: seagreen;
+}
+
+nav.listset {
+    outline-color: firebrick;
 }
 
 nav.keyword {

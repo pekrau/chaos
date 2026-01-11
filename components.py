@@ -92,6 +92,10 @@ def get_link_icon():
     return get_icon("box-arrow-up-right.svg", title="Follow link...")
 
 
+def get_listset_icon():
+    return get_icon("list-ul.svg")
+
+
 def get_mimetype_icon(mimetype, title=""):
     if mimetype in constants.IMAGE_MIMETYPES:
         return get_icon("file-earmark-image.svg", title=title)
@@ -122,11 +126,13 @@ def get_nav_menu(*links):
             Li(A("Add link...", href="/link/")),
             Li(A("Add image...", href="/image/")),
             Li(A("Add file...", href="/file/")),
+            Li(A("Add listset...", href="/listset/")),
             Li(A("Keywords", href="/keywords")),
             Li(A("Notes", href="/notes")),
             Li(A("Links", href="/links")),
             Li(A("Images", href="/images")),
             Li(A("Files", href="/files")),
+            Li(A("Listsets", href="/listsets")),
             Li(A("No keywords", href="/nokeywords")),
             Li(A("Unrelated", href="/unrelated")),
             Li(A("Random", href="/random")),
@@ -155,13 +161,23 @@ def search_form(term=None):
     )
 
 
-def get_entry_edit(entry):
+def get_entry_edit(entry, as_button=True):
     return A(
         Img(
-            src="/pencil.svg", title="Edit", width=24, height=24, cls="white norescale"
+            src="/pencil.svg", title="Edit", width=24, height=24, cls="white norescale" if as_button else "norescale"
         ),
         href=f"{entry.url}/edit",
-        cls="button",
+        cls="button" if as_button else "",
+    )
+
+
+def get_entry_delete(entry, as_button=True):
+    return A(
+        Img(
+            src="/trash.svg", title="Delete", width=24, height=24, cls="white norescale" if as_button else "norescale"
+        ),
+        href=f"{entry.url}/delete",
+        cls="button" if as_button else "",
     )
 
 
@@ -230,12 +246,16 @@ def get_entries_table(entries):
                     ),
                     href=entry.data_url,
                 )
+            case "Listset":
+                icon = A(get_listset_icon(), href=entry.url)
             case _:
                 raise NotImplementedError
         rows.append(
             Tr(
                 Td(icon, A(entry.title, href=entry.url)),
                 Td(get_keywords_links(entry, limit=True)),
+                Td(get_entry_edit(entry, as_button=False)),
+                Td(get_entry_delete(entry, as_button=False)),
             )
         )
     if rows:

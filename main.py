@@ -22,19 +22,21 @@ import components
 import constants
 import settings
 import entries
-import keywords
 import note
 import link
-import image
 import file
+import image
+import listset
+import keywords
 import api
 
 app, rt = components.get_app_rt(
     routes=[
         Mount("/note", note.app),
         Mount("/link", link.app),
-        Mount("/image", image.app),
         Mount("/file", file.app),
+        Mount("/image", image.app),
+        Mount("/listset", listset.app),
         Mount("/keywords", keywords.app),
         Mount("/api", api.app),
     ],

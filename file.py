@@ -40,7 +40,7 @@ def get(request):
                     ),
                     Details(
                         Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=[])),
+                        Ul(*components.get_keywords_dropdown(keywords=list())),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -111,7 +111,7 @@ def get(request):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=request.headers.get("Referer", "/"),
+                action=request.headers["Referer"],
                 method="GET",
             ),
             cls="container",
@@ -125,7 +125,7 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    keywords: list[str] = [],
+    keywords: list[str] = None,
     process: str = "",
 ):
     "Actually add the file."
@@ -138,7 +138,7 @@ async def post(
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
     filecontent = await upfile.read()
-    filename = str(file) + ext
+    filename = file.id + ext
     file.frontmatter["filename"] = filename
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
@@ -146,7 +146,7 @@ async def post(
     except OSError as error:
         raise components.Error(error)
     file.text = text.strip()
-    file.keywords = keywords
+    file.keywords = keywords or list()
     if process and process != "none":
         file.frontmatter["process"] = process
     file.write()
@@ -210,7 +210,7 @@ def get(file: entries.Entry):
 
 
 @rt("/{file:Entry}/edit")
-def get(file: entries.Entry):
+def get(request, file: entries.Entry):
     "Form for editing metadata for the file."
     assert isinstance(file, entries.File)
     return (
@@ -315,7 +315,7 @@ def get(file: entries.Entry):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=file.url,
+                action=request.headers["Referer"],
                 method="GET",
             ),
             cls="container",
@@ -329,7 +329,7 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    keywords: list[str] = [],
+    keywords: list[str] = None,
     process: str = None,
 ):
     "Actually edit the file."
@@ -340,14 +340,14 @@ async def post(
         if ext == ".md":
             raise components.Error("Upload of Markdown file is disallowed.")
         filecontent = await upfile.read()
-        filename = str(file) + ext  # The mimetype may change on file contents update.
+        filename = file.id + ext  # The mimetype may change on file contents update.
         try:
             with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
                 outfile.write(filecontent)
         except OSError as error:
             raise components.Error(error)
     file.text = text.strip()
-    file.keywords = keywords
+    file.keywords = keywords or list()
     if process and process != "none":
         file.frontmatter["process"] = process
     else:
@@ -357,7 +357,7 @@ async def post(
 
 
 @rt("/{file:Entry}/copy")
-def get(file: entries.Entry):
+def get(request, file: entries.Entry):
     "Form for making a copy of the file."
     assert isinstance(file, entries.File)
     return (
@@ -397,7 +397,7 @@ def get(file: entries.Entry):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=file.url,
+                action=request.headers["Referer"],
                 method="GET",
             ),
             cls="container",
@@ -417,7 +417,7 @@ def post(session, source: entries.File, title: str):
     file.text = source.text
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
-    filename = str(file) + filename.suffix
+    filename = file.id + filename.suffix
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
@@ -430,7 +430,7 @@ def post(session, source: entries.File, title: str):
 
 
 @rt("/{file:Entry}/delete")
-def get(file: entries.Entry):
+def get(request, file: entries.Entry):
     "Ask for confirmation to delete the file."
     assert isinstance(file, entries.File)
     return (
@@ -451,18 +451,27 @@ def get(file: entries.Entry):
                 Fieldset(
                     Input(
                         type="submit",
-                        name="action",
                         value="Yes, delete",
                     ),
                     Input(
-                        type="submit",
-                        name="action",
-                        value="Cancel",
-                        cls="secondary",
+                        type="hidden",
+                        name="target",
+                        value=request.headers["Referer"],
                     ),
                 ),
                 action=f"{file.url}/delete",
                 method="POST",
+            ),
+            Form(
+                Fieldset(
+                    Input(
+                        type="submit",
+                        value="Cancel",
+                        cls="secondary",
+                    ),
+                ),
+                action=request.headers["Referer"],
+                method="GET",
             ),
             cls="container",
         ),
@@ -470,11 +479,8 @@ def get(file: entries.Entry):
 
 
 @rt("/{file:Entry}/delete")
-def post(file: entries.Entry, action: str):
+def post(file: entries.Entry, target: str):
     "Actually delete the file."
     assert isinstance(file, entries.File)
-    if "yes" in action.casefold():
-        file.delete()
-        return components.redirect(f"/")
-    else:
-        return components.redirect(file.url)
+    file.delete()
+    return components.redirect(target)

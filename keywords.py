@@ -125,7 +125,7 @@ def get(keyword: str, page: int = 1):
 
 
 @rt("/{keyword}/delete")
-def get(keyword: str):
+def get(request, keyword: str):
     "Ask for confirmation to delete the keyword."
     keyword = keyword.strip()
     if not keyword:
@@ -150,18 +150,27 @@ def get(keyword: str):
                 Fieldset(
                     Input(
                         type="submit",
-                        name="action",
                         value="Yes, delete",
                     ),
                     Input(
-                        type="submit",
-                        name="action",
-                        value="Cancel",
-                        cls="secondary",
+                        type="hidden",
+                        name="origin",
+                        value=request.headers["Referer"],
                     ),
                 ),
                 action=f"/keywords/{keyword}/delete",
                 method="POST",
+            ),
+            Form(
+                Fieldset(
+                    Input(
+                        type="submit",
+                        value="Cancel",
+                        cls="secondary",
+                    ),
+                ),
+                action=request.headers["Referer"],
+                method="GET",
             ),
             cls="container",
         ),
@@ -169,14 +178,11 @@ def get(keyword: str):
 
 
 @rt("/{keyword}/delete")
-def post(keyword: str, action: str):
+def post(keyword: str, origin: str):
     "Actually delete a keyword. This will delete it from all entries."
-    if "yes" in action.casefold():
-        settings.keywords.discard(keyword)
-        settings.write()
-        for entry in entries.lookup.values():
-            entry.remove_keyword(keyword)
-        entries.set_all_relations()
-        return components.redirect("/keywords")
-    else:
-        return components.redirect(f"/keywords/{keyword}")
+    settings.keywords.discard(keyword)
+    settings.write()
+    for entry in entries.lookup.values():
+        entry.remove_keyword(keyword)
+    entries.set_all_relations()
+    return components.redirect(origin)

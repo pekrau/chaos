@@ -43,7 +43,7 @@ def get(request):
                     ),
                     Details(
                         Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=[])),
+                        Ul(*components.get_keywords_dropdown(keywords=list())),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -105,7 +105,7 @@ def get(request):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=request.headers.get("Referer", "/"),
+                action=request.headers["Referer"],
                 method="GET",
             ),
             cls="container",
@@ -119,7 +119,7 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    keywords: list[str] = [],
+    keywords: list[str] = None,
     process: str = "",
 ):
     "Actually add the image."
@@ -134,7 +134,7 @@ async def post(
     image.owner = session["auth"]
     image.title = title.strip() or filename.stem
     filecontent = await upfile.read()
-    filename = str(image) + ext
+    filename = image.id + ext
     image.frontmatter["filename"] = filename
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
@@ -142,7 +142,7 @@ async def post(
     except OSError as error:
         raise components.Error(error)
     image.text = text.strip()
-    image.keywords = keywords
+    image.keywords = keywords or list()
     if process and process != "none":
         image.frontmatter["process"] = process
     image.write()
@@ -205,7 +205,7 @@ def get(image: entries.Entry):
 
 
 @rt("/{image:Entry}/edit")
-def get(image: entries.Entry):
+def get(request, image: entries.Entry):
     "Form for editing metadata for the image."
     assert isinstance(image, entries.Image)
     return (
@@ -300,7 +300,7 @@ def get(image: entries.Entry):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=image.url,
+                action=request.headers["Referer"],
                 method="GET",
             ),
             cls="container",
@@ -314,7 +314,7 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    keywords: list[str] = [],
+    keywords: list[str] = None,
     process: str = None,
 ):
     "Actually edit the image."
@@ -325,14 +325,14 @@ async def post(
         if ext == ".md":
             raise components.Error("Upload of Markdown file is disallowed.")
         filecontent = await upfile.read()
-        filename = str(image) + ext  # The mimetype may change on file contents update.
+        filename = image.id + ext  # The mimetype may change on file contents update.
         try:
             with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
                 outfile.write(filecontent)
         except OSError as error:
             raise components.Error(error)
     image.text = text.strip()
-    image.keywords = keywords
+    image.keywords = keywords or list()
     if process and process != "none":
         image.frontmatter["process"] = process
     else:
@@ -342,7 +342,7 @@ async def post(
 
 
 @rt("/{image:Entry}/copy")
-def get(image: entries.Entry):
+def get(request, image: entries.Entry):
     "Form for making a copy of the image."
     assert isinstance(image, entries.Image)
     return (
@@ -382,7 +382,7 @@ def get(image: entries.Entry):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=image.url,
+                action=request.headers["Referer"],
                 method="GET",
             ),
             cls="container",
@@ -402,7 +402,7 @@ def post(session, source: entries.File, title: str):
     image.text = source.text
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
-    filename = str(image) + filename.suffix
+    filename = image.id + filename.suffix
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
@@ -415,7 +415,7 @@ def post(session, source: entries.File, title: str):
 
 
 @rt("/{image:Entry}/delete")
-def get(image: entries.Entry):
+def get(request, image: entries.Entry):
     "Ask for confirmation to delete the file image."
     assert isinstance(image, entries.Image)
     return (
@@ -436,18 +436,27 @@ def get(image: entries.Entry):
                 Fieldset(
                     Input(
                         type="submit",
-                        name="action",
                         value="Yes, delete",
                     ),
                     Input(
-                        type="submit",
-                        name="action",
-                        value="Cancel",
-                        cls="secondary",
+                        type="hidden",
+                        name="target",
+                        value=request.headers["Referer"],
                     ),
                 ),
                 action=f"{image.url}/delete",
                 method="POST",
+            ),
+            Form(
+                Fieldset(
+                    Input(
+                        type="submit",
+                        value="Cancel",
+                        cls="secondary",
+                    ),
+                ),
+                action=request.headers["Referer"],
+                method="GET",
             ),
             cls="container",
         ),
@@ -455,11 +464,8 @@ def get(image: entries.Entry):
 
 
 @rt("/{image:Entry}/delete")
-def post(image: entries.Entry, action: str):
+def post(image: entries.Entry, target: str):
     "Actually delete the image."
     assert isinstance(image, entries.Image)
-    if "yes" in action.casefold():
-        image.delete()
-        return components.redirect(f"/")
-    else:
-        return components.redirect(image.url)
+    image.delete()
+    return components.redirect(target)

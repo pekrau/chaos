@@ -54,9 +54,9 @@ def get(request, keyword: str):
     result = {}
     for entry in entries.get_keyword_entries(keyword):
         try:
-            result[str(entry)] = entry.filename
+            result[entry.id] = entry.filename
         except AttributeError:
-            result[str(entry)] = None
+            result[entry.id] = None
     return result
 
 
@@ -72,9 +72,9 @@ def get(request, process: str):
     result = {}
     for entry in entries.get_process_entries(process):
         try:
-            result[str(entry)] = entry.filename
+            result[entry.id] = entry.filename
         except AttributeError:
-            result[str(entry)] = None
+            result[entry.id] = None
     return result
 
 

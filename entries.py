@@ -30,8 +30,9 @@ class Entry:
         self.text = ""
         self.relations = {}  # Key: entry id; value: relation number.
 
-    def __str__(self):
-        return self._path.stem
+    @property
+    def id(self):
+        return self.path.stem
 
     @property
     def path(self):
@@ -39,7 +40,7 @@ class Entry:
 
     @property
     def url(self):
-        return f"/{self.__class__.__name__.casefold()}/{self}"
+        return f"/{self.__class__.__name__.casefold()}/{self.id}"
 
     @property
     def owner(self):
@@ -73,14 +74,14 @@ class Entry:
             )
             filename = filename.casefold()
             self._path = constants.DATA_DIR / f"{filename}.md"
-            if str(self) in lookup:
+            if self.id in lookup:
                 n = 2
                 while True:
                     self._path = constants.DATA_DIR / f"{filename}-{n}.md"
-                    if str(self) not in lookup:
+                    if self.id not in lookup:
                         break
                     n += 1
-            lookup[str(self)] = self
+            lookup[self.id] = self
 
     @property
     def keywords(self):
@@ -119,7 +120,7 @@ class Entry:
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = self.frontmatter.copy()
-                frontmatter["keywords"] = list(frontmatter.pop("keywords", []))
+                frontmatter["keywords"] = list(frontmatter.pop("keywords", list()))
                 outfile.write("---\n")
                 outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
                 outfile.write("---\n")
@@ -132,7 +133,7 @@ class Entry:
         Remove from the lookup.
         """
         global lookup
-        id = str(self)
+        id = self.id
         for entry in lookup.values():
             entry.relations.pop(id, None)
         lookup.pop(id)
@@ -151,13 +152,13 @@ class Entry:
     def set_relations(self):
         "Set the relations between this entry and all others."
         global lookup
-        id = str(self)
+        id = self.id
         self.relations = {}  # Key: entry id; value: relation number.
         for entry in lookup.values():
             if entry is self:
                 continue
             if relation := self.relation(entry):
-                self.relations[str(entry)] = relation
+                self.relations[entry.id] = relation
                 entry.relations[id] = relation
             else:
                 entry.relations.pop(id, None)
@@ -200,6 +201,41 @@ class Link(Entry):
         self.frontmatter["href"] = href.strip() or "/"
 
 
+class Listset(Entry):
+    "Listset entry class."
+
+    def __contains__(self, item):
+        assert isinstance(item, Entry)
+        iid = item.id
+        for id in self.items:
+            if id == iid:
+                return True
+            elif isinstance(subitem := get(id), Listset):
+                if item in subitem:
+                    return True
+        return False
+
+    @property
+    def items(self):
+        return self.frontmatter["items"]
+
+    def add(self, item):
+        assert isinstance(item, Entry)
+        if isinstance(item, Listset):
+            if self in item:
+                raise ValueError("The given listset item contains this item.")
+        if item.id in self.items:
+            return
+        self.items.append(item.id)
+
+    def remove(self, item):
+        assert isinstance(item, Entry)
+        try:
+            self.items.remove(item.id)
+        except ValueError:
+            pass
+
+
 class GenericFile(Entry):
     "Generic file entry class."
 
@@ -234,7 +270,7 @@ class GenericFile(Entry):
 
     @property
     def data_url(self):
-        return f"/data/{self}"
+        return f"/data/{self.id}"
 
     def delete(self):
         "Delete the entry and file from the file system and remove from the lookup."
@@ -296,10 +332,12 @@ def read_entries(dirpath=None):
                     entry = Image(path)
                 else:
                     entry = File(path)
+            elif "items" in frontmatter:
+                entry = Listset(path)
             else:
                 entry = Note(path)
-            lookup[str(entry)] = entry
-            frontmatter["keywords"] = set(frontmatter.pop("keywords", []))
+            lookup[entry.id] = entry
+            frontmatter["keywords"] = set(frontmatter.pop("keywords", list()))
             entry.frontmatter = frontmatter
             entry.text = text
     set_all_relations()
@@ -314,8 +352,8 @@ def set_all_relations():
     for pos, entry1 in enumerate(entries):
         for entry2 in entries[pos + 1 :]:
             if relation := entry1.relation(entry2):
-                entry1.relations[str(entry2)] = relation
-                entry2.relations[str(entry1)] = relation
+                entry1.relations[entry2.id] = relation
+                entry2.relations[entry1.id] = relation
 
 
 def get_entries():
@@ -414,7 +452,7 @@ def get_all():
         )
     }
     for entry in lookup.values():
-        result[str(entry)] = entry.modified
+        result[entry.id] = entry.modified
         if isinstance(entry, (File, Image)):
             result[str(entry.filename)] = entry.file_modified
     return result

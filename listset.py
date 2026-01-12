@@ -236,7 +236,7 @@ def get(request, listset: entries.Entry):
                     type="submit",
                     value="Save",
                 ),
-                action=f"/listset/{listset}/copy",
+                action=f"{listset.url}/copy",
                 method="POST",
             ),
             Form(

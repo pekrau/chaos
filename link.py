@@ -256,7 +256,7 @@ def get(request, link: entries.Entry):
                     type="submit",
                     value="Save",
                 ),
-                action=f"/link/{link}/copy",
+                action=f"{link.url}/copy",
                 method="POST",
             ),
             Form(

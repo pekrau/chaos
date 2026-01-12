@@ -386,7 +386,7 @@ def get(request, file: entries.Entry):
                     type="submit",
                     value="Save",
                 ),
-                action=f"/file/{file}/copy",
+                action=f"{file.url}/copy",
                 method="POST",
             ),
             Form(

@@ -163,6 +163,20 @@ def get_entry_edit_link(entry):
     )
 
 
+def get_entry_copy_link(entry):
+    return A(
+        Img(
+            src="/copy.svg",
+            title="Copy",
+            width=24,
+            height=24,
+            cls="norescale",
+            style="margin-left: 10px;",
+        ),
+        href=f"{entry.url}/copy",
+    )
+
+
 def get_entry_id_to_clipboard(entry):
     return Img(
         src="/info-square.svg",
@@ -206,6 +220,8 @@ def get_entry_delete_link(entry):
 def get_entry_links(entry):
     return [
         get_entry_edit_link(entry),
+        " ",
+        get_entry_copy_link(entry),
         " ",
         get_entry_id_to_clipboard(entry),
         " ",

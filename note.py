@@ -213,7 +213,7 @@ def get(request, note: entries.Entry):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Copy '{note.title}')"),
+                    Li(f"Copy '{note.title}'"),
                 ),
                 cls="note",
             ),
@@ -235,7 +235,7 @@ def get(request, note: entries.Entry):
                     type="submit",
                     value="Copy",
                 ),
-                action=f"/note/{note}/copy",
+                action=f"{note.url}/copy",
                 method="POST",
             ),
             Form(

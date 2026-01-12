@@ -371,7 +371,7 @@ def get(request, image: entries.Entry):
                     type="submit",
                     value="Copy",
                 ),
-                action=f"/image/{image}/copy",
+                action=f"{image.url}/copy",
                 method="POST",
             ),
             Form(

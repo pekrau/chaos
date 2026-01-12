@@ -142,7 +142,7 @@ class Entry:
     def remove_keyword(self, keyword):
         "Remove the keyword from this entry, and write it if any change."
         try:
-            self.keyword.remove(keyword)
+            self.keywords.remove(keyword)
         except KeyError:
             pass
         else:

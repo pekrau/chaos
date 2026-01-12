@@ -154,7 +154,7 @@ def get(request, keyword: str):
                     ),
                     Input(
                         type="hidden",
-                        name="origin",
+                        name="target",
                         value=request.headers["Referer"],
                     ),
                 ),
@@ -178,11 +178,11 @@ def get(request, keyword: str):
 
 
 @rt("/{keyword}/delete")
-def post(keyword: str, origin: str):
+def post(keyword: str, target: str):
     "Actually delete a keyword. This will delete it from all entries."
-    settings.keywords.discard(keyword)
-    settings.write()
     for entry in entries.lookup.values():
         entry.remove_keyword(keyword)
+    settings.keywords.discard(keyword)
+    settings.write()
     entries.set_all_relations()
-    return components.redirect(origin)
+    return components.redirect(target)

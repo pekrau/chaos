@@ -169,10 +169,8 @@ def get(image: entries.Entry):
                             A(Strong("Delete"), href=f"{image.url}/delete"),
                         )
                     ),
-                    Li(
-                        components.get_entry_link_to_clipboard(image),
-                        components.get_entry_edit(image),
-                    ),
+                    Li(Strong(image.title)),
+                    Li(*components.get_entry_links(image)),
                 ),
                 Ul(Li(components.search_form())),
                 cls="image",

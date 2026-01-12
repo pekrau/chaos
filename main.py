@@ -144,7 +144,7 @@ def get(page: int = 1):
     "Display note entries."
     return components.get_entries_table_page(
         "Notes",
-        entries.get_notes(),
+        entries.get_entries(entries.Note),
         page,
         "/notes",
     )
@@ -155,7 +155,7 @@ def get(page: int = 1):
     "Display link entries."
     return components.get_entries_table_page(
         "Links",
-        entries.get_links(),
+        entries.get_entries(entries.Link),
         page,
         "/links",
     )
@@ -164,8 +164,7 @@ def get(page: int = 1):
 @rt("/images")
 def get(page: int = 1):
     "Display image entries."
-    images = [e for e in entries.lookup.values() if isinstance(e, entries.Image)]
-    images.sort(key=lambda e: e.modified, reverse=True)
+    images = entries.get_entries(entries.Image)
     total_entries = len(images)
     images = list(
         images[
@@ -217,9 +216,20 @@ def get(page: int = 1):
     "Display file entries."
     return components.get_entries_table_page(
         "Files",
-        entries.get_files(),
+        entries.get_entries(entries.File),
         page,
         "/files",
+    )
+
+
+@rt("/listsets")
+def get(page: int = 1):
+    "Display listset entries."
+    return components.get_entries_table_page(
+        "Listsets",
+        entries.get_entries(entries.Listset),
+        page,
+        "/listsets",
     )
 
 
@@ -262,7 +272,7 @@ def get(term: str, keywords: list[str] = [], type: str = None):
     keywords = set(keywords)
     if type:
         type = type.capitalize()
-        if type not in ("Note", "Link", "Image", "File"):
+        if type not in ("Note", "Link", "Image", "File", "Listset"):
             type = None
     result = []
     for entry in entries.lookup.values():
@@ -357,7 +367,7 @@ def get():
         for filename in filenames:
             fp = dp / filename
             disk_usage += os.path.getsize(fp)
-    statistics = entries.get_statistics
+    statistics = entries.get_statistics()
     usage = Table(
         Thead(Tr(Th("Resource usage", Th("Bytes or #", cls="right")))),
         Tbody(
@@ -383,10 +393,30 @@ def get():
                     cls="right",
                 ),
             ),
-            *[
-                Tr(Td(k), Td(v, cls="right"))
-                for k, v in entries.get_statistics().items()
-            ],
+            Tr(
+                Td("# entries"),
+                Td(A(statistics["# entries"], href="/"), cls="right"),
+            ),
+            Tr(
+                Td("# notes"),
+                Td(A(statistics["# notes"], href="/notes"), cls="right"),
+            ),
+            Tr(
+                Td("# links"),
+                Td(A(statistics["# links"], href="/links"), cls="right"),
+            ),
+            Tr(
+                Td("# images"),
+                Td(A(statistics["# images"], href="/images"), cls="right"),
+            ),
+            Tr(
+                Td("# files"),
+                Td(A(statistics["# files"], href="/files"), cls="right"),
+            ),
+            Tr(
+                Td("# listsets"),
+                Td(A(statistics["# listsets"], href="/listsets"), cls="right"),
+            ),
         ),
     )
     software = Table(

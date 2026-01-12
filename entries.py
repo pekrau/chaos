@@ -356,42 +356,13 @@ def set_all_relations():
                 entry2.relations[entry1.id] = relation
 
 
-def get_entries():
-    "Get all entries sorted by modified time."
+def get_entries(cls=None):
+    "Get all entries, or of a given type, sorted by modified time."
     global lookup
-    result = list(lookup.values())
-    result.sort(key=lambda e: e.modified, reverse=True)
-    return result
-
-
-def get_notes():
-    "Get all note entries sorted by modified time."
-    global lookup
-    result = [e for e in lookup.values() if isinstance(e, Note)]
-    result.sort(key=lambda e: e.modified, reverse=True)
-    return result
-
-
-def get_links():
-    "Get all link entries sorted by modified time."
-    global lookup
-    result = [e for e in lookup.values() if isinstance(e, Link)]
-    result.sort(key=lambda e: e.modified, reverse=True)
-    return result
-
-
-def get_files():
-    "Get all file entries sorted by modified time."
-    global lookup
-    result = [e for e in lookup.values() if isinstance(e, File)]
-    result.sort(key=lambda e: e.modified, reverse=True)
-    return result
-
-
-def get_images():
-    "Get all image entries sorted by modified time."
-    global lookup
-    result = [e for e in lookup.values() if isinstance(e, Image)]
+    if cls is None:
+        result = list(lookup.values())
+    else:
+        result = [e for e in lookup.values() if isinstance(e, cls)]
     result.sort(key=lambda e: e.modified, reverse=True)
     return result
 
@@ -471,6 +442,7 @@ def get_statistics():
         "# links": 0,
         "# images": 0,
         "# files": 0,
+        "# listsets": 0,
     }
     for entry in lookup.values():
         match entry.__class__.__name__:
@@ -482,5 +454,7 @@ def get_statistics():
                 result["# images"] += 1
             case "File":
                 result["# files"] += 1
+            case "Listset":
+                result["# listsets"] += 1
     result["# keywords"] = len(settings.keywords)
     return result

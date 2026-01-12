@@ -103,10 +103,8 @@ def get(note: entries.Entry):
                             A(Strong("Delete"), href=f"{note.url}/delete"),
                         )
                     ),
-                    Li(
-                        components.get_entry_link_to_clipboard(note),
-                        components.get_entry_edit(note),
-                    ),
+                    Li(Strong(note.title)),
+                    Li(*components.get_entry_links(note)),
                 ),
                 Ul(Li(components.search_form())),
                 cls="note",

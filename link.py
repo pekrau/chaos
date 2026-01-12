@@ -111,10 +111,8 @@ def get(link: entries.Entry):
                             A(Strong("Delete"), href=f"{link.url}/delete"),
                         )
                     ),
-                    Li(
-                        components.get_entry_link_to_clipboard(link),
-                        components.get_entry_edit(link),
-                    ),
+                    Li(Strong(link.title)),
+                    Li(*components.get_entry_links(link)),
                 ),
                 Ul(Li(components.search_form())),
                 cls="link",
@@ -122,13 +120,7 @@ def get(link: entries.Entry):
             cls="container",
         ),
         Main(
-            Card(
-                Strong(
-                    A(
-                        components.get_link_icon(),
-                        link.href, href=link.href)
-                )
-            ),
+            Card(Strong(A(components.get_link_icon(), link.href, href=link.href))),
             NotStr(marko.convert(link.text)),
             components.get_keywords_entries_card(link),
             cls="container",

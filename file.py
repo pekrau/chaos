@@ -173,10 +173,8 @@ def get(file: entries.Entry):
                             A(Strong("Delete"), href=f"{file.url}/delete"),
                         )
                     ),
-                    Li(
-                        components.get_entry_link_to_clipboard(file),
-                        components.get_entry_edit(file),
-                    ),
+                    Li(Strong(file.title)),
+                    Li(*components.get_entry_links(file)),
                 ),
                 Ul(Li(components.search_form())),
                 cls="file",
@@ -189,7 +187,9 @@ def get(file: entries.Entry):
                 Strong(
                     A(
                         components.get_mimetype_icon(file.file_mimetype),
-                        file.filename, href=file.data_url)
+                        file.filename,
+                        href=file.data_url,
+                    )
                 )
             ),
             NotStr(marko.convert(file.text)),
@@ -248,9 +248,7 @@ def get(request, file: entries.Entry):
                             type="file",
                             name="upfile",
                         ),
-                        Span(
-                            "Current file: ", A(file.filename, href=file.data_url)
-                        ),
+                        Span("Current file: ", A(file.filename, href=file.data_url)),
                     ),
                     Details(
                         Summary("Process request..."),

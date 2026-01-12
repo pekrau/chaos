@@ -72,7 +72,7 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, text:str, keywords: list[str] = None):
+def post(session, title: str, text: str, keywords: list[str] = None):
     "Actually add the listset."
     listset = entries.Listset()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
@@ -103,10 +103,8 @@ def get(listset: entries.Entry):
                             A(Strong("Delete"), href=f"{listset.url}/delete"),
                         )
                     ),
-                    Li(
-                        components.get_entry_link_to_clipboard(listset),
-                        components.get_entry_edit(listset),
-                    ),
+                    Li(Strong(listset.title)),
+                    Li(*components.get_entry_links(listset)),
                 ),
                 Ul(Li(components.search_form())),
                 cls="listset",
@@ -115,8 +113,7 @@ def get(listset: entries.Entry):
         ),
         Main(
             NotStr(marko.convert(listset.text)),
-            Card("List of items..."
-            ),
+            Card("List of items..."),
             components.get_keywords_entries_card(listset),
             cls="container",
         ),
@@ -197,9 +194,7 @@ def get(request, listset: entries.Entry):
 
 
 @rt("/{listset:Entry}/edit")
-def post(
-    listset: entries.Entry, title: str, text: str, keywords: list[str] = None
-):
+def post(listset: entries.Entry, title: str, text: str, keywords: list[str] = None):
     "Actually edit the listset."
     assert isinstance(listset, entries.Listset)
     listset.title = (title or "no title").strip()

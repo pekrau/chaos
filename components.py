@@ -84,18 +84,6 @@ def get_icon(filename, title=""):
     )
 
 
-def get_note_icon():
-    return get_icon("clipboard.svg", title="Note")
-
-
-def get_link_icon():
-    return get_icon("box-arrow-up-right.svg", title="Follow link...")
-
-
-def get_listset_icon():
-    return get_icon("list-ul.svg")
-
-
 def get_mimetype_icon(mimetype, title=""):
     if mimetype in constants.IMAGE_MIMETYPES:
         return get_icon("file-earmark-image.svg", title=title)
@@ -161,34 +149,70 @@ def search_form(term=None):
     )
 
 
-def get_entry_edit(entry, as_button=True):
+def get_entry_edit_link(entry):
     return A(
         Img(
-            src="/pencil.svg", title="Edit", width=24, height=24, cls="white norescale" if as_button else "norescale"
+            src="/pencil.svg",
+            title="Edit",
+            width=24,
+            height=24,
+            cls="norescale",
+            style="margin-left: 10px;",
         ),
         href=f"{entry.url}/edit",
-        cls="button" if as_button else "",
     )
 
 
-def get_entry_delete(entry, as_button=True):
-    return A(
-        Img(
-            src="/trash.svg", title="Delete", width=24, height=24, cls="white norescale" if as_button else "norescale"
-        ),
-        href=f"{entry.url}/delete",
-        cls="button" if as_button else "",
+def get_entry_id_to_clipboard(entry):
+    return Img(
+        src="/info-square.svg",
+        title="Copy item identifier to clipboard",
+        width=24,
+        height=24,
+        data_clipboard_action="copy",
+        data_clipboard_text=entry.id,
+        cls="cursor norescale",
+        style="margin-left: 10px;",
     )
 
 
-def get_entry_link_to_clipboard(entry):
-    return Span(
-        entry.title,
-        title="Copy link to clipboard",
-        cls="to_clipboard",
+def get_entry_md_link_to_clipboard(entry):
+    return Img(
+        src="/markdown.svg",
+        title="Copy item Markdown link to clipboard",
+        width=24,
+        height=24,
         data_clipboard_action="copy",
         data_clipboard_text=f"[{entry.title}]({entry.url})",
+        cls="cursor norescale",
+        style="margin-left: 10px;",
     )
+
+
+def get_entry_delete_link(entry):
+    return A(
+        Img(
+            src="/trash.svg",
+            title="Delete",
+            width=24,
+            height=24,
+            cls="norescale",
+            style="margin-left: 10px;",
+        ),
+        href=f"{entry.url}/delete",
+    )
+
+
+def get_entry_links(entry):
+    return [
+        get_entry_edit_link(entry),
+        " ",
+        get_entry_id_to_clipboard(entry),
+        " ",
+        get_entry_md_link_to_clipboard(entry),
+        " ",
+        get_entry_delete_link(entry),
+    ]
 
 
 def get_entries_table_page(title, entries, page, href, after=""):
@@ -236,9 +260,12 @@ def get_entries_table(entries):
             keywords = NotStr(", ".join(keywords))
         match entry.__class__.__name__:
             case "Note":
-                icon = A(get_note_icon(), href=entry.url)
+                icon = A(get_icon("card-text.svg", title="Note"), href=entry.url)
             case "Link":
-                icon = A(get_link_icon(), href=entry.href)
+                icon = A(
+                    get_icon("box-arrow-up-right.svg", title="Follow link..."),
+                    href=entry.href,
+                )
             case "File" | "Image":
                 icon = A(
                     get_mimetype_icon(
@@ -247,20 +274,19 @@ def get_entries_table(entries):
                     href=entry.data_url,
                 )
             case "Listset":
-                icon = A(get_listset_icon(), href=entry.url)
+                icon = A(get_icon("list-ul.svg", title="Listset"), href=entry.url)
             case _:
                 raise NotImplementedError
         rows.append(
             Tr(
                 Td(icon, A(entry.title, href=entry.url)),
                 Td(get_keywords_links(entry, limit=True)),
-                Td(get_entry_edit(entry, as_button=False)),
-                Td(get_entry_delete(entry, as_button=False)),
+                Td(*get_entry_links(entry), cls="right"),
             )
         )
     if rows:
         if len(entries) > constants.MAX_PAGE_ENTRIES:
-            rows.append(Tr(Td(I("Others not shown..."), colspan=3)))
+            rows.append(Tr(Td(I("Some not shown..."), colspan=3)))
         return Table(Tbody(*rows), cls="striped compressed")
     else:
         return Article(I("No entries."))

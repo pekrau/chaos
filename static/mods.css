@@ -4,6 +4,10 @@
     text-align: right;
 }
 
+.cursor {
+    cursor: pointer
+}
+
 img.white {
     background-color: white;
     padding: 1px;
@@ -27,10 +31,6 @@ img.autoscale {
 img.norescale {
     max-width: none;
 };
-
-span.to_clipboard {
-    cursor: pointer;
-}
 
 nav {
     outline-width: 3px;

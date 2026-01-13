@@ -91,8 +91,7 @@ def get(note: entries.Entry):
     assert isinstance(note, entries.Note)
     return (
         Title(note.title),
-        Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
+        *components.get_clipboard_scripts(),
         Header(
             Nav(
                 Ul(

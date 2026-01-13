@@ -161,8 +161,7 @@ def get(file: entries.Entry):
         process = Card(f"Process request: {process}")
     return (
         Title(file.title),
-        Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
+        *components.get_clipboard_scripts(),
         Header(
             Nav(
                 Ul(

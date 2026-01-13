@@ -185,7 +185,7 @@ def get_entry_id_to_clipboard(entry):
         height=24,
         data_clipboard_action="copy",
         data_clipboard_text=entry.id,
-        cls="cursor norescale",
+        cls="to_clipboard norescale",
         style="margin-left: 10px;",
     )
 
@@ -198,9 +198,20 @@ def get_entry_md_link_to_clipboard(entry):
         height=24,
         data_clipboard_action="copy",
         data_clipboard_text=f"[{entry.title}]({entry.url})",
-        cls="cursor norescale",
+        cls="to_clipboard norescale",
         style="margin-left: 10px;",
     )
+
+
+def get_clipboard_scripts():
+    return [
+        Script(src="/clipboard.min.js"),
+        Script("""var clipboard = new ClipboardJS('.to_clipboard');
+        clipboard.on('success', function(e) {
+          alert('Copied!');
+          e.clearSelection();
+        });"""),
+    ]
 
 
 def get_entry_delete_link(entry):
@@ -241,6 +252,7 @@ def get_entries_table_page(title, entries, page, href, after=""):
     pager = get_table_pager(page, total_entries, href)
     return (
         Title(title),
+        *get_clipboard_scripts(),
         Header(
             Nav(
                 Ul(

@@ -99,8 +99,7 @@ def get(link: entries.Entry):
     assert isinstance(link, entries.Link)
     return (
         Title(link.title),
-        Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
+        *components.get_clipboard_scripts(),
         Header(
             Nav(
                 Ul(

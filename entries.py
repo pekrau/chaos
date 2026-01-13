@@ -206,32 +206,34 @@ class Listset(Entry):
 
     def __contains__(self, item):
         assert isinstance(item, Entry)
-        iid = item.id
-        for id in self.items:
-            if id == iid:
-                return True
-            elif isinstance(subitem := get(id), Listset):
-                if item in subitem:
-                    return True
-        return False
+        return item.id in self.frontmatter["items"]
 
     @property
     def items(self):
-        return self.frontmatter["items"]
+        return [get(id) for id in self.frontmatter["items"]]
+
+    def flattened(self):
+        "Return all subitems, including those in contained listsets."
+        result = [self]
+        for item in self.items:
+            if isinstance(item, Listset):
+                result.extend(item.flattened())
+            else:
+                result.append(item)
+        return result
 
     def add(self, item):
         assert isinstance(item, Entry)
-        if isinstance(item, Listset):
-            if self in item:
-                raise ValueError("The given listset item contains this item.")
-        if item.id in self.items:
+        if item in self:
             return
-        self.items.append(item.id)
+        if isinstance(item, Listset):
+            if self in item.flattened():
+                raise ValueError("The given listset contains this listset in its tree.")
+        self.frontmatter["items"].append(item.id)
 
-    def remove(self, item):
-        assert isinstance(item, Entry)
+    def remove(self, id):
         try:
-            self.items.remove(item.id)
+            self.frontmatter["items"].remove(id)
         except ValueError:
             pass
 

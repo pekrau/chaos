@@ -30,7 +30,7 @@ def get(request):
         ),
         Main(
             Form(
-                Fieldset(
+                Div(
                     Input(
                         type="text",
                         name="title",
@@ -45,7 +45,7 @@ def get(request):
                     ),
                     cls="grid",
                 ),
-                Fieldset(
+                Div(
                     Input(
                         type="file",
                         name="upfile",
@@ -91,12 +91,10 @@ def get(request):
                     ),
                     cls="grid",
                 ),
-                Fieldset(
-                    Textarea(
-                        name="text",
-                        rows=10,
-                        placeholder="Text...",
-                    ),
+                Textarea(
+                    name="text",
+                    rows=10,
+                    placeholder="Text...",
                 ),
                 Input(
                     type="submit",
@@ -161,17 +159,12 @@ def get(file: entries.Entry):
         process = Card(f"Process request: {process}")
     return (
         Title(file.title),
-        *components.get_clipboard_scripts(),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
-                    Li(
-                        components.get_nav_menu(
-                            A(Strong("Edit"), href=f"{file.url}/edit"),
-                            A(Strong("Copy"), href=f"{file.url}/copy"),
-                            A(Strong("Delete"), href=f"{file.url}/delete"),
-                        )
-                    ),
+                    Li(components.get_nav_menu()),
                     Li(Strong(file.title)),
                     Li(*components.get_entry_links(file)),
                 ),
@@ -226,7 +219,7 @@ def get(request, file: entries.Entry):
         ),
         Main(
             Form(
-                Fieldset(
+                Div(
                     Input(
                         type="text",
                         name="title",
@@ -241,13 +234,13 @@ def get(request, file: entries.Entry):
                     ),
                     cls="grid",
                 ),
-                Fieldset(
-                    Div(
+                Div(
+                    Label(
+                        Span("Current file: ", A(file.filename, href=file.data_url)),
                         Input(
                             type="file",
                             name="upfile",
                         ),
-                        Span("Current file: ", A(file.filename, href=file.data_url)),
                     ),
                     Details(
                         Summary("Process request..."),
@@ -288,16 +281,11 @@ def get(request, file: entries.Entry):
                     ),
                     cls="grid",
                 ),
-                Fieldset(
-                    Label(
-                        "Text",
-                        Textarea(
-                            file.text,
-                            name="text",
-                            rows=10,
-                            autofocus=True,
-                        ),
-                    ),
+                Textarea(
+                    file.text,
+                    name="text",
+                    rows=10,
+                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -371,15 +359,13 @@ def get(request, file: entries.Entry):
         ),
         Main(
             Form(
-                Fieldset(
-                    Input(
-                        type="text",
-                        name="title",
-                        value=file.title,
-                        placeholder="Title...",
-                        required=True,
-                        autofocus=True,
-                    ),
+                Input(
+                    type="text",
+                    name="title",
+                    value=file.title,
+                    placeholder="Title...",
+                    required=True,
+                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -445,27 +431,23 @@ def get(request, file: entries.Entry):
         Main(
             P("Really delete the file? All data will be lost."),
             Form(
-                Fieldset(
-                    Input(
-                        type="submit",
-                        value="Yes, delete",
-                    ),
-                    Input(
-                        type="hidden",
-                        name="target",
-                        value=request.headers["Referer"],
-                    ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
+                Input(
+                    type="hidden",
+                    name="target",
+                    value=request.headers["Referer"],
                 ),
                 action=f"{file.url}/delete",
                 method="POST",
             ),
             Form(
-                Fieldset(
-                    Input(
-                        type="submit",
-                        value="Cancel",
-                        cls="secondary",
-                    ),
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
                 ),
                 action=request.headers["Referer"],
                 method="GET",

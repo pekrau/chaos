@@ -97,7 +97,7 @@ def get_mimetype_icon(mimetype, title=""):
     return get_icon("file-earmark-binary.svg", title=title)
 
 
-def get_nav_menu(*links):
+def get_nav_menu():
     return Details(
         Summary(
             Img(
@@ -109,7 +109,6 @@ def get_nav_menu(*links):
         ),
         Ul(
             Li(A("Home", href="/")),
-            *[Li(l) for l in links],
             Li(A("Add note...", href="/note/")),
             Li(A("Add link...", href="/link/")),
             Li(A("Add image...", href="/image/")),
@@ -127,7 +126,7 @@ def get_nav_menu(*links):
             Li(A("System", href="/system")),
             Li(A("Logout", href="/logout")),
         ),
-        title="chaos: Web service for a repository of notes, links, images and files with no intrinsic order.",
+        title="chaos: Web-based repository of notes, links, images and files with no intrinsic order.",
         cls="dropdown",
     )
 
@@ -203,17 +202,6 @@ def get_entry_md_link_to_clipboard(entry):
     )
 
 
-def get_clipboard_scripts():
-    return [
-        Script(src="/clipboard.min.js"),
-        Script("""var clipboard = new ClipboardJS('.to_clipboard');
-        clipboard.on('success', function(e) {
-          alert('Copied!');
-          e.clearSelection();
-        });"""),
-    ]
-
-
 def get_entry_delete_link(entry):
     return A(
         Img(
@@ -252,7 +240,8 @@ def get_entries_table_page(title, entries, page, href, after=""):
     pager = get_table_pager(page, total_entries, href)
     return (
         Title(title),
-        *get_clipboard_scripts(),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
@@ -275,9 +264,10 @@ def get_keywords_entries_card(entry):
     )
 
 
-def get_entries_table(entries):
+def get_entries_table(entries, max_entries=constants.MAX_PAGE_ENTRIES, edit=False):
     rows = []
-    for entry in entries[0 : constants.MAX_PAGE_ENTRIES]:
+    entries = entries[0:max_entries]
+    for entry in entries:
         keywords = sorted(entry.keywords)
         keywords = [str(A(kw, href=f"/keywords/{kw}")) for kw in keywords]
         if len(keywords) > constants.MAX_ROW_KEYWORDS:
@@ -305,13 +295,35 @@ def get_entries_table(entries):
                 icon = A(get_icon("list-ul.svg", title="Listset"), href=entry.url)
             case _:
                 raise NotImplementedError
-        rows.append(
-            Tr(
-                Td(icon, A(entry.title, href=entry.url)),
-                Td(get_keywords_links(entry, limit=True)),
-                Td(*get_entry_links(entry), cls="right"),
+        if edit:
+            rows.append(
+                Tr(
+                    Td(icon, A(entry.title, href=entry.url)),
+                    Td(
+                        Select(
+                            name=f"position_{entry.id}",
+                            *[
+                                Option(str(i), selected=i == len(rows) + 1)
+                                for i in range(0, len(entries) + 2)
+                            ],
+                            cls="slim",
+                        ),
+                    ),
+                    Td(
+                        Input(type="checkbox", name="remove", value=entry.id),
+                        "Remove",
+                        cls="right",
+                    ),
+                )
             )
-        )
+        else:
+            rows.append(
+                Tr(
+                    Td(icon, A(entry.title, href=entry.url)),
+                    Td(get_keywords_links(entry, limit=True)),
+                    Td(*get_entry_links(entry), cls="right"),
+                )
+            )
     if rows:
         if len(entries) > constants.MAX_PAGE_ENTRIES:
             rows.append(Tr(Td(I("Some not shown..."), colspan=3)))

@@ -76,8 +76,8 @@ nav.search {
 }
 
 form.search {
-    margin-bottom: 2px;
     padding-top: 0px;
+    margin-bottom: 2px;
 }
 
 a.thin {
@@ -96,7 +96,13 @@ a.button {
 }
 
 table.compressed > tbody > tr > td {
-    padding-bottom: 0px;
     padding-top: 2px;
+    padding-bottom: 0px;
     margin-bottom: 2px;
+}
+
+select.slim {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-bottom: 0px;
 }

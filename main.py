@@ -1,4 +1,4 @@
-"Chaos notebook."
+"chaos: Web-based repository of notes, links, images and files with no intrinsic order."
 
 from icecream import install
 
@@ -69,7 +69,7 @@ def get(session, page: int = 1):
                                     width=24,
                                     cls="white",
                                 ),
-                                title="chaos: Web service for a repository of notes, links, images and files with no intrinsic order.",
+                                title="chaos: Web-based repository of notes, links, images and files with no intrinsic order.",
                                 role="button",
                                 cls="secondary outline nomargin",
                                 href="/",

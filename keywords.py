@@ -58,13 +58,11 @@ def get():
             Div(
                 Div(
                     Form(
-                        Fieldset(
-                            Input(
-                                type="text",
-                                name="keyword",
-                                placeholder="Add keyword...",
-                                required=True,
-                            ),
+                        Input(
+                            type="text",
+                            name="keyword",
+                            placeholder="Add keyword...",
+                            required=True,
                         ),
                         Input(
                             type="submit",
@@ -147,27 +145,23 @@ def get(request, keyword: str):
         Main(
             P(f"Really delete the keyword '{keyword}'?"),
             Form(
-                Fieldset(
-                    Input(
-                        type="submit",
-                        value="Yes, delete",
-                    ),
-                    Input(
-                        type="hidden",
-                        name="target",
-                        value=request.headers["Referer"],
-                    ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
+                Input(
+                    type="hidden",
+                    name="target",
+                    value=request.headers["Referer"],
                 ),
                 action=f"/keywords/{keyword}/delete",
                 method="POST",
             ),
             Form(
-                Fieldset(
-                    Input(
-                        type="submit",
-                        value="Cancel",
-                        cls="secondary",
-                    ),
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
                 ),
                 action=request.headers["Referer"],
                 method="GET",

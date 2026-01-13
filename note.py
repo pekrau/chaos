@@ -29,7 +29,7 @@ def get(request):
         ),
         Main(
             Form(
-                Fieldset(
+                Div(
                     Input(
                         type="text",
                         name="title",
@@ -44,12 +44,10 @@ def get(request):
                     ),
                     cls="grid",
                 ),
-                Fieldset(
-                    Textarea(
-                        name="text",
-                        rows=10,
-                        placeholder="Text...",
-                    ),
+                Textarea(
+                    name="text",
+                    rows=10,
+                    placeholder="Text...",
                 ),
                 Input(
                     type="submit",
@@ -91,17 +89,12 @@ def get(note: entries.Entry):
     assert isinstance(note, entries.Note)
     return (
         Title(note.title),
-        *components.get_clipboard_scripts(),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
-                    Li(
-                        components.get_nav_menu(
-                            A(Strong("Edit"), href=f"{note.url}/edit"),
-                            A(Strong("Copy"), href=f"{note.url}/copy"),
-                            A(Strong("Delete"), href=f"{note.url}/delete"),
-                        )
-                    ),
+                    Li(components.get_nav_menu()),
                     Li(Strong(note.title)),
                     Li(*components.get_entry_links(note)),
                 ),
@@ -146,7 +139,7 @@ def get(request, note: entries.Entry):
         ),
         Main(
             Form(
-                Fieldset(
+                Div(
                     Input(
                         type="text",
                         name="title",
@@ -161,14 +154,12 @@ def get(request, note: entries.Entry):
                     ),
                     cls="grid",
                 ),
-                Fieldset(
-                    Textarea(
-                        note.text,
-                        name="text",
-                        rows=10,
-                        placeholder="Text...",
-                        autofocus=True,
-                    ),
+                Textarea(
+                    note.text,
+                    name="text",
+                    rows=10,
+                    placeholder="Text...",
+                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -220,15 +211,13 @@ def get(request, note: entries.Entry):
         ),
         Main(
             Form(
-                Fieldset(
-                    Input(
-                        type="text",
-                        name="title",
-                        value=note.title,
-                        placeholder="Title...",
-                        required=True,
-                        autofocus=True,
-                    ),
+                Input(
+                    type="text",
+                    name="title",
+                    value=note.title,
+                    placeholder="Title...",
+                    required=True,
+                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -284,27 +273,23 @@ def get(request, note: entries.Entry):
         Main(
             P("Really delete the note? All data will be lost."),
             Form(
-                Fieldset(
-                    Input(
-                        type="submit",
-                        value="Yes, delete",
-                    ),
-                    Input(
-                        type="hidden",
-                        name="target",
-                        value=request.headers["Referer"],
-                    ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
+                Input(
+                    type="hidden",
+                    name="target",
+                    value=request.headers["Referer"],
                 ),
                 action=f"{note.url}/delete",
                 method="POST",
             ),
             Form(
-                Fieldset(
-                    Input(
-                        type="submit",
-                        value="Cancel",
-                        cls="secondary",
-                    ),
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
                 ),
                 action=request.headers["Referer"],
                 method="GET",

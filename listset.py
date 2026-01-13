@@ -28,7 +28,7 @@ def get(request):
         ),
         Main(
             Form(
-                Fieldset(
+                Div(
                     Input(
                         type="text",
                         name="title",
@@ -43,12 +43,10 @@ def get(request):
                     ),
                     cls="grid",
                 ),
-                Fieldset(
-                    Textarea(
-                        name="text",
-                        rows=10,
-                        placeholder="Text...",
-                    ),
+                Textarea(
+                    name="text",
+                    rows=10,
+                    placeholder="Text...",
                 ),
                 Input(
                     type="submit",
@@ -87,21 +85,16 @@ def post(session, title: str, text: str, keywords: list[str] = None):
 
 @rt("/{listset:Entry}")
 def get(listset: entries.Entry):
-    "View the metadata for the listset."
+    "View the listset."
     assert isinstance(listset, entries.Listset)
     return (
         Title(listset.title),
-        *components.get_clipboard_scripts(),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
-                    Li(
-                        components.get_nav_menu(
-                            A(Strong("Edit"), href=f"{listset.url}/edit"),
-                            A(Strong("Copy"), href=f"{listset.url}/copy"),
-                            A(Strong("Delete"), href=f"{listset.url}/delete"),
-                        )
-                    ),
+                    Li(components.get_nav_menu()),
                     Li(Strong(listset.title)),
                     Li(*components.get_entry_links(listset)),
                 ),
@@ -112,7 +105,7 @@ def get(listset: entries.Entry):
         ),
         Main(
             NotStr(marko.convert(listset.text)),
-            Card("List of items..."),
+            Card(components.get_entries_table(listset.items)),
             components.get_keywords_entries_card(listset),
             cls="container",
         ),
@@ -147,7 +140,7 @@ def get(request, listset: entries.Entry):
         ),
         Main(
             Form(
-                Fieldset(
+                Div(
                     Input(
                         type="text",
                         name="title",
@@ -162,14 +155,18 @@ def get(request, listset: entries.Entry):
                     ),
                     cls="grid",
                 ),
-                Fieldset(
-                    Textarea(
-                        listset.text,
-                        name="text",
-                        rows=10,
-                        placeholder="Text...",
-                        autofocus=True,
-                    ),
+                Textarea(
+                    listset.text,
+                    name="text",
+                    rows=10,
+                    placeholder="Text...",
+                    autofocus=True,
+                ),
+                components.get_entries_table(listset.items, edit=True),
+                Input(
+                    type="text",
+                    name="add",
+                    placeholder="Identifiers for items to add...",
                 ),
                 Input(
                     type="submit",
@@ -193,12 +190,40 @@ def get(request, listset: entries.Entry):
 
 
 @rt("/{listset:Entry}/edit")
-def post(listset: entries.Entry, title: str, text: str, keywords: list[str] = None):
+def post(
+    listset: entries.Entry,
+    title: str,
+    text: str,
+    form: dict,
+    keywords: list[str] = None,
+    add: str = "",
+    remove: list[str] = None,
+):
     "Actually edit the listset."
     assert isinstance(listset, entries.Listset)
     listset.title = (title or "no title").strip()
     listset.text = text.strip()
     listset.keywords = keywords or list()
+    # First remove items.
+    for id in remove:
+        listset.remove(id)
+    # Next, change position of remaining items.
+    positions = [
+        (int(form[f"position_{id}"]), id) for id in listset.frontmatter["items"]
+    ]
+    positions.sort(key=lambda t: t[0])
+    listset.frontmatter["items"] = [t[1] for t in positions]
+    # Lastly, add new items.
+    for id in add.replace(",", " ").split():
+        try:
+            item = entries.get(id)
+        except KeyError:
+            pass
+        else:
+            try:
+                listset.add(item)
+            except ValueError:
+                pass
     listset.write()
     return components.redirect(listset.url)
 
@@ -221,15 +246,13 @@ def get(request, listset: entries.Entry):
         ),
         Main(
             Form(
-                Fieldset(
-                    Input(
-                        type="text",
-                        name="title",
-                        value=listset.title,
-                        placeholder="Title...",
-                        required=True,
-                        autofocus=True,
-                    ),
+                Input(
+                    type="text",
+                    name="title",
+                    value=listset.title,
+                    placeholder="Title...",
+                    required=True,
+                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -286,27 +309,23 @@ def get(request, listset: entries.Entry):
         Main(
             P("Really delete the listset? All data will be lost."),
             Form(
-                Fieldset(
-                    Input(
-                        type="submit",
-                        value="Yes, delete",
-                    ),
-                    Input(
-                        type="hidden",
-                        name="target",
-                        value=request.headers["Referer"],
-                    ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
+                Input(
+                    type="hidden",
+                    name="target",
+                    value=request.headers["Referer"],
                 ),
                 action=f"{listset.url}/delete",
                 method="POST",
             ),
             Form(
-                Fieldset(
-                    Input(
-                        type="submit",
-                        value="Cancel",
-                        cls="secondary",
-                    ),
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
                 ),
                 action=request.headers["Referer"],
                 method="GET",

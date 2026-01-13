@@ -28,7 +28,7 @@ def get(request):
         ),
         Main(
             Form(
-                Fieldset(
+                Div(
                     Input(
                         type="text",
                         name="title",
@@ -43,20 +43,16 @@ def get(request):
                     ),
                     cls="grid",
                 ),
-                Fieldset(
-                    Input(
-                        type="href",
-                        name="href",
-                        placeholder="Href...",
-                        required=True,
-                    ),
+                Input(
+                    type="href",
+                    name="href",
+                    placeholder="Href...",
+                    required=True,
                 ),
-                Fieldset(
-                    Textarea(
-                        name="text",
-                        rows=10,
-                        placeholder="Text...",
-                    ),
+                Textarea(
+                    name="text",
+                    rows=10,
+                    placeholder="Text...",
                 ),
                 Input(
                     type="submit",
@@ -99,17 +95,12 @@ def get(link: entries.Entry):
     assert isinstance(link, entries.Link)
     return (
         Title(link.title),
-        *components.get_clipboard_scripts(),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
-                    Li(
-                        components.get_nav_menu(
-                            A(Strong("Edit"), href=f"{link.url}/edit"),
-                            A(Strong("Copy"), href=f"{link.url}/copy"),
-                            A(Strong("Delete"), href=f"{link.url}/delete"),
-                        )
-                    ),
+                    Li(components.get_nav_menu()),
                     Li(Strong(link.title)),
                     Li(*components.get_entry_links(link)),
                 ),
@@ -119,7 +110,15 @@ def get(link: entries.Entry):
             cls="container",
         ),
         Main(
-            Card(Strong(A(components.get_link_icon(), link.href, href=link.href))),
+            Card(
+                Strong(
+                    A(
+                        components.get_icon("box-arrow-up-right.svg"),
+                        link.href,
+                        href=link.href,
+                    )
+                )
+            ),
             NotStr(marko.convert(link.text)),
             components.get_keywords_entries_card(link),
             cls="container",
@@ -155,7 +154,7 @@ def get(request, link: entries.Entry):
         ),
         Main(
             Form(
-                Fieldset(
+                Div(
                     Input(
                         type="text",
                         name="title",
@@ -170,23 +169,19 @@ def get(request, link: entries.Entry):
                     ),
                     cls="grid",
                 ),
-                Fieldset(
-                    Input(
-                        type="href",
-                        name="href",
-                        value=link.href,
-                        placeholder="Href...",
-                        required=True,
-                    ),
+                Input(
+                    type="href",
+                    name="href",
+                    value=link.href,
+                    placeholder="Href...",
+                    required=True,
                 ),
-                Fieldset(
-                    Textarea(
-                        link.text,
-                        name="text",
-                        rows=10,
-                        placeholder="Text...",
-                        autofocus=True,
-                    ),
+                Textarea(
+                    link.text,
+                    name="text",
+                    rows=10,
+                    placeholder="Text...",
+                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -241,15 +236,13 @@ def get(request, link: entries.Entry):
         ),
         Main(
             Form(
-                Fieldset(
-                    Input(
-                        type="text",
-                        name="title",
-                        value=link.title,
-                        placeholder="Title...",
-                        required=True,
-                        autofocus=True,
-                    ),
+                Input(
+                    type="text",
+                    name="title",
+                    value=link.title,
+                    placeholder="Title...",
+                    required=True,
+                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -307,27 +300,23 @@ def get(request, link: entries.Entry):
         Main(
             P("Really delete the link? All data will be lost."),
             Form(
-                Fieldset(
-                    Input(
-                        type="submit",
-                        value="Yes, delete",
-                    ),
-                    Input(
-                        type="hidden",
-                        name="target",
-                        value=request.headers["Referer"],
-                    ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
+                Input(
+                    type="hidden",
+                    name="target",
+                    value=request.headers["Referer"],
                 ),
                 action=f"{link.url}/delete",
                 method="POST",
             ),
             Form(
-                Fieldset(
-                    Input(
-                        type="submit",
-                        value="Cancel",
-                        cls="secondary",
-                    ),
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
                 ),
                 action=request.headers["Referer"],
                 method="GET",

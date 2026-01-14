@@ -179,10 +179,9 @@ def get_item_copy_link(item):
 def get_item_id_to_clipboard(item):
     return Img(
         src="/info-square.svg",
-        title="Copy item identifier to clipboard",
+        title="Identifier to clipboard",
         width=24,
         height=24,
-        data_clipboard_action="copy",
         data_clipboard_text=item.id,
         cls="to_clipboard norescale",
         style="margin-left: 10px;",
@@ -192,15 +191,13 @@ def get_item_id_to_clipboard(item):
 def get_item_md_link_to_clipboard(item):
     return Img(
         src="/markdown.svg",
-        title="Copy item Markdown link to clipboard",
+        title="Markdown link to clipboard",
         width=24,
         height=24,
-        data_clipboard_action="copy",
         data_clipboard_text=f"[{item.title}]({item.url})",
         cls="to_clipboard norescale",
         style="margin-left: 10px;",
     )
-
 
 def get_item_delete_link(item):
     return A(

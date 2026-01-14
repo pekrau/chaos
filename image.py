@@ -188,7 +188,7 @@ def get(image: items.Item):
                     href=image.data_url,
                 )
             ),
-            NotStr(marko.convert(image.text)),
+            Card(NotStr(marko.convert(image.text))),
             components.get_keywords_items_card(image),
             components.get_listsets_card(image),
             cls="container",

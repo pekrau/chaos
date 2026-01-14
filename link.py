@@ -129,7 +129,7 @@ def get(link: items.Item):
                     )
                 )
             ),
-            NotStr(marko.convert(link.text)),
+            Card(NotStr(marko.convert(link.text))),
             components.get_keywords_items_card(link),
             components.get_listsets_card(link),
             cls="container",

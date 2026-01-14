@@ -129,7 +129,7 @@ def get(listset: items.Item):
             cls="container",
         ),
         Main(
-            NotStr(marko.convert(listset.text)),
+            Card(NotStr(marko.convert(listset.text))),
             Card(components.get_items_table(listset.items)),
             components.get_keywords_items_card(listset),
             components.get_listsets_card(listset),

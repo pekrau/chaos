@@ -195,7 +195,7 @@ def get(file: items.Item):
                     )
                 )
             ),
-            NotStr(marko.convert(file.text)),
+            Card(NotStr(marko.convert(file.text))),
             components.get_keywords_items_card(file),
             components.get_listsets_card(file),
             cls="container",

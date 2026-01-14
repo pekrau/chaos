@@ -114,7 +114,7 @@ def get(note: items.Item):
             cls="container",
         ),
         Main(
-            NotStr(marko.convert(note.text)),
+            Card(NotStr(marko.convert(note.text))),
             components.get_keywords_items_card(note),
             components.get_listsets_card(note),
             cls="container",

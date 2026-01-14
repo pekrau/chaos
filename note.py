@@ -1,11 +1,11 @@
-"Note entry pages."
+"Note item pages."
 
 from fasthtml.common import *
 import marko
 
 import components
 import constants
-import entries
+import items
 import settings
 
 
@@ -42,6 +42,11 @@ def get(request):
                         Ul(*components.get_keywords_dropdown(keywords=list())),
                         cls="dropdown",
                     ),
+                    Details(
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(None)),
+                        cls="dropdown",
+                    ),
                     cls="grid",
                 ),
                 Textarea(
@@ -71,22 +76,27 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, text: str, keywords: list[str] = None):
+def post(session, title: str, text: str, keywords: list[str] = None, listsets: list[str] = None):
     "Actually add the note."
-    note = entries.Note()
+    note = items.Note()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     note.owner = session["auth"]
     note.title = title.strip() or "no title"
     note.text = text.strip()
     note.keywords = keywords or list()
+    for id in (listsets or list()):
+        listset = items.get(id)
+        assert isinstance(listset, items.Listset)
+        listset.add(note)
+        listset.write()
     note.write()
     return components.redirect(note.url)
 
 
-@rt("/{note:Entry}")
-def get(note: entries.Entry):
+@rt("/{note:Item}")
+def get(note: items.Item):
     "View the note."
-    assert isinstance(note, entries.Note)
+    assert isinstance(note, items.Note)
     return (
         Title(note.title),
         Script(src="/clipboard.min.js"),
@@ -96,7 +106,7 @@ def get(note: entries.Entry):
                 Ul(
                     Li(components.get_nav_menu()),
                     Li(Strong(note.title)),
-                    Li(*components.get_entry_links(note)),
+                    Li(*components.get_item_links(note)),
                 ),
                 Ul(Li(components.search_form())),
                 cls="note",
@@ -105,7 +115,8 @@ def get(note: entries.Entry):
         ),
         Main(
             NotStr(marko.convert(note.text)),
-            components.get_keywords_entries_card(note),
+            components.get_keywords_items_card(note),
+            components.get_listsets_card(note),
             cls="container",
         ),
         Footer(
@@ -121,10 +132,10 @@ def get(note: entries.Entry):
     )
 
 
-@rt("/{note:Entry}/edit")
-def get(request, note: entries.Entry):
+@rt("/{note:Item}/edit")
+def get(request, note: items.Item):
     "Form for editing a note."
-    assert isinstance(note, entries.Note)
+    assert isinstance(note, items.Note)
     return (
         Title("Edit"),
         Header(
@@ -150,6 +161,11 @@ def get(request, note: entries.Entry):
                     Details(
                         Summary("Keywords..."),
                         Ul(*components.get_keywords_dropdown(note.keywords)),
+                        cls="dropdown",
+                    ),
+                    Details(
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(note)),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -182,21 +198,26 @@ def get(request, note: entries.Entry):
     )
 
 
-@rt("/{note:Entry}/edit")
-def post(note: entries.Entry, title: str, text: str, keywords: list[str] = None):
+@rt("/{note:Item}/edit")
+def post(note: items.Item, title: str, text: str, keywords: list[str] = None, listsets: list[str] = None):
     "Actually edit the note."
-    assert isinstance(note, entries.Note)
+    assert isinstance(note, items.Note)
     note.title = title or "no title"
     note.text = text.strip()
     note.keywords = keywords or list()
+    for id in (listsets or list()):
+        listset = items.get(id)
+        assert isinstance(listset, items.Listset)
+        listset.add(note)
+        listset.write()
     note.write()
     return components.redirect(note.url)
 
 
-@rt("/{note:Entry}/copy")
-def get(request, note: entries.Entry):
+@rt("/{note:Item}/copy")
+def get(request, note: items.Item):
     "Form for making a copy of the note."
-    assert isinstance(note, entries.Note)
+    assert isinstance(note, items.Note)
     return (
         Title("Copy"),
         Header(
@@ -240,11 +261,11 @@ def get(request, note: entries.Entry):
     )
 
 
-@rt("/{source:Entry}/copy")
-def post(session, source: entries.File, title: str):
+@rt("/{source:Item}/copy")
+def post(session, source: items.File, title: str):
     "Actually copy the note."
-    assert isinstance(source, entries.Note)
-    note = entries.Note()
+    assert isinstance(source, items.Note)
+    note = items.Note()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     note.owner = session["auth"]
     note.title = title.strip()
@@ -254,10 +275,10 @@ def post(session, source: entries.File, title: str):
     return components.redirect(note.url)
 
 
-@rt("/{note:Entry}/delete")
-def get(request, note: entries.Entry):
+@rt("/{note:Item}/delete")
+def get(request, note: items.Item):
     "Ask for confirmation to delete the note."
-    assert isinstance(note, entries.Note)
+    assert isinstance(note, items.Note)
     return (
         Title("Delete"),
         Header(
@@ -299,9 +320,9 @@ def get(request, note: entries.Entry):
     )
 
 
-@rt("/{note:Entry}/delete")
-def post(note: entries.Entry, target: str):
+@rt("/{note:Item}/delete")
+def post(note: items.Item, target: str):
     "Actually delete the note."
-    assert isinstance(note, entries.Note)
+    assert isinstance(note, items.Note)
     note.delete()
     return components.redirect(target)

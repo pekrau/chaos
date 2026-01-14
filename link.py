@@ -1,11 +1,11 @@
-"Link entry pages."
+"Link item pages."
 
 from fasthtml.common import *
 import marko
 
 import components
 import constants
-import entries
+import items
 
 
 app, rt = components.get_app_rt()
@@ -39,6 +39,11 @@ def get(request):
                     Details(
                         Summary("Keywords..."),
                         Ul(*components.get_keywords_dropdown(keywords=list())),
+                        cls="dropdown",
+                    ),
+                    Details(
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(None)),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -76,23 +81,28 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, href: str, text: str, keywords: list[str] = None):
+def post(session, title: str, href: str, text: str, keywords: list[str] = None, listsets: list[str] = None):
     "Actually add the link."
-    link = entries.Link()
+    link = items.Link()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     link.owner = session["auth"]
     link.title = title.strip() or "no title"
     link.href = href.strip() or "/"
     link.text = text.strip()
     link.keywords = keywords or list()
+    for id in (listsets or list()):
+        listset = items.get(id)
+        assert isinstance(listset, items.Listset)
+        listset.add(link)
+        listset.write()
     link.write()
     return components.redirect(link.url)
 
 
-@rt("/{link:Entry}")
-def get(link: entries.Entry):
+@rt("/{link:Item}")
+def get(link: items.Item):
     "View the metadata for the link."
-    assert isinstance(link, entries.Link)
+    assert isinstance(link, items.Link)
     return (
         Title(link.title),
         Script(src="/clipboard.min.js"),
@@ -102,7 +112,7 @@ def get(link: entries.Entry):
                 Ul(
                     Li(components.get_nav_menu()),
                     Li(Strong(link.title)),
-                    Li(*components.get_entry_links(link)),
+                    Li(*components.get_item_links(link)),
                 ),
                 Ul(Li(components.search_form())),
                 cls="link",
@@ -120,7 +130,8 @@ def get(link: entries.Entry):
                 )
             ),
             NotStr(marko.convert(link.text)),
-            components.get_keywords_entries_card(link),
+            components.get_keywords_items_card(link),
+            components.get_listsets_card(link),
             cls="container",
         ),
         Footer(
@@ -136,10 +147,10 @@ def get(link: entries.Entry):
     )
 
 
-@rt("/{link:Entry}/edit")
-def get(request, link: entries.Entry):
+@rt("/{link:Item}/edit")
+def get(request, link: items.Item):
     "Form for editing a link."
-    assert isinstance(link, entries.Link)
+    assert isinstance(link, items.Link)
     return (
         Title("Edit"),
         Header(
@@ -165,6 +176,11 @@ def get(request, link: entries.Entry):
                     Details(
                         Summary("Keywords..."),
                         Ul(*components.get_keywords_dropdown(link.keywords)),
+                        cls="dropdown",
+                    ),
+                    Details(
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(link)),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -204,24 +220,30 @@ def get(request, link: entries.Entry):
     )
 
 
-@rt("/{link:Entry}/edit")
+@rt("/{link:Item}/edit")
 def post(
-    link: entries.Entry, title: str, href: str, text: str, keywords: list[str] = None
+        link: items.Item, title: str, href: str, text: str, keywords: list[str] = None,
+        listsets: list[str] = None
 ):
     "Actually edit the link."
-    assert isinstance(link, entries.Link)
+    assert isinstance(link, items.Link)
     link.title = (title or "no title").strip()
     link.href = href.strip() or "/"
     link.text = text.strip()
     link.keywords = keywords or list()
+    for id in (listsets or list()):
+        listset = items.get(id)
+        assert isinstance(listset, items.Listset)
+        listset.add(link)
+        listset.write()
     link.write()
     return components.redirect(link.url)
 
 
-@rt("/{link:Entry}/copy")
-def get(request, link: entries.Entry):
+@rt("/{link:Item}/copy")
+def get(request, link: items.Item):
     "Form for making a copy of the link."
-    assert isinstance(link, entries.Link)
+    assert isinstance(link, items.Link)
     return (
         Title("Copy"),
         Header(
@@ -265,11 +287,11 @@ def get(request, link: entries.Entry):
     )
 
 
-@rt("/{source:Entry}/copy")
-def post(session, source: entries.File, title: str):
+@rt("/{source:Item}/copy")
+def post(session, source: items.File, title: str):
     "Actually copy the link."
-    assert isinstance(source, entries.Link)
-    link = entries.Link()
+    assert isinstance(source, items.Link)
+    link = items.Link()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     link.owner = session["auth"]
     link.title = title.strip()
@@ -280,10 +302,10 @@ def post(session, source: entries.File, title: str):
     return components.redirect(link.url)
 
 
-@rt("/{link:Entry}/delete")
-def get(request, link: entries.Entry):
+@rt("/{link:Item}/delete")
+def get(request, link: items.Item):
     "Ask for confirmation to delete the link."
-    assert isinstance(link, entries.Link)
+    assert isinstance(link, items.Link)
 
     return (
         Title("Delete"),
@@ -326,9 +348,9 @@ def get(request, link: entries.Entry):
     )
 
 
-@rt("/{link:Entry}/delete")
-def post(link: entries.Entry, target: str):
+@rt("/{link:Item}/delete")
+def post(link: items.Item, target: str):
     "Actually delete the link."
-    assert isinstance(link, entries.Link)
+    assert isinstance(link, items.Link)
     link.delete()
     return components.redirect(target)

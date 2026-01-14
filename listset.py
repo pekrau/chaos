@@ -1,11 +1,11 @@
-"Listset (ordered set) entry pages."
+"Listset (ordered set) item pages."
 
 from fasthtml.common import *
 import marko
 
 import components
 import constants
-import entries
+import items
 
 
 app, rt = components.get_app_rt()
@@ -41,12 +41,22 @@ def get(request):
                         Ul(*components.get_keywords_dropdown(keywords=list())),
                         cls="dropdown",
                     ),
+                    Details(
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(None)),
+                        cls="dropdown",
+                    ),
                     cls="grid",
                 ),
                 Textarea(
                     name="text",
                     rows=10,
                     placeholder="Text...",
+                ),
+                Input(
+                    type="text",
+                    name="add",
+                    placeholder="Identifiers for items to add...",
                 ),
                 Input(
                     type="submit",
@@ -70,23 +80,38 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, text: str, keywords: list[str] = None):
+def post(session, title: str, text: str, keywords: list[str] = None, listsets: list[str] = None, add: str = ""):
     "Actually add the listset."
-    listset = entries.Listset()
+    listset = items.Listset()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     listset.owner = session["auth"]
     listset.title = title.strip() or "no title"
     listset.text = text.strip()
     listset.keywords = keywords or list()
+    for id in (listsets or list()):
+        other = items.get(id)
+        assert isinstance(other, items.Listset)
+        other.add(listset)
+        other.write()
     listset.frontmatter["items"] = list()
+    for id in add.replace(",", " ").split():
+        try:
+            item = items.get(id)
+        except KeyError:
+            pass
+        else:
+            try:
+                listset.add(item)
+            except ValueError:
+                pass
     listset.write()
     return components.redirect(listset.url)
 
 
-@rt("/{listset:Entry}")
-def get(listset: entries.Entry):
+@rt("/{listset:Item}")
+def get(listset: items.Item):
     "View the listset."
-    assert isinstance(listset, entries.Listset)
+    assert isinstance(listset, items.Listset)
     return (
         Title(listset.title),
         Script(src="/clipboard.min.js"),
@@ -96,7 +121,7 @@ def get(listset: entries.Entry):
                 Ul(
                     Li(components.get_nav_menu()),
                     Li(Strong(listset.title)),
-                    Li(*components.get_entry_links(listset)),
+                    Li(*components.get_item_links(listset)),
                 ),
                 Ul(Li(components.search_form())),
                 cls="listset",
@@ -105,8 +130,9 @@ def get(listset: entries.Entry):
         ),
         Main(
             NotStr(marko.convert(listset.text)),
-            Card(components.get_entries_table(listset.items)),
-            components.get_keywords_entries_card(listset),
+            Card(components.get_items_table(listset.items)),
+            components.get_keywords_items_card(listset),
+            components.get_listsets_card(listset),
             cls="container",
         ),
         Footer(
@@ -122,10 +148,10 @@ def get(listset: entries.Entry):
     )
 
 
-@rt("/{listset:Entry}/edit")
-def get(request, listset: entries.Entry):
+@rt("/{listset:Item}/edit")
+def get(request, listset: items.Item):
     "Form for editing a listset."
-    assert isinstance(listset, entries.Listset)
+    assert isinstance(listset, items.Listset)
     return (
         Title("Edit"),
         Header(
@@ -153,6 +179,11 @@ def get(request, listset: entries.Entry):
                         Ul(*components.get_keywords_dropdown(listset.keywords)),
                         cls="dropdown",
                     ),
+                    Details(
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(listset)),
+                        cls="dropdown",
+                    ),
                     cls="grid",
                 ),
                 Textarea(
@@ -162,7 +193,7 @@ def get(request, listset: entries.Entry):
                     placeholder="Text...",
                     autofocus=True,
                 ),
-                components.get_entries_table(listset.items, edit=True),
+                components.get_items_table(listset.items, edit=True),
                 Input(
                     type="text",
                     name="add",
@@ -189,21 +220,27 @@ def get(request, listset: entries.Entry):
     )
 
 
-@rt("/{listset:Entry}/edit")
+@rt("/{listset:Item}/edit")
 def post(
-    listset: entries.Entry,
+    listset: items.Item,
     title: str,
     text: str,
     form: dict,
     keywords: list[str] = None,
+    listsets: list[str] = None,
     add: str = "",
     remove: list[str] = None,
 ):
     "Actually edit the listset."
-    assert isinstance(listset, entries.Listset)
+    assert isinstance(listset, items.Listset)
     listset.title = (title or "no title").strip()
     listset.text = text.strip()
     listset.keywords = keywords or list()
+    for id in (listsets or list()):
+        other = items.get(id)
+        assert isinstance(other, items.Listset)
+        other.add(listset)
+        other.write()
     # First remove items.
     for id in remove:
         listset.remove(id)
@@ -216,7 +253,7 @@ def post(
     # Lastly, add new items.
     for id in add.replace(",", " ").split():
         try:
-            item = entries.get(id)
+            item = items.get(id)
         except KeyError:
             pass
         else:
@@ -228,10 +265,10 @@ def post(
     return components.redirect(listset.url)
 
 
-@rt("/{listset:Entry}/copy")
-def get(request, listset: entries.Entry):
+@rt("/{listset:Item}/copy")
+def get(request, listset: items.Item):
     "Form for making a copy of the listset."
-    assert isinstance(listset, entries.Listset)
+    assert isinstance(listset, items.Listset)
     return (
         Title("Copy"),
         Header(
@@ -275,24 +312,25 @@ def get(request, listset: entries.Entry):
     )
 
 
-@rt("/{source:Entry}/copy")
-def post(session, source: entries.File, title: str):
+@rt("/{source:Item}/copy")
+def post(session, source: items.File, title: str):
     "Actually copy the listset."
-    assert isinstance(source, entries.Listset)
-    listset = entries.Listset()
+    assert isinstance(source, items.Listset)
+    listset = items.Listset()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     listset.owner = session["auth"]
     listset.title = title.strip()
     listset.text = source.text
     listset.keywords = source.keywords
+    listset.frontmatter["items"] = list(source.frontmatter["items"])
     listset.write()
     return components.redirect(listset.url)
 
 
-@rt("/{listset:Entry}/delete")
-def get(request, listset: entries.Entry):
+@rt("/{listset:Item}/delete")
+def get(request, listset: items.Item):
     "Ask for confirmation to delete the listset."
-    assert isinstance(listset, entries.Listset)
+    assert isinstance(listset, items.Listset)
 
     return (
         Title("Delete"),
@@ -335,10 +373,10 @@ def get(request, listset: entries.Entry):
     )
 
 
-@rt("/{listset:Entry}/delete")
-def post(listset: entries.Entry, target: str):
+@rt("/{listset:Item}/delete")
+def post(listset: items.Item, target: str):
     "Actually delete the listset."
-    assert isinstance(listset, entries.Listset)
+    assert isinstance(listset, items.Listset)
     # XXX Remove from lookup lists in other items.
     listset.delete()
     return components.redirect(target)

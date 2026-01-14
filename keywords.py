@@ -4,7 +4,7 @@ from fasthtml.common import *
 
 import components
 import constants
-import entries
+import items
 import settings
 
 app, rt = components.get_app_rt()
@@ -31,7 +31,7 @@ def get():
                 Thead(
                     Tr(
                         Th("Keyword"),
-                        Th("# total entries"),
+                        Th("# total items"),
                         Th(),
                     ),
                 ),
@@ -39,7 +39,7 @@ def get():
                     *[
                         Tr(
                             Td(A(kw, href=f"/keywords/{kw}")),
-                            Td(entries.get_total_keyword_entries(kw)),
+                            Td(items.get_total_keyword_items(kw)),
                             Td(
                                 A(
                                     "Delete",
@@ -96,7 +96,7 @@ def post(keyword: str):
 
 @rt("/{keyword}")
 def get(keyword: str, page: int = 1):
-    "Display list of entries containing the provided keyword."
+    "Display list of items containing the provided keyword."
     keyword = keyword.strip()
     if not keyword:
         return components.redirect("/keywords")
@@ -113,9 +113,9 @@ def get(keyword: str, page: int = 1):
             ),
         )
     ]
-    return components.get_entries_table_page(
+    return components.get_items_table_page(
         f"Keyword '{keyword}'",
-        entries.get_keyword_entries(keyword),
+        items.get_keyword_items(keyword),
         page,
         f"/keywords/{keyword}",
         after=Article(Header("Synonyms"), Table(Tbody(*rows))),
@@ -173,10 +173,10 @@ def get(request, keyword: str):
 
 @rt("/{keyword}/delete")
 def post(keyword: str, target: str):
-    "Actually delete a keyword. This will delete it from all entries."
-    for entry in entries.lookup.values():
-        entry.remove_keyword(keyword)
+    "Actually delete a keyword. This will delete it from all items."
+    for item in items.lookup.values():
+        item.remove_keyword(keyword)
     settings.keywords.discard(keyword)
     settings.write()
-    entries.set_all_relations()
+    items.set_all_relations()
     return components.redirect(target)

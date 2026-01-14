@@ -8,7 +8,7 @@ from fasthtml.common import *
 
 import components
 import constants
-import entries
+import items
 import settings
 
 app, rt = components.get_app_rt()
@@ -24,12 +24,12 @@ def check_apikey(request):
 
 @rt("/")
 def get(request):
-    "Return a JSON dictionary of items {name: modified} for all entries."
+    "Return a JSON dictionary of items {name: modified} for all items."
     try:
         check_apikey(request)
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
-    return entries.get_all()
+    return items.get_all()
 
 
 @rt("/keywords")
@@ -45,62 +45,62 @@ def get(request):
 @rt("/keyword/{keyword}")
 def get(request, keyword: str):
     """Return a JSON dictionary of items {name: filename}, where 'filename'
-    may be None, for all entries with the given keyword.
+    may be None, for all items with the given keyword.
     """
     try:
         check_apikey(request)
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
     result = {}
-    for entry in entries.get_keyword_entries(keyword):
+    for item in items.get_keyword_items(keyword):
         try:
-            result[entry.id] = entry.filename
+            result[item.id] = item.filename
         except AttributeError:
-            result[entry.id] = None
+            result[item.id] = None
     return result
 
 
 @rt("/process/{process}")
 def get(request, process: str):
     """Return a JSON dictionary of items {name: filename}, where 'filename'
-    may be None, for all entries with the given process request.
+    may be None, for all items with the given process request.
     """
     try:
         check_apikey(request)
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
     result = {}
-    for entry in entries.get_process_entries(process):
+    for item in items.get_process_items(process):
         try:
-            result[entry.id] = entry.filename
+            result[item.id] = item.filename
         except AttributeError:
-            result[entry.id] = None
+            result[item.id] = None
     return result
 
 
-@rt("/entry/{entry:Entry}")
-def get(request, entry: entries.Entry):
-    "Return the text contents of an entry."
+@rt("/item/{item:Item}")
+def get(request, item: items.Item):
+    "Return the text contents of an item."
     try:
         check_apikey(request)
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
-    return {"frontmatter": entry.frontmatter, "text": entry.text}
+    return {"frontmatter": item.frontmatter, "text": item.text}
 
 
-@rt("/entry/{entry:Entry}")
-def post(request, entry: entries.Entry, text: str = None, process: str = None):
-    "Set the text of an entry, optionally removing a process request."
+@rt("/item/{item:Item}")
+def post(request, item: items.Item, text: str = None, process: str = None):
+    "Set the text of an item, optionally removing a process request."
     try:
         check_apikey(request)
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
     if text is not None:
-        entry.text = text.strip()
-    if process and process == entry.frontmatter.get("process"):
-        entry.frontmatter.pop("process")
-    entry.write()
-    entries.set_keywords_relations(entry)
+        item.text = text.strip()
+    if process and process == item.frontmatter.get("process"):
+        item.frontmatter.pop("process")
+    item.write()
+    items.set_keywords_relations(item)
     return Response(content="text updated", status_code=HTTP.OK)
 
 
@@ -114,7 +114,7 @@ async def post(request):
     data = await request.json()
     buffer = io.BytesIO()
     with tarfile.open(fileobj=buffer, mode="w:gz") as tgzfile:
-        for name in data["entries"]:
+        for name in data["items"]:
             path = constants.DATA_DIR / name
             if not path.suffix:
                 path = path.with_suffix(".md")

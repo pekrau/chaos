@@ -1,4 +1,4 @@
-"Entry class and functions."
+"Item class and functions."
 
 import datetime
 import mimetypes
@@ -17,18 +17,18 @@ import constants
 import settings
 
 
-# Key: entry id; value: entry instance.
+# Key: item id; value: item instance.
 lookup = {}
 
 
-class Entry:
-    "Abstract entry class."
+class Item:
+    "Abstract item class."
 
     def __init__(self, path=None):
         self._path = path
         self.frontmatter = {}
         self.text = ""
-        self.relations = {}  # Key: entry id; value: relation number.
+        self.relations = {}  # Key: item id; value: relation number.
 
     @property
     def id(self):
@@ -94,8 +94,18 @@ class Entry:
         self.set_relations()
 
     @property
+    def listsets(self):
+        "Return the set of listsets this item is part of."
+        result = set()
+        for item in lookup.values():
+            if isinstance(item, Listset):
+                if self in item:
+                    result.add(item)
+        return result
+
+    @property
     def size(self):
-        "Size of the entry text, in bytes."
+        "Size of the item text, in bytes."
         return len(self.text)
 
     @property
@@ -116,7 +126,7 @@ class Entry:
         )
 
     def write(self):
-        "Write the entry to file."
+        "Write the item to file."
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = self.frontmatter.copy()
@@ -128,19 +138,19 @@ class Entry:
                 outfile.write(self.text)
 
     def delete(self):
-        """Delete the entry from the file system.
+        """Delete the item from the file system.
         Remove all relations to it.
         Remove from the lookup.
         """
         global lookup
         id = self.id
-        for entry in lookup.values():
-            entry.relations.pop(id, None)
+        for item in lookup.values():
+            item.relations.pop(id, None)
         lookup.pop(id)
         self.path.unlink()
 
     def remove_keyword(self, keyword):
-        "Remove the keyword from this entry, and write it if any change."
+        "Remove the keyword from this item, and write it if any change."
         try:
             self.keywords.remove(keyword)
         except KeyError:
@@ -150,33 +160,33 @@ class Entry:
             self.set_relations()
 
     def set_relations(self):
-        "Set the relations between this entry and all others."
+        "Set the relations between this item and all others."
         global lookup
         id = self.id
-        self.relations = {}  # Key: entry id; value: relation number.
-        for entry in lookup.values():
-            if entry is self:
+        self.relations = {}  # Key: item id; value: relation number.
+        for item in lookup.values():
+            if item is self:
                 continue
-            if relation := self.relation(entry):
-                self.relations[entry.id] = relation
-                entry.relations[id] = relation
+            if relation := self.relation(item):
+                self.relations[item.id] = relation
+                item.relations[id] = relation
             else:
-                entry.relations.pop(id, None)
+                item.relations.pop(id, None)
 
     def relation(self, other):
-        "Return the relation number between this entry and the other."
-        assert isinstance(other, Entry)
+        "Return the relation number between this item and the other."
+        assert isinstance(other, Item)
         return len(self.keywords.intersection(other.keywords))
 
     def related(self):
-        "Return the sorted list of related entries."
+        "Return the sorted list of related items."
         return [
             get(k)
             for k, v in sorted(self.relations.items(), key=lambda r: r[1], reverse=True)
         ]
 
     def score(self, term):
-        """Calculate the score for the term in the title or text of the entry.
+        """Calculate the score for the term in the title or text of the item.
         Presence in the title is weighted heavier.
         """
         rx = re.compile(f"{term.strip()}.*", re.IGNORECASE)
@@ -185,12 +195,12 @@ class Entry:
         )
 
 
-class Note(Entry):
-    "Note entry class."
+class Note(Item):
+    "Note item class."
 
 
-class Link(Entry):
-    "Link entry class."
+class Link(Item):
+    "Link item class."
 
     @property
     def href(self):
@@ -201,12 +211,14 @@ class Link(Entry):
         self.frontmatter["href"] = href.strip() or "/"
 
 
-class Listset(Entry):
-    "Listset entry class."
+class Listset(Item):
+    "Listset item class."
 
     def __contains__(self, item):
-        assert isinstance(item, Entry)
-        return item.id in self.frontmatter["items"]
+        if isinstance(item, Item):
+            return item.id in self.frontmatter["items"]
+        else:
+            return False
 
     @property
     def items(self):
@@ -223,7 +235,7 @@ class Listset(Entry):
         return result
 
     def add(self, item):
-        assert isinstance(item, Entry)
+        assert isinstance(item, Item)
         if item in self:
             return
         if isinstance(item, Listset):
@@ -238,8 +250,8 @@ class Listset(Entry):
             pass
 
 
-class GenericFile(Entry):
-    "Generic file entry class."
+class GenericFile(Item):
+    "Generic file item class."
 
     @property
     def filename(self):
@@ -275,33 +287,33 @@ class GenericFile(Entry):
         return f"/data/{self.id}"
 
     def delete(self):
-        "Delete the entry and file from the file system and remove from the lookup."
+        "Delete the item and file from the file system and remove from the lookup."
         self.filepath.unlink()
         super().delete()
 
 
 class Image(GenericFile):
-    "Image entry class."
+    "Image item class."
 
     pass
 
 
 class File(GenericFile):
-    "File entry class."
+    "File item class."
 
     pass
 
 
-def get(entryid):
+def get(itemid):
     global lookup
-    return lookup[entryid]
+    return lookup[itemid]
 
 
-def read_entries(dirpath=None):
-    """Recursively read all entries from files in the given directory.
+def read_items(dirpath=None):
+    """Recursively read all items from files in the given directory.
     If no directory is given, start with the data dir.
     Create the data dir if it does not exist.
-    Compute relations between the entries based on the keywords.
+    Compute relations between the items based on the keywords.
     """
     global lookup
     if dirpath is None:
@@ -310,7 +322,7 @@ def read_entries(dirpath=None):
         if path.is_dir():
             if path.name == ".trash":
                 continue
-            read_entries(path)
+            read_items(path)
         elif path.is_file() and path.suffix == ".md":
             content = path.read_text()
             match = constants.FRONTMATTER.match(content)
@@ -325,41 +337,41 @@ def read_entries(dirpath=None):
                 frontmatter = {}
                 text = content
             if "href" in frontmatter:
-                entry = Link(path)
+                item = Link(path)
             elif "filename" in frontmatter:
                 if (
                     mimetypes.guess_type(frontmatter["filename"])[0]
                     in constants.IMAGE_MIMETYPES
                 ):
-                    entry = Image(path)
+                    item = Image(path)
                 else:
-                    entry = File(path)
+                    item = File(path)
             elif "items" in frontmatter:
-                entry = Listset(path)
+                item = Listset(path)
             else:
-                entry = Note(path)
-            lookup[entry.id] = entry
+                item = Note(path)
+            lookup[item.id] = item
             frontmatter["keywords"] = set(frontmatter.pop("keywords", list()))
-            entry.frontmatter = frontmatter
-            entry.text = text
+            item.frontmatter = frontmatter
+            item.text = text
     set_all_relations()
 
 
 def set_all_relations():
-    "Compute relations between the entries based on the keywords."
+    "Compute relations between the items based on the keywords."
     global lookup
-    entries = list(lookup.values())
-    for entry in entries:
-        entry.relations = {}  # Key: entry id; value: relation number.
-    for pos, entry1 in enumerate(entries):
-        for entry2 in entries[pos + 1 :]:
-            if relation := entry1.relation(entry2):
-                entry1.relations[entry2.id] = relation
-                entry2.relations[entry1.id] = relation
+    items = list(lookup.values())
+    for item in items:
+        item.relations = {}  # Key: item id; value: relation number.
+    for pos, item1 in enumerate(items):
+        for item2 in items[pos + 1 :]:
+            if relation := item1.relation(item2):
+                item1.relations[item2.id] = relation
+                item2.relations[item1.id] = relation
 
 
-def get_entries(cls=None):
-    "Get all entries, or of a given type, sorted by modified time."
+def get_items(cls=None):
+    "Get all items, or of a given type, sorted by modified time."
     global lookup
     if cls is None:
         result = list(lookup.values())
@@ -369,65 +381,65 @@ def get_entries(cls=None):
     return result
 
 
-def get_keyword_entries(keyword):
-    "Get the entries with the given keyword sorted by modified time."
+def get_keyword_items(keyword):
+    "Get the items with the given keyword sorted by modified time."
     global lookup
     result = [e for e in lookup.values() if keyword in e.keywords]
     result.sort(key=lambda e: e.modified, reverse=True)
     return result
 
 
-def get_total_keyword_entries(keyword):
-    "Return the number of entries having the keyword."
+def get_total_keyword_items(keyword):
+    "Return the number of items having the keyword."
     global lookup
     return len([e for e in lookup.values() if keyword in e.keywords])
 
 
-def get_unrelated_entries():
-    "Get the unrelated entries sorted by modified time."
+def get_unrelated_items():
+    "Get the unrelated items sorted by modified time."
     global lookup
     result = [e for e in lookup.values() if len(e.related) == 0]
     result.sort(key=lambda e: e.modified, reverse=True)
     return result
 
 
-def get_no_keyword_entries():
-    "Get the entries without keywords sorted by modified time."
+def get_no_keyword_items():
+    "Get the items without keywords sorted by modified time."
     global lookup
     result = [e for e in lookup.values() if not e.keywords]
     result.sort(key=lambda e: e.modified, reverse=True)
     return result
 
 
-def get_random_entries():
-    "Get a set of at most MAX_PAGE_ENTRIES random entries."
+def get_random_items():
+    "Get a set of at most MAX_PAGE_ITEMS random items."
     global lookup
-    entries = list(lookup.values())
-    if len(entries) <= constants.MAX_PAGE_ENTRIES:
-        random.shuffle(entries)
-        return entries
+    items = list(lookup.values())
+    if len(items) <= constants.MAX_PAGE_ITEMS:
+        random.shuffle(items)
+        return items
     else:
-        return random.sample(entries, constants.MAX_PAGE_ENTRIES)
+        return random.sample(items, constants.MAX_PAGE_ITEMS)
 
 
-def get_process_entries(process):
-    "Get the set of entries with the specified process request."
+def get_process_items(process):
+    "Get the set of items with the specified process request."
     global lookup
     return [e for e in lookup.values() if e.frontmatter.get("process") == process]
 
 
 def get_all():
-    "Get a map of entry paths and filepaths with their modified timestamps."
+    "Get a map of item paths and filepaths with their modified timestamps."
     global lookup
     result = {
         ".chaos.yaml": timestamp_utc(
             (constants.DATA_DIR / ".chaos.yaml").stat().st_mtime
         )
     }
-    for entry in lookup.values():
-        result[entry.id] = entry.modified
-        if isinstance(entry, (File, Image)):
-            result[str(entry.filename)] = entry.file_modified
+    for item in lookup.values():
+        result[item.id] = item.modified
+        if isinstance(item, (File, Image)):
+            result[str(item.filename)] = item.file_modified
     return result
 
 
@@ -439,15 +451,15 @@ def timestamp_utc(timestamp):
 
 def get_statistics():
     result = {
-        "# entries": len(lookup),
+        "# items": len(lookup),
         "# notes": 0,
         "# links": 0,
         "# images": 0,
         "# files": 0,
         "# listsets": 0,
     }
-    for entry in lookup.values():
-        match entry.__class__.__name__:
+    for item in lookup.values():
+        match item.__class__.__name__:
             case "Note":
                 result["# notes"] += 1
             case "Link":

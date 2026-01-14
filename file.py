@@ -1,4 +1,4 @@
-"File entry pages."
+"File item pages."
 
 import pathlib
 
@@ -7,7 +7,7 @@ import marko
 
 import components
 import constants
-import entries
+import items
 
 
 app, rt = components.get_app_rt()
@@ -41,6 +41,11 @@ def get(request):
                     Details(
                         Summary("Keywords..."),
                         Ul(*components.get_keywords_dropdown(keywords=list())),
+                        cls="dropdown",
+                    ),
+                    Details(
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(None)),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -125,13 +130,14 @@ async def post(
     text: str,
     keywords: list[str] = None,
     process: str = "",
+    listsets: list[str] = None,
 ):
     "Actually add the file."
     filename = pathlib.Path(upfile.filename)
     ext = filename.suffix
     if ext == ".md":
         raise components.Error("Upload of Markdown file is disallowed.")
-    file = entries.File()
+    file = items.File()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
@@ -145,16 +151,21 @@ async def post(
         raise components.Error(error)
     file.text = text.strip()
     file.keywords = keywords or list()
+    for id in (listsets or list()):
+        listset = items.get(id)
+        assert isinstance(listset, items.Listset)
+        listset.add(file)
+        listset.write()
     if process and process != "none":
         file.frontmatter["process"] = process
     file.write()
     return components.redirect(file.url)
 
 
-@rt("/{file:Entry}")
-def get(file: entries.Entry):
+@rt("/{file:Item}")
+def get(file: items.Item):
     "View the metadata for the file."
-    assert isinstance(file, entries.File)
+    assert isinstance(file, items.File)
     if process := file.frontmatter.get("process", ""):
         process = Card(f"Process request: {process}")
     return (
@@ -166,7 +177,7 @@ def get(file: entries.Entry):
                 Ul(
                     Li(components.get_nav_menu()),
                     Li(Strong(file.title)),
-                    Li(*components.get_entry_links(file)),
+                    Li(*components.get_item_links(file)),
                 ),
                 Ul(Li(components.search_form())),
                 cls="file",
@@ -185,7 +196,8 @@ def get(file: entries.Entry):
                 )
             ),
             NotStr(marko.convert(file.text)),
-            components.get_keywords_entries_card(file),
+            components.get_keywords_items_card(file),
+            components.get_listsets_card(file),
             cls="container",
         ),
         Footer(
@@ -201,10 +213,10 @@ def get(file: entries.Entry):
     )
 
 
-@rt("/{file:Entry}/edit")
-def get(request, file: entries.Entry):
+@rt("/{file:Item}/edit")
+def get(request, file: items.Item):
     "Form for editing metadata for the file."
-    assert isinstance(file, entries.File)
+    assert isinstance(file, items.File)
     return (
         Title("Edit"),
         Header(
@@ -230,6 +242,11 @@ def get(request, file: entries.Entry):
                     Details(
                         Summary("Keywords..."),
                         Ul(*components.get_keywords_dropdown(file.keywords)),
+                        cls="dropdown",
+                    ),
+                    Details(
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(file)),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -308,17 +325,18 @@ def get(request, file: entries.Entry):
     )
 
 
-@rt("/{file:Entry}/edit")
+@rt("/{file:Item}/edit")
 async def post(
-    file: entries.Entry,
+    file: items.Item,
     title: str,
     upfile: UploadFile,
     text: str,
     keywords: list[str] = None,
+    listsets: list[str] = None,
     process: str = None,
 ):
     "Actually edit the file."
-    assert isinstance(file, entries.File)
+    assert isinstance(file, items.File)
     file.title = title.strip() or file.filename.stem
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
@@ -333,6 +351,11 @@ async def post(
             raise components.Error(error)
     file.text = text.strip()
     file.keywords = keywords or list()
+    for id in (listsets or list()):
+        listset = items.get(id)
+        assert isinstance(listset, items.Listset)
+        listset.add(file)
+        listset.write()
     if process and process != "none":
         file.frontmatter["process"] = process
     else:
@@ -341,10 +364,10 @@ async def post(
     return components.redirect(file.url)
 
 
-@rt("/{file:Entry}/copy")
-def get(request, file: entries.Entry):
+@rt("/{file:Item}/copy")
+def get(request, file: items.Item):
     "Form for making a copy of the file."
-    assert isinstance(file, entries.File)
+    assert isinstance(file, items.File)
     return (
         Title("Copy"),
         Header(
@@ -388,12 +411,12 @@ def get(request, file: entries.Entry):
     )
 
 
-@rt("/{source:Entry}/copy")
-def post(session, source: entries.File, title: str):
+@rt("/{source:Item}/copy")
+def post(session, source: items.File, title: str):
     "Actually copy the file."
-    assert isinstance(source, entries.File)
+    assert isinstance(source, items.File)
     filename = pathlib.Path(source.filename)
-    file = entries.File()
+    file = items.File()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
     file.title = title.strip() or filename.stem
@@ -412,10 +435,10 @@ def post(session, source: entries.File, title: str):
     return components.redirect(file.url)
 
 
-@rt("/{file:Entry}/delete")
-def get(request, file: entries.Entry):
+@rt("/{file:Item}/delete")
+def get(request, file: items.Item):
     "Ask for confirmation to delete the file."
-    assert isinstance(file, entries.File)
+    assert isinstance(file, items.File)
     return (
         Title("Delete"),
         Header(
@@ -457,9 +480,9 @@ def get(request, file: entries.Entry):
     )
 
 
-@rt("/{file:Entry}/delete")
-def post(file: entries.Entry, target: str):
+@rt("/{file:Item}/delete")
+def post(file: items.Item, target: str):
     "Actually delete the file."
-    assert isinstance(file, entries.File)
+    assert isinstance(file, items.File)
     file.delete()
     return components.redirect(target)

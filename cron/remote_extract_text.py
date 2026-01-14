@@ -1,4 +1,4 @@
-"chaos: Perform OCR text extraction for entries in the www instance that request it."
+"chaos: Perform OCR text extraction for items in the www instance that request it."
 
 from http import HTTPStatus as HTTP
 import io
@@ -24,7 +24,7 @@ timer = Timer()
 
 
 def extract(url, apikey):
-    """Fetch which entries to do OCR on, extract the text and upload it.
+    """Fetch which items to do OCR on, extract the text and upload it.
     Return a dictionary with statistics.
     """
     response = requests.get(
@@ -35,22 +35,22 @@ def extract(url, apikey):
     elif response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
-    # Remove entries not having a file attached.
+    # Remove items not having a file attached.
     if response.text:
         data = response.json()
     else:
         data = {}
-    file_entries = dict([(k, v) for k, v in data.items() if v is not None])
+    file_items = dict([(k, v) for k, v in data.items() if v is not None])
 
-    # Just return if no entries to process.
-    if not file_entries:
+    # Just return if no items to process.
+    if not file_items:
         return {}
 
-    # Process at most one page of entries in one go.
-    while len(file_entries) > constants.MAX_PAGE_ENTRIES:
-        file_entries.popitem()
+    # Process at most one page of items in one go.
+    while len(file_items) > constants.MAX_PAGE_ITEMS:
+        file_items.popitem()
 
-    # Saves time doing this here, if no entries.
+    # Saves time doing this here, if no items.
     import easyocr
 
     reader = easyocr.Reader(constants.OCR_LANGUAGES, gpu=constants.OCR_GPU)
@@ -58,46 +58,46 @@ def extract(url, apikey):
     failed = set()
     headers = dict(apikey=apikey)
 
-    for entry in file_entries:
-        response = requests.get(url + f"/data/{entry}", headers=headers)
+    for item in file_items:
+        response = requests.get(url + f"/data/{item}", headers=headers)
         if response.status_code != HTTP.OK:
-            failed.add(entry + ": could not fetch file data")
+            failed.add(item + ": could not fetch file data")
             continue
 
         mimetype = response.headers["Content-Type"]
         if mimetype not in constants.IMAGE_MIMETYPES:
-            failed.add(entry + ": not image")
+            failed.add(item + ": not image")
             continue
 
-        filename = entry + (mimetypes.guess_extension(mimetype) or ".bin")
+        filename = item + (mimetypes.guess_extension(mimetype) or ".bin")
         filepath = Path("/tmp") / filename
         with open(filepath, "wb") as outfile:
             outfile.write(response.content)
         image_text = " ".join(reader.readtext(str(filepath), detail=0))
         os.unlink(filepath)
 
-        response = requests.get(url + f"/api/entry/{entry}", headers=headers)
+        response = requests.get(url + f"/api/item/{item}", headers=headers)
         if response.status_code != HTTP.OK:
-            failed.add(entry + ": could not get entry")
+            failed.add(item + ": could not get item")
             continue
         try:
             text = response.json()["text"]
         except KeyError:
-            failed.add(entry + ": no entry text in response")
+            failed.add(item + ": no item text in response")
             continue
         text = text.replace("extract_text", "")
         text = f"{text}\n\n## Extracted text from image\n\n{image_text}"
         response = requests.post(
-            url + f"/api/entry/{entry}",
+            url + f"/api/item/{item}",
             headers=headers,
             data={"text": text, "process": "extract_text"},
         )
         if response.status_code != HTTP.OK:
-            failed.add(entry + ": could not update text")
+            failed.add(item + ": could not update text")
             continue
 
     result = {
-        "file_entries": len(file_entries),
+        "file_items": len(file_items),
         "failed": list(failed),
     }
     result.update(timer.current)

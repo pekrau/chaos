@@ -1,5 +1,5 @@
 """chaos: Extract Markdown from the text in PDF and other textual files
-for entries in the www instance that request it.
+for items in the www instance that request it.
 """
 
 from http import HTTPStatus as HTTP
@@ -27,7 +27,7 @@ timer = Timer()
 
 
 def extract(url, apikey):
-    """Fetch which entries to extract Markdown from, and upload the result.
+    """Fetch which items to extract Markdown from, and upload the result.
     Return a dictionary with statistics.
     """
     response = requests.get(
@@ -38,66 +38,66 @@ def extract(url, apikey):
     elif response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
-    # Remove entries not having a file attached.
+    # Remove items not having a file attached.
     if response.text:
         data = response.json()
     else:
         data = {}
-    file_entries = dict([(k, v) for k, v in data.items() if v is not None])
+    file_items = dict([(k, v) for k, v in data.items() if v is not None])
 
-    # Just return if no entries to process.
-    if not file_entries:
+    # Just return if no items to process.
+    if not file_items:
         return {}
 
-    # Process at most one page of entries in one go.
-    file_entries = file_entries[0 : constants.MAX_PAGE_ENTRIES]
+    # Process at most one page of items in one go.
+    file_items = file_items[0 : constants.MAX_PAGE_ITEMS]
 
-    # Saves time doing this here, if no entries.
+    # Saves time doing this here, if no items.
     import pymupdf4llm
 
     failed = set()
     headers = dict(apikey=apikey)
 
-    for entry in file_entries:
-        response = requests.get(url + f"/data/{entry}", headers=headers)
+    for item in file_items:
+        response = requests.get(url + f"/data/{item}", headers=headers)
         if response.status_code != HTTP.OK:
-            failed.add(entry + ": could not fetch file data")
+            failed.add(item + ": could not fetch file data")
             continue
 
         mimetype = response.headers["Content-Type"]
         if mimetype not in constants.TEXTUAL_MIMETYPES:
-            failed.add(entry + ": not textual file")
+            failed.add(item + ": not textual file")
             continue
 
-        filename = entry + (mimetypes.guess_extension(mimetype) or ".bin")
+        filename = item + (mimetypes.guess_extension(mimetype) or ".bin")
         filepath = Path("/tmp") / filename
         with open(filepath, "wb") as outfile:
             outfile.write(response.content)
         md_text = pymupdf4llm.to_markdown(str(filepath))
         os.unlink(filepath)
 
-        response = requests.get(url + f"/api/entry/{entry}", headers=headers)
+        response = requests.get(url + f"/api/item/{item}", headers=headers)
         if response.status_code != HTTP.OK:
-            failed.add(entry + ": could not get text")
+            failed.add(item + ": could not get text")
             continue
         try:
             text = response.json()["text"]
         except KeyError:
-            failed.add(entry + ": no text in response")
+            failed.add(item + ": no text in response")
             continue
 
         text = text.replace("extract_markdown", "")
         text = f"{text}\n\n## Extracted Markdown from file\n\n{md_text}"
         response = requests.post(
-            url + f"/api/entry/{entry}",
+            url + f"/api/item/{item}",
             headers=headers,
             data={"text": text, "process": "extract_markdown"},
         )
         if response.status_code != HTTP.OK:
-            failed.add(entry + ": could not update text")
+            failed.add(item + ": could not update text")
             continue
 
-    result = {"file_entries": len(file_entries), "failed": list(failed)}
+    result = {"file_items": len(file_items), "failed": list(failed)}
     result.update(time.current)
     return result
 

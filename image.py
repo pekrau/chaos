@@ -1,4 +1,4 @@
-"Image entry pages."
+"Image item pages."
 
 from http import HTTPStatus as HTTP
 import mimetypes
@@ -9,7 +9,7 @@ import marko
 
 import components
 import constants
-import entries
+import items
 import settings
 
 
@@ -44,6 +44,11 @@ def get(request):
                     Details(
                         Summary("Keywords..."),
                         Ul(*components.get_keywords_dropdown(keywords=list())),
+                        cls="dropdown",
+                    ),
+                    Details(
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(None)),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -118,6 +123,7 @@ async def post(
     upfile: UploadFile,
     text: str,
     keywords: list[str] = None,
+    listsets: list[str] = None,
     process: str = "",
 ):
     "Actually add the image."
@@ -127,7 +133,7 @@ async def post(
     ext = filename.suffix
     if ext == ".md":
         raise components.Error("Upload of Markdown file is disallowed.")
-    image = entries.Image()
+    image = items.Image()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     image.owner = session["auth"]
     image.title = title.strip() or filename.stem
@@ -141,16 +147,21 @@ async def post(
         raise components.Error(error)
     image.text = text.strip()
     image.keywords = keywords or list()
+    for id in (listsets or list()):
+        listset = items.get(id)
+        assert isinstance(listset, items.Listset)
+        listset.add(image)
+        listset.write()
     if process and process != "none":
         image.frontmatter["process"] = process
     image.write()
     return components.redirect(image.url)
 
 
-@rt("/{image:Entry}")
-def get(image: entries.Entry):
+@rt("/{image:Item}")
+def get(image: items.Item):
     "View the metadata for the image."
-    assert isinstance(image, entries.Image)
+    assert isinstance(image, items.Image)
     if process := image.frontmatter.get("process", ""):
         process = Card(f"Process request: {process}")
     return (
@@ -162,7 +173,7 @@ def get(image: entries.Entry):
                 Ul(
                     Li(components.get_nav_menu()),
                     Li(Strong(image.title)),
-                    Li(*components.get_entry_links(image)),
+                    Li(*components.get_item_links(image)),
                 ),
                 Ul(Li(components.search_form())),
                 cls="image",
@@ -178,7 +189,8 @@ def get(image: entries.Entry):
                 )
             ),
             NotStr(marko.convert(image.text)),
-            components.get_keywords_entries_card(image),
+            components.get_keywords_items_card(image),
+            components.get_listsets_card(image),
             cls="container",
         ),
         Footer(
@@ -194,10 +206,10 @@ def get(image: entries.Entry):
     )
 
 
-@rt("/{image:Entry}/edit")
-def get(request, image: entries.Entry):
+@rt("/{image:Item}/edit")
+def get(request, image: items.Item):
     "Form for editing metadata for the image."
-    assert isinstance(image, entries.Image)
+    assert isinstance(image, items.Image)
     return (
         Title("Edit"),
         Header(
@@ -223,6 +235,11 @@ def get(request, image: entries.Entry):
                     Details(
                         Summary("Keywords..."),
                         Ul(*components.get_keywords_dropdown(image.keywords)),
+                        cls="dropdown",
+                    ),
+                    Details(
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(image)),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -296,17 +313,18 @@ def get(request, image: entries.Entry):
     )
 
 
-@rt("/{image:Entry}/edit")
+@rt("/{image:Item}/edit")
 async def post(
-    image: entries.Entry,
+    image: items.Item,
     title: str,
     upfile: UploadFile,
     text: str,
     keywords: list[str] = None,
+    listsets: list[str] = None,
     process: str = None,
 ):
     "Actually edit the image."
-    assert isinstance(image, entries.Image)
+    assert isinstance(image, items.Image)
     image.title = title.strip() or image.filename.stem
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
@@ -321,6 +339,11 @@ async def post(
             raise components.Error(error)
     image.text = text.strip()
     image.keywords = keywords or list()
+    for id in (listsets or list()):
+        listset = items.get(id)
+        assert isinstance(listset, items.Listset)
+        listset.add(image)
+        listset.write()
     if process and process != "none":
         image.frontmatter["process"] = process
     else:
@@ -329,10 +352,10 @@ async def post(
     return components.redirect(image.url)
 
 
-@rt("/{image:Entry}/copy")
-def get(request, image: entries.Entry):
+@rt("/{image:Item}/copy")
+def get(request, image: items.Item):
     "Form for making a copy of the image."
-    assert isinstance(image, entries.Image)
+    assert isinstance(image, items.Image)
     return (
         Title("Copy"),
         Header(
@@ -376,12 +399,12 @@ def get(request, image: entries.Entry):
     )
 
 
-@rt("/{source:Entry}/copy")
-def post(session, source: entries.File, title: str):
+@rt("/{source:Item}/copy")
+def post(session, source: items.File, title: str):
     "Actually copy the image."
-    assert isinstance(source, entries.Image)
+    assert isinstance(source, items.Image)
     filename = pathlib.Path(source.filename)
-    image = entries.Image()
+    image = items.Image()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     image.owner = session["auth"]
     image.title = title.strip()
@@ -400,10 +423,10 @@ def post(session, source: entries.File, title: str):
     return components.redirect(image.url)
 
 
-@rt("/{image:Entry}/delete")
-def get(request, image: entries.Entry):
+@rt("/{image:Item}/delete")
+def get(request, image: items.Item):
     "Ask for confirmation to delete the file image."
-    assert isinstance(image, entries.Image)
+    assert isinstance(image, items.Image)
     return (
         Title("Delete"),
         Header(
@@ -445,9 +468,9 @@ def get(request, image: entries.Entry):
     )
 
 
-@rt("/{image:Entry}/delete")
-def post(image: entries.Entry, target: str):
+@rt("/{image:Item}/delete")
+def post(image: items.Item, target: str):
     "Actually delete the image."
-    assert isinstance(image, entries.Image)
+    assert isinstance(image, items.Image)
     image.delete()
     return components.redirect(target)

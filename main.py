@@ -21,7 +21,7 @@ load_dotenv()
 import components
 import constants
 import settings
-import entries
+import items
 import note
 import link
 import file
@@ -43,15 +43,15 @@ app, rt = components.get_app_rt(
 )
 
 settings.read()
-entries.read_entries()
+items.read_items()
 
 
 @rt("/")
 def get(session, page: int = 1):
     if session.get("auth"):
-        return components.get_entries_table_page(
+        return components.get_items_table_page(
             "chaos",
-            entries.get_entries(),
+            items.get_items(),
             page,
             "/",
         )
@@ -129,10 +129,10 @@ def post(session, username: str, password: str):
     return components.redirect(session.pop("path", None) or "/")
 
 
-@rt("/data/{file:Entry}")
-def get(file: entries.Entry):
-    "Return the data of the file or image entry."
-    assert isinstance(file, entries.GenericFile)
+@rt("/data/{file:Item}")
+def get(file: items.Item):
+    "Return the data of the file or image item."
+    assert isinstance(file, items.GenericFile)
     return Response(
         content=file.filepath.read_bytes(),
         media_type=file.file_mimetype or constants.BINARY_MIMETYPE,
@@ -141,10 +141,10 @@ def get(file: entries.Entry):
 
 @rt("/notes")
 def get(page: int = 1):
-    "Display note entries."
-    return components.get_entries_table_page(
+    "Display note items."
+    return components.get_items_table_page(
         "Notes",
-        entries.get_entries(entries.Note),
+        items.get_items(items.Note),
         page,
         "/notes",
     )
@@ -152,10 +152,10 @@ def get(page: int = 1):
 
 @rt("/links")
 def get(page: int = 1):
-    "Display link entries."
-    return components.get_entries_table_page(
+    "Display link items."
+    return components.get_items_table_page(
         "Links",
-        entries.get_entries(entries.Link),
+        items.get_items(items.Link),
         page,
         "/links",
     )
@@ -163,12 +163,12 @@ def get(page: int = 1):
 
 @rt("/images")
 def get(page: int = 1):
-    "Display image entries."
-    images = entries.get_entries(entries.Image)
-    total_entries = len(images)
+    "Display image items."
+    images = items.get_items(items.Image)
+    total_items = len(images)
     images = list(
         images[
-            (page - 1) * constants.MAX_PAGE_ENTRIES : page * constants.MAX_PAGE_ENTRIES
+            (page - 1) * constants.MAX_PAGE_ITEMS : page * constants.MAX_PAGE_ITEMS
         ]
     )
     rows = []
@@ -205,7 +205,7 @@ def get(page: int = 1):
         ),
         Main(
             *rows,
-            components.get_table_pager(page, total_entries, "/images"),
+            components.get_table_pager(page, total_items, "/images"),
             cls="container",
         ),
     )
@@ -213,10 +213,10 @@ def get(page: int = 1):
 
 @rt("/files")
 def get(page: int = 1):
-    "Display file entries."
-    return components.get_entries_table_page(
+    "Display file items."
+    return components.get_items_table_page(
         "Files",
-        entries.get_entries(entries.File),
+        items.get_items(items.File),
         page,
         "/files",
     )
@@ -224,10 +224,10 @@ def get(page: int = 1):
 
 @rt("/listsets")
 def get(page: int = 1):
-    "Display listset entries."
-    return components.get_entries_table_page(
+    "Display listset items."
+    return components.get_items_table_page(
         "Listsets",
-        entries.get_entries(entries.Listset),
+        items.get_items(items.Listset),
         page,
         "/listsets",
     )
@@ -235,10 +235,10 @@ def get(page: int = 1):
 
 @rt("/nokeywords")
 def get(page: int = 1):
-    "Display entries without keywords."
-    return components.get_entries_table_page(
+    "Display items without keywords."
+    return components.get_items_table_page(
         "No keywords",
-        entries.get_no_keyword_entries(),
+        items.get_no_keyword_items(),
         page,
         "/nokeywords",
     )
@@ -246,10 +246,10 @@ def get(page: int = 1):
 
 @rt("/unrelated")
 def get(page: int = 1):
-    "Display entries having no relations."
-    return components.get_entries_table_page(
+    "Display items having no relations."
+    return components.get_items_table_page(
         "Unrelated",
-        entries.get_unrelated_entries(),
+        items.get_unrelated_items(),
         page,
         "/unrelated",
     )
@@ -257,10 +257,10 @@ def get(page: int = 1):
 
 @rt("/random")
 def get():
-    "Display a page of random entries."
-    return components.get_entries_table_page(
+    "Display a page of random items."
+    return components.get_items_table_page(
         "Random",
-        entries.get_random_entries(),
+        items.get_random_items(),
         1,
         "/random",
     )
@@ -268,21 +268,21 @@ def get():
 
 @rt("/search")
 def get(term: str, keywords: list[str] = [], type: str = None):
-    "Search the entries."
+    "Search the items."
     keywords = set(keywords)
     if type:
         type = type.capitalize()
         if type not in ("Note", "Link", "Image", "File", "Listset"):
             type = None
     result = []
-    for entry in entries.lookup.values():
-        if type and entry.__class__.__name__ != type:
+    for item in items.lookup.values():
+        if type and item.__class__.__name__ != type:
             continue
-        if not keywords.issubset(entry.keywords):
+        if not keywords.issubset(item.keywords):
             continue
-        if score := entry.score(term):
+        if score := item.score(term):
             if score:
-                result.append((score, entry.modified_local, entry))
+                result.append((score, item.modified_local, item))
     result.sort(key=lambda e: (e[0], e[1]), reverse=True)
     return (
         Title("Search"),
@@ -352,7 +352,7 @@ def get(term: str, keywords: list[str] = [], type: str = None):
                 action="/search",
                 method="GET",
             ),
-            components.get_entries_table([e for s, m, e in result]),
+            components.get_items_table([e for s, m, e in result]),
             cls="container",
         ),
     )
@@ -367,7 +367,7 @@ def get():
         for filename in filenames:
             fp = dp / filename
             disk_usage += os.path.getsize(fp)
-    statistics = entries.get_statistics()
+    statistics = items.get_statistics()
     usage = Table(
         Thead(Tr(Th("Resource usage", Th("Bytes or #", cls="right")))),
         Tbody(
@@ -394,8 +394,8 @@ def get():
                 ),
             ),
             Tr(
-                Td("# entries"),
-                Td(A(statistics["# entries"], href="/"), cls="right"),
+                Td("# items"),
+                Td(A(statistics["# items"], href="/"), cls="right"),
             ),
             Tr(
                 Td("# notes"),
@@ -459,7 +459,7 @@ def get():
         Main(
             usage,
             Form(
-                Input(type="submit", value="Reread entries"),
+                Input(type="submit", value="Reread items"),
                 action="/system/reread",
                 method="POST",
             ),
@@ -471,9 +471,9 @@ def get():
 
 @rt("/system/reread")
 def post():
-    "Reread all entries from disk."
+    "Reread all items from disk."
     settings.read()
-    entries.read_entries()
+    items.read_items()
     return components.redirect("/system")
 
 

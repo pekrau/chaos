@@ -8,22 +8,22 @@ from fasthtml.common import *
 
 import constants
 import settings
-import entries
+import items
 
 
-class EntryConvertor(Convertor):
-    "Convert path segment to Entry class instance."
+class ItemConvertor(Convertor):
+    "Convert path segment to Item class instance."
 
     regex = "[^./]+"
 
-    def convert(self, value: str) -> entries.Entry:
-        return entries.get(value)
+    def convert(self, value: str) -> items.Item:
+        return items.get(value)
 
-    def to_string(self, value: entries.Entry) -> str:
+    def to_string(self, value: items.Item) -> str:
         return str(value)
 
 
-register_url_convertor("Entry", EntryConvertor())
+register_url_convertor("Item", ItemConvertor())
 
 
 class Error(Exception):
@@ -148,7 +148,7 @@ def search_form(term=None):
     )
 
 
-def get_entry_edit_link(entry):
+def get_item_edit_link(item):
     return A(
         Img(
             src="/pencil.svg",
@@ -158,11 +158,11 @@ def get_entry_edit_link(entry):
             cls="norescale",
             style="margin-left: 10px;",
         ),
-        href=f"{entry.url}/edit",
+        href=f"{item.url}/edit",
     )
 
 
-def get_entry_copy_link(entry):
+def get_item_copy_link(item):
     return A(
         Img(
             src="/copy.svg",
@@ -172,37 +172,37 @@ def get_entry_copy_link(entry):
             cls="norescale",
             style="margin-left: 10px;",
         ),
-        href=f"{entry.url}/copy",
+        href=f"{item.url}/copy",
     )
 
 
-def get_entry_id_to_clipboard(entry):
+def get_item_id_to_clipboard(item):
     return Img(
         src="/info-square.svg",
         title="Copy item identifier to clipboard",
         width=24,
         height=24,
         data_clipboard_action="copy",
-        data_clipboard_text=entry.id,
+        data_clipboard_text=item.id,
         cls="to_clipboard norescale",
         style="margin-left: 10px;",
     )
 
 
-def get_entry_md_link_to_clipboard(entry):
+def get_item_md_link_to_clipboard(item):
     return Img(
         src="/markdown.svg",
         title="Copy item Markdown link to clipboard",
         width=24,
         height=24,
         data_clipboard_action="copy",
-        data_clipboard_text=f"[{entry.title}]({entry.url})",
+        data_clipboard_text=f"[{item.title}]({item.url})",
         cls="to_clipboard norescale",
         style="margin-left: 10px;",
     )
 
 
-def get_entry_delete_link(entry):
+def get_item_delete_link(item):
     return A(
         Img(
             src="/trash.svg",
@@ -212,32 +212,32 @@ def get_entry_delete_link(entry):
             cls="norescale",
             style="margin-left: 10px;",
         ),
-        href=f"{entry.url}/delete",
+        href=f"{item.url}/delete",
     )
 
 
-def get_entry_links(entry):
+def get_item_links(item):
     return [
-        get_entry_edit_link(entry),
+        get_item_edit_link(item),
         " ",
-        get_entry_copy_link(entry),
+        get_item_copy_link(item),
         " ",
-        get_entry_id_to_clipboard(entry),
+        get_item_id_to_clipboard(item),
         " ",
-        get_entry_md_link_to_clipboard(entry),
+        get_item_md_link_to_clipboard(item),
         " ",
-        get_entry_delete_link(entry),
+        get_item_delete_link(item),
     ]
 
 
-def get_entries_table_page(title, entries, page, href, after=""):
-    "Get the page displaying a table of the given entries."
-    total_entries = len(entries)
-    page = min(max(1, page), get_total_pages(total_entries))
-    start = (page - 1) * constants.MAX_PAGE_ENTRIES
-    end = page * constants.MAX_PAGE_ENTRIES
-    table = get_entries_table(entries[start:end])
-    pager = get_table_pager(page, total_entries, href)
+def get_items_table_page(title, items, page, href, after=""):
+    "Get the page displaying a table of the given items."
+    total_items = len(items)
+    page = min(max(1, page), get_total_pages(total_items))
+    start = (page - 1) * constants.MAX_PAGE_ITEMS
+    end = page * constants.MAX_PAGE_ITEMS
+    table = get_items_table(items[start:end])
+    pager = get_table_pager(page, total_items, href)
     return (
         Title(title),
         Script(src="/clipboard.min.js"),
@@ -257,18 +257,25 @@ def get_entries_table_page(title, entries, page, href, after=""):
     )
 
 
-def get_keywords_entries_card(entry):
+def get_listsets_card(item):
     return Card(
-        Header("Keywords: ", get_keywords_links(entry) or "-"),
-        get_entries_table(entry.related()),
+        Header("In listsets"),
+        get_items_table(list(item.listsets)),
     )
 
 
-def get_entries_table(entries, max_entries=constants.MAX_PAGE_ENTRIES, edit=False):
+def get_keywords_items_card(item):
+    return Card(
+        Header("Keywords: ", get_keywords_links(item) or "-"),
+        get_items_table(item.related()),
+    )
+
+
+def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
     rows = []
-    entries = entries[0:max_entries]
-    for entry in entries:
-        keywords = sorted(entry.keywords)
+    items = items[0:max_items]
+    for item in items:
+        keywords = sorted(item.keywords)
         keywords = [str(A(kw, href=f"/keywords/{kw}")) for kw in keywords]
         if len(keywords) > constants.MAX_ROW_KEYWORDS:
             keywords = NotStr(
@@ -276,41 +283,41 @@ def get_entries_table(entries, max_entries=constants.MAX_PAGE_ENTRIES, edit=Fals
             )
         else:
             keywords = NotStr(", ".join(keywords))
-        match entry.__class__.__name__:
+        match item.__class__.__name__:
             case "Note":
-                icon = A(get_icon("card-text.svg", title="Note"), href=entry.url)
+                icon = A(get_icon("card-text.svg", title="Note"), href=item.url)
             case "Link":
                 icon = A(
                     get_icon("box-arrow-up-right.svg", title="Follow link..."),
-                    href=entry.href,
+                    href=item.href,
                 )
             case "File" | "Image":
                 icon = A(
                     get_mimetype_icon(
-                        entry.file_mimetype, title="View or download file"
+                        item.file_mimetype, title="View or download file"
                     ),
-                    href=entry.data_url,
+                    href=item.data_url,
                 )
             case "Listset":
-                icon = A(get_icon("list-ul.svg", title="Listset"), href=entry.url)
+                icon = A(get_icon("list-ul.svg", title="Listset"), href=item.url)
             case _:
                 raise NotImplementedError
         if edit:
             rows.append(
                 Tr(
-                    Td(icon, A(entry.title, href=entry.url)),
+                    Td(icon, A(item.title, href=item.url)),
                     Td(
                         Select(
-                            name=f"position_{entry.id}",
+                            name=f"position_{item.id}",
                             *[
                                 Option(str(i), selected=i == len(rows) + 1)
-                                for i in range(0, len(entries) + 2)
+                                for i in range(0, len(items) + 2)
                             ],
                             cls="slim",
                         ),
                     ),
                     Td(
-                        Input(type="checkbox", name="remove", value=entry.id),
+                        Input(type="checkbox", name="remove", value=item.id),
                         "Remove",
                         cls="right",
                     ),
@@ -319,25 +326,25 @@ def get_entries_table(entries, max_entries=constants.MAX_PAGE_ENTRIES, edit=Fals
         else:
             rows.append(
                 Tr(
-                    Td(icon, A(entry.title, href=entry.url)),
-                    Td(get_keywords_links(entry, limit=True)),
-                    Td(*get_entry_links(entry), cls="right"),
+                    Td(icon, A(item.title, href=item.url)),
+                    Td(get_keywords_links(item, limit=True)),
+                    Td(*get_item_links(item), cls="right"),
                 )
             )
     if rows:
-        if len(entries) > constants.MAX_PAGE_ENTRIES:
+        if len(items) > constants.MAX_PAGE_ITEMS:
             rows.append(Tr(Td(I("Some not shown..."), colspan=3)))
         return Table(Tbody(*rows), cls="striped compressed")
     else:
-        return Article(I("No entries."))
+        return Article(I("No items."))
 
 
-def get_table_pager(current_page, total_entries, href):
+def get_table_pager(current_page, total_items, href):
     "Return form with pager buttons given current page."
-    if total_entries <= constants.MAX_PAGE_ENTRIES:
+    if total_items <= constants.MAX_PAGE_ITEMS:
         return ""
     pages = [1]
-    total_pages = get_total_pages(total_entries)
+    total_pages = get_total_pages(total_items)
     for page in range(2, total_pages):
         if abs(current_page - page) < 2:
             pages.append(page)
@@ -386,20 +393,45 @@ def get_keywords_dropdown(keywords):
     ]
 
 
-def get_keywords_links(entry, limit=False):
-    "Return the list of keywords for the entry as links."
-    result = [str(A(kw, href=f"/keywords/{kw}")) for kw in sorted(entry.keywords)]
+def get_listsets_dropdown(item, max_listsets=constants.MAX_LISTSETS):
+    "Return a dropdown of candidate listsets for the item."
+    listsets = []
+    for listset in items.get_items(items.Listset):
+        if item in listset:
+            continue
+        if item is listset:
+            continue
+        if isinstance(item, items.Listset) and item in listset.flattened():
+            continue
+        listsets.append(listset)
+        if max_listsets and len(listsets) >= max_listsets:
+            break
+    return [
+        Li(
+            Label(
+                Input(
+                    type="checkbox", name="listsets", value=listset.id
+                ),
+                listset.title,
+            )
+        )
+        for listset in listsets
+    ]
+
+def get_keywords_links(item, limit=False):
+    "Return the list of keywords for the item as links."
+    result = [str(A(kw, href=f"/keywords/{kw}")) for kw in sorted(item.keywords)]
     if limit and len(result) > constants.MAX_ROW_KEYWORDS:
         return NotStr(", ".join(result[0 : constants.MAX_ROW_KEYWORDS]) + "...")
     else:
         return NotStr(", ".join(result))
 
 
-def get_total_pages(total_entries=None):
-    "Return the total number of table pages for the given number of entries."
-    if total_entries is None:
-        total_entries = total()
-    return (total_entries - 1) // constants.MAX_PAGE_ENTRIES + 1
+def get_total_pages(total_items=None):
+    "Return the total number of table pages for the given number of items."
+    if total_items is None:
+        total_items = total()
+    return (total_items - 1) // constants.MAX_PAGE_ITEMS + 1
 
 
 def numerical(n):

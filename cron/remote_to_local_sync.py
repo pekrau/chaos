@@ -18,7 +18,7 @@ load_dotenv()
 sys.path.insert(0, str(Path(sys.path[0]).parent))
 
 import constants
-import entries
+import items
 from timer import Timer
 
 timer = Timer()
@@ -34,22 +34,22 @@ def update(url, apikey, targetdir):
     elif response.status_code != HTTP.OK:
         raise IOError(f"invalid response: {response.status_code=} {response.content=}")
 
-    remote_entries = response.json()
+    remote_items = response.json()
 
     targetdir = Path(targetdir)
-    entries.read_entries()
-    local_entries = entries.get_all()
+    items.read_items()
+    local_items = items.get_all()
 
     # Download the set of files with different modified timestamps from the remote.
-    download_entries = set()
-    for name, modified in remote_entries.items():
-        if (name not in local_entries) or (local_entries[name] != modified):
-            download_entries.add(name)
+    download_items = set()
+    for name, modified in remote_items.items():
+        if (name not in local_items) or (local_items[name] != modified):
+            download_items.add(name)
 
-    if download_entries:
+    if download_items:
         response = requests.post(
             url + "/api/download",
-            json={"entries": list(download_entries)},
+            json={"items": list(download_items)},
             headers=dict(apikey=apikey),
         )
         if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
@@ -71,22 +71,22 @@ def update(url, apikey, targetdir):
         except tarfile.TarError as message:
             raise IOError(f"tar file error: {message}")
 
-    # Delete local entries that do not exist in the remote.
-    delete_entries = set(local_entries.keys()).difference(remote_entries.keys())
-    for name in delete_entries:
+    # Delete local items that do not exist in the remote.
+    delete_items = set(local_items.keys()).difference(remote_items.keys())
+    for name in delete_items:
         path = targetdir / name
         if not path.suffix:
             path = path.with_suffix(".md")
         path.unlink()
 
-    if not download_entries and not delete_entries:
+    if not download_items and not delete_items:
         return {}
     else:
         result = {
-            "local": len(local_entries),
-            "remote": len(remote_entries),
-            "downloaded": len(download_entries),
-            "deleted": len(delete_entries),
+            "local": len(local_items),
+            "remote": len(remote_items),
+            "downloaded": len(download_items),
+            "deleted": len(delete_items),
         }
         result.update(timer.current)
     return result

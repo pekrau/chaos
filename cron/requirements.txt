@@ -12,7 +12,7 @@ easyocr==1.7.2
 executing==2.2.1
 fastcore==1.8.12
 fastlite==0.2.1
-filelock==3.20.1
+filelock==3.20.3
 filetype==1.2.0
 fsspec==2025.9.0
 h11==0.16.0

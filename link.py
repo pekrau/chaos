@@ -126,6 +126,7 @@ def get(link: items.Item):
                         components.get_icon("box-arrow-up-right.svg"),
                         link.href,
                         href=link.href,
+                        target="_blank",
                     )
                 )
             ),

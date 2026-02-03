@@ -264,7 +264,7 @@ def get_listsets_card(item):
 def get_keywords_items_card(item):
     return Card(
         Header("Keywords: ", get_keywords_links(item) or "-"),
-        get_items_table(item.related()),
+        Small(get_items_table(item.related())),
     )
 
 
@@ -287,6 +287,7 @@ def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
                 icon = A(
                     get_icon("box-arrow-up-right.svg", title="Follow link..."),
                     href=item.href,
+                    target="_blank",
                 )
             case "File" | "Image":
                 icon = A(

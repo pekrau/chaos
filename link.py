@@ -1,7 +1,8 @@
 "Link item pages."
 
+import urllib.parse
+
 from fasthtml.common import *
-import marko
 
 import components
 import constants
@@ -81,7 +82,14 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, href: str, text: str, keywords: list[str] = None, listsets: list[str] = None):
+def post(
+    session,
+    title: str,
+    href: str,
+    text: str,
+    keywords: list[str] = None,
+    listsets: list[str] = None,
+):
     "Actually add the link."
     link = items.Link()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
@@ -90,7 +98,7 @@ def post(session, title: str, href: str, text: str, keywords: list[str] = None, 
     link.href = href.strip() or "/"
     link.text = text.strip()
     link.keywords = keywords or list()
-    for id in (listsets or list()):
+    for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
         listset.add(link)
@@ -111,7 +119,7 @@ def get(link: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(Strong(link.title)),
+                    Li(components.get_link_icon(), Strong(link.title)),
                     Li(*components.get_item_links(link)),
                 ),
                 Ul(Li(components.search_form())),
@@ -123,16 +131,15 @@ def get(link: items.Item):
             Card(
                 Strong(
                     A(
-                        components.get_icon("box-arrow-up-right.svg"),
                         link.href,
                         href=link.href,
                         target="_blank",
                     )
                 )
             ),
-            Card(NotStr(marko.convert(link.text))),
-            components.get_keywords_items_card(link),
+            components.get_text_card(link),
             components.get_listsets_card(link),
+            components.get_keywords_card(link),
             cls="container",
         ),
         Footer(
@@ -223,8 +230,12 @@ def get(request, link: items.Item):
 
 @rt("/{link:Item}/edit")
 def post(
-        link: items.Item, title: str, href: str, text: str, keywords: list[str] = None,
-        listsets: list[str] = None
+    link: items.Item,
+    title: str,
+    href: str,
+    text: str,
+    keywords: list[str] = None,
+    listsets: list[str] = None,
 ):
     "Actually edit the link."
     assert isinstance(link, items.Link)
@@ -232,7 +243,7 @@ def post(
     link.href = href.strip() or "/"
     link.text = text.strip()
     link.keywords = keywords or list()
-    for id in (listsets or list()):
+    for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
         listset.add(link)
@@ -307,7 +318,9 @@ def post(session, source: items.File, title: str):
 def get(request, link: items.Item):
     "Ask for confirmation to delete the link."
     assert isinstance(link, items.Link)
-
+    target = urllib.parse.urlsplit(request.headers["Referer"]).path
+    if target == f"/link/{link.id}":
+        target = "/links"
     return (
         Title("Delete"),
         Header(
@@ -330,7 +343,7 @@ def get(request, link: items.Item):
                 Input(
                     type="hidden",
                     name="target",
-                    value=request.headers["Referer"],
+                    value=target,
                 ),
                 action=f"{link.url}/delete",
                 method="POST",

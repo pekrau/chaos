@@ -67,6 +67,10 @@ nav.listset {
     outline-color: firebrick;
 }
 
+nav.database {
+    outline-color: darkred;
+}
+
 nav.keyword {
     outline-color: orange;
 }

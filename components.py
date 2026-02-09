@@ -5,6 +5,7 @@ import os
 
 import babel.numbers
 from fasthtml.common import *
+import marko
 
 import constants
 import settings
@@ -76,17 +77,33 @@ def redirect(href):
     return RedirectResponse(href, status_code=HTTP.SEE_OTHER)
 
 
-def get_icon(filename, title=""):
+def get_icon(filename, title="", **kwargs):
+    defaults = dict(cls="icon")
+    defaults.update(kwargs)
     return Img(
         src=f"/{filename}",
         title=title,
-        cls="icon",
+        width="24",
+        height="24",
+        **defaults
     )
 
+def get_note_icon(title="Note"):
+    return get_icon("card-text.svg", title=title)
+
+def get_link_icon(title="Link"):
+    return get_icon("box-arrow-up-right.svg", title=title)
+
+def get_image_icon(title="Image"):
+    return get_icon("file-earmark-image.svg", title=title)
+
+def get_listset_icon(title="Listset"):
+    return get_icon("list-ul.svg", title=title)
+
+def get_database_icon(title="Database"):
+    return get_icon("database.svg", title=title)
 
 def get_mimetype_icon(mimetype, title=""):
-    if mimetype in constants.IMAGE_MIMETYPES:
-        return get_icon("file-earmark-image.svg", title=title)
     match mimetype:
         case constants.PDF_MIMETYPE:
             return get_icon("file-earmark-pdf.svg", title=title)
@@ -113,15 +130,17 @@ def get_nav_menu():
             Li(A("Add link...", href="/link/")),
             Li(A("Add image...", href="/image/")),
             Li(A("Add file...", href="/file/")),
+            Li(A("Add database...", href="/database/")),
             Li(A("Add listset...", href="/listset/")),
             Li(A("Keywords", href="/keywords")),
             Li(A("Notes", href="/notes")),
             Li(A("Links", href="/links")),
             Li(A("Images", href="/images")),
             Li(A("Files", href="/files")),
+            Li(A("Databases", href="/databases")),
             Li(A("Listsets", href="/listsets")),
             Li(A("No keywords", href="/nokeywords")),
-            Li(A("Unrelated", href="/unrelated")),
+            Li(A("No similar", href="/nosimilar")),
             Li(A("Random", href="/random")),
             Li(A("System", href="/system")),
             Li(A("Logout", href="/logout")),
@@ -150,65 +169,30 @@ def search_form(term=None):
 
 def get_item_edit_link(item):
     return A(
-        Img(
-            src="/pencil.svg",
-            title="Edit",
-            width=24,
-            height=24,
-            cls="norescale",
-            style="margin-left: 10px;",
-        ),
+        get_icon("pencil.svg", title=f"Edit {item.name}"),
         href=f"{item.url}/edit",
     )
 
 
 def get_item_copy_link(item):
     return A(
-        Img(
-            src="/copy.svg",
-            title="Copy",
-            width=24,
-            height=24,
-            cls="norescale",
-            style="margin-left: 10px;",
-        ),
+        get_icon("copy.svg", title=f"Edit {item.name}"),
         href=f"{item.url}/copy",
     )
 
 
 def get_item_id_to_clipboard(item):
-    return Img(
-        src="/info-square.svg",
-        title="Identifier to clipboard",
-        width=24,
-        height=24,
-        data_clipboard_text=item.id,
-        cls="to_clipboard norescale",
-        style="margin-left: 10px;",
-    )
+    return get_icon("info-square.svg", title="Copy identifier to clipboard",
+                    cls="icon to_clipboard")
 
 
 def get_item_md_link_to_clipboard(item):
-    return Img(
-        src="/markdown.svg",
-        title="Markdown link to clipboard",
-        width=24,
-        height=24,
-        data_clipboard_text=f"[{item.title}]({item.url})",
-        cls="to_clipboard norescale",
-        style="margin-left: 10px;",
-    )
+    return get_icon("markdown.svg", title="Copy Markdown link to clipboard",
+                    cls="icon to_clipboard")
 
 def get_item_delete_link(item):
     return A(
-        Img(
-            src="/trash.svg",
-            title="Delete",
-            width=24,
-            height=24,
-            cls="norescale",
-            style="margin-left: 10px;",
-        ),
+        get_icon("trash.svg", title=f"Delete {item.name}"),
         href=f"{item.url}/delete",
     )
 
@@ -254,18 +238,31 @@ def get_items_table_page(title, items, page, href, after=""):
     )
 
 
+def get_text_card(item):
+    if item.text:
+        return Card(NotStr(marko.convert(item.text)))
+    else:
+        return Card(I("No text."))
+
+
 def get_listsets_card(item):
-    return Card(
-        Header("In listsets"),
-        get_items_table(list(item.listsets)),
-    )
+    if listsets := list(item.listsets):
+        return Card(
+            Header("In listsets"),
+            get_items_table(listsets),
+        )
+    else:
+        return Card(I("In no listsets."))
 
 
-def get_keywords_items_card(item):
-    return Card(
-        Header("Keywords: ", get_keywords_links(item) or "-"),
-        Small(get_items_table(item.related())),
-    )
+def get_keywords_card(item):
+    if keywords_links := get_keywords_links(item):
+        return Card(
+            Div("Keywords: ", keywords_links),
+            Div(A("Similar items", href=f"/similar/{item.id}", role="button"), cls="right"),
+        )
+    else:
+        return Card(I("No keywords."))
 
 
 def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
@@ -282,22 +279,26 @@ def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
             keywords = NotStr(", ".join(keywords))
         match item.__class__.__name__:
             case "Note":
-                icon = A(get_icon("card-text.svg", title="Note"), href=item.url)
+                icon = A(get_note_icon(), href=item.url)
             case "Link":
                 icon = A(
-                    get_icon("box-arrow-up-right.svg", title="Follow link..."),
+                    get_link_icon(title="Follow link..."),
                     href=item.href,
                     target="_blank",
                 )
-            case "File" | "Image":
+            case "Database":
+                icon = A(get_database_icon(), href=item.url)
+            case "Image":
+                icon = A(get_image_icon(title="View image"), href=item.bin_url)
+            case "File":
                 icon = A(
                     get_mimetype_icon(
                         item.file_mimetype, title="View or download file"
                     ),
-                    href=item.data_url,
+                    href=item.bin_url,
                 )
             case "Listset":
-                icon = A(get_icon("list-ul.svg", title="Listset"), href=item.url)
+                icon = A(get_listset_icon(), href=item.url)
             case _:
                 raise NotImplementedError
         if edit:
@@ -407,14 +408,13 @@ def get_listsets_dropdown(item, max_listsets=constants.MAX_LISTSETS):
     return [
         Li(
             Label(
-                Input(
-                    type="checkbox", name="listsets", value=listset.id
-                ),
+                Input(type="checkbox", name="listsets", value=listset.id),
                 listset.title,
             )
         )
         for listset in listsets
     ]
+
 
 def get_keywords_links(item, limit=False):
     "Return the list of keywords for the item as links."

@@ -6,6 +6,7 @@ import os
 import pathlib
 import random
 import re
+import sqlite3
 import unicodedata
 
 import babel.dates
@@ -28,7 +29,11 @@ class Item:
         self._path = path
         self.frontmatter = {}
         self.text = ""
-        self.relations = {}  # Key: item id; value: relation number.
+        self.similarities = {}  # Key: item id; value: similarity number.
+
+    @property
+    def name(self):
+        return self.__class__.__name__.lower()
 
     @property
     def id(self):
@@ -91,7 +96,7 @@ class Item:
     @keywords.setter
     def keywords(self, keywords):
         self.frontmatter["keywords"] = set(keywords).intersection(settings.keywords)
-        self.set_relations()
+        self.set_similarities()
 
     @property
     def listsets(self):
@@ -139,13 +144,13 @@ class Item:
 
     def delete(self):
         """Delete the item from the file system.
-        Remove all relations to it.
+        Remove all similarities to it.
         Remove from the lookup.
         """
         global lookup
         id = self.id
         for item in lookup.values():
-            item.relations.pop(id, None)
+            item.similarities.pop(id, None)
         lookup.pop(id)
         self.path.unlink()
 
@@ -157,32 +162,32 @@ class Item:
             pass
         else:
             self.write()
-            self.set_relations()
+            self.set_similarities()
 
-    def set_relations(self):
-        "Set the relations between this item and all others."
+    def set_similarities(self):
+        "Set the similarities between this item and all others."
         global lookup
         id = self.id
-        self.relations = {}  # Key: item id; value: relation number.
+        self.similarities = {}  # Key: item id; value: similarity number.
         for item in lookup.values():
             if item is self:
                 continue
-            if relation := self.relation(item):
-                self.relations[item.id] = relation
-                item.relations[id] = relation
+            if similarity := self.similarity(item):
+                self.similarities[item.id] = similarity
+                item.similarities[id] = similarity
             else:
-                item.relations.pop(id, None)
+                item.similarities.pop(id, None)
 
-    def relation(self, other):
-        "Return the relation number between this item and the other."
+    def similarity(self, other):
+        "Return the similarity number between this item and the other."
         assert isinstance(other, Item)
         return len(self.keywords.intersection(other.keywords))
 
-    def related(self):
-        "Return the sorted list of related items."
+    def similar(self):
+        "Return the sorted list of similar items."
         return [
             get(k)
-            for k, v in sorted(self.relations.items(), key=lambda r: r[1], reverse=True)
+            for k, v in sorted(self.similarities.items(), key=lambda r: r[1], reverse=True)
         ]
 
     def score(self, term):
@@ -269,11 +274,14 @@ class GenericFile(Item):
     @property
     def file_mimetype(self):
         """Return MIME type, or None if not recognized.
-        Determined from the file data, not from the explicit file extension.
+        Determined from the file data, not from the file extension.
         """
         kind = filetype.guess(self.filepath)
         if kind is None:
             None
+        # Special case; convert to the mimetype used in this package.
+        elif kind.mime == "application/x-sqlite3":
+            return constants.SQLITE_MIMETYPE
         else:
             return kind.mime
 
@@ -283,8 +291,8 @@ class GenericFile(Item):
         return timestamp_utc(self.filepath.stat().st_mtime)
 
     @property
-    def data_url(self):
-        return f"/data/{self.id}"
+    def bin_url(self):
+        return f"/bin/{self.id}"
 
     def delete(self):
         "Delete the item and file from the file system and remove from the lookup."
@@ -304,6 +312,53 @@ class File(GenericFile):
     pass
 
 
+class Database(GenericFile):
+    "Database (Sqlite3) item class."
+
+    def tables(self):
+        "Return the definitions of all tables."
+        cnx = sqlite3.connect(self.filepath)
+        names = [
+            cursor[0]
+            for cursor in cnx.execute(
+                "SELECT name FROM sqlite_schema WHERE type='table'"
+            )
+        ]
+        result = {}
+        for name in [n for n in names if not n.startswith("_")]:
+            result[name] = self.get_info(cnx, name)
+        cnx.close()
+        return result
+
+    def views(self):
+        "Return the infos of all views."
+        cnx = sqlite3.connect(self.filepath)
+        names = [
+            cursor[0]
+            for cursor in cnx.execute(
+                "SELECT name FROM sqlite_schema WHERE type='view'"
+            )
+        ]
+        result = {}
+        for name in [n for n in names if not n.startswith("_")]:
+            result[name] = self.get_info(cnx, name)
+        cnx.close()
+        return result
+
+    def get_info(self, cnx, name):
+        result = dict(rows=list())
+        cursor = cnx.execute(f"pragma table_info({name})")
+        for row in cursor:
+            result["rows"].append(
+                dict(name=row[1], type=row[2], null=not row[3], default=row[4], primary=bool(row[5]))
+            )
+        result["sql"] = cnx.execute(
+            "SELECT sql FROM sqlite_schema WHERE name=?", (name,)
+        ).fetchone()
+        result["count"] = cnx.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
+        return result
+
+
 def get(itemid):
     global lookup
     return lookup[itemid]
@@ -313,7 +368,7 @@ def read_items(dirpath=None):
     """Recursively read all items from files in the given directory.
     If no directory is given, start with the data dir.
     Create the data dir if it does not exist.
-    Compute relations between the items based on the keywords.
+    Compute similarities between the items based on the keywords.
     """
     global lookup
     if dirpath is None:
@@ -339,11 +394,11 @@ def read_items(dirpath=None):
             if "href" in frontmatter:
                 item = Link(path)
             elif "filename" in frontmatter:
-                if (
-                    mimetypes.guess_type(frontmatter["filename"])[0]
-                    in constants.IMAGE_MIMETYPES
-                ):
+                mimetype = mimetypes.guess_type(frontmatter["filename"])[0]
+                if mimetype in constants.IMAGE_MIMETYPES:
                     item = Image(path)
+                elif mimetype == constants.SQLITE_MIMETYPE:
+                    item = Database(path)
                 else:
                     item = File(path)
             elif "items" in frontmatter:
@@ -354,20 +409,20 @@ def read_items(dirpath=None):
             frontmatter["keywords"] = set(frontmatter.pop("keywords", list()))
             item.frontmatter = frontmatter
             item.text = text
-    set_all_relations()
+    set_all_similarities()
 
 
-def set_all_relations():
-    "Compute relations between the items based on the keywords."
+def set_all_similarities():
+    "Compute similarities between the items based on the keywords."
     global lookup
     items = list(lookup.values())
     for item in items:
-        item.relations = {}  # Key: item id; value: relation number.
+        item.similarities = {}  # Key: item id; value: similarity number.
     for pos, item1 in enumerate(items):
         for item2 in items[pos + 1 :]:
-            if relation := item1.relation(item2):
-                item1.relations[item2.id] = relation
-                item2.relations[item1.id] = relation
+            if similarity := item1.similarity(item2):
+                item1.similarities[item2.id] = similarity
+                item2.similarities[item1.id] = similarity
 
 
 def get_items(cls=None):
@@ -395,10 +450,10 @@ def get_total_keyword_items(keyword):
     return len([e for e in lookup.values() if keyword in e.keywords])
 
 
-def get_unrelated_items():
-    "Get the unrelated items sorted by modified time."
+def get_no_similar_items():
+    "Get the items with no similars sorted by modified time."
     global lookup
-    result = [e for e in lookup.values() if len(e.related) == 0]
+    result = [i for i in lookup.values() if len(i.similar) == 0]
     result.sort(key=lambda e: e.modified, reverse=True)
     return result
 
@@ -420,12 +475,6 @@ def get_random_items():
         return items
     else:
         return random.sample(items, constants.MAX_PAGE_ITEMS)
-
-
-def get_process_items(process):
-    "Get the set of items with the specified process request."
-    global lookup
-    return [e for e in lookup.values() if e.frontmatter.get("process") == process]
 
 
 def get_all():

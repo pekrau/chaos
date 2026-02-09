@@ -60,24 +60,6 @@ def get(request, keyword: str):
     return result
 
 
-@rt("/process/{process}")
-def get(request, process: str):
-    """Return a JSON dictionary of items {name: filename}, where 'filename'
-    may be None, for all items with the given process request.
-    """
-    try:
-        check_apikey(request)
-    except KeyError as error:
-        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
-    result = {}
-    for item in items.get_process_items(process):
-        try:
-            result[item.id] = item.filename
-        except AttributeError:
-            result[item.id] = None
-    return result
-
-
 @rt("/item/{item:Item}")
 def get(request, item: items.Item):
     "Return the text contents of an item."
@@ -86,22 +68,6 @@ def get(request, item: items.Item):
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
     return {"frontmatter": item.frontmatter, "text": item.text}
-
-
-@rt("/item/{item:Item}")
-def post(request, item: items.Item, text: str = None, process: str = None):
-    "Set the text of an item, optionally removing a process request."
-    try:
-        check_apikey(request)
-    except KeyError as error:
-        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
-    if text is not None:
-        item.text = text.strip()
-    if process and process == item.frontmatter.get("process"):
-        item.frontmatter.pop("process")
-    item.write()
-    items.set_keywords_relations(item)
-    return Response(content="text updated", status_code=HTTP.OK)
 
 
 @rt("/download")

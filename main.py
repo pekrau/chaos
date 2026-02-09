@@ -6,6 +6,7 @@ install()
 
 import os
 import shutil
+import sys
 
 import fasthtml
 from fasthtml.common import *
@@ -17,6 +18,8 @@ import yaml
 from dotenv import load_dotenv
 
 load_dotenv()
+if len(sys.argv) >= 1:
+    os.environ["CHAOS_DIR"] = "/home/pekrau/Dropbox/chaos-development"
 
 import components
 import constants
@@ -26,6 +29,7 @@ import note
 import link
 import file
 import image
+import database
 import listset
 import keywords
 import api
@@ -36,6 +40,7 @@ app, rt = components.get_app_rt(
         Mount("/link", link.app),
         Mount("/file", file.app),
         Mount("/image", image.app),
+        Mount("/database", database.app),
         Mount("/listset", listset.app),
         Mount("/keywords", keywords.app),
         Mount("/api", api.app),
@@ -129,9 +134,9 @@ def post(session, username: str, password: str):
     return components.redirect(session.pop("path", None) or "/")
 
 
-@rt("/data/{file:Item}")
+@rt("/bin/{file:Item}")
 def get(file: items.Item):
-    "Return the data of the file or image item."
+    "Return the binary data of the file or image item."
     assert isinstance(file, items.GenericFile)
     return Response(
         content=file.filepath.read_bytes(),
@@ -167,9 +172,7 @@ def get(page: int = 1):
     images = items.get_items(items.Image)
     total_items = len(images)
     images = list(
-        images[
-            (page - 1) * constants.MAX_PAGE_ITEMS : page * constants.MAX_PAGE_ITEMS
-        ]
+        images[(page - 1) * constants.MAX_PAGE_ITEMS : page * constants.MAX_PAGE_ITEMS]
     )
     rows = []
     for chunk in [
@@ -179,7 +182,7 @@ def get(page: int = 1):
         row = [
             Div(
                 A(
-                    Img(src=image.data_url, cls="autoscale display"),
+                    Img(src=image.bin_url, cls="autoscale display"),
                     title=image.title,
                     href=str(image.url),
                 ),
@@ -222,6 +225,17 @@ def get(page: int = 1):
     )
 
 
+@rt("/databases")
+def get(page: int = 1):
+    "Display database items."
+    return components.get_items_table_page(
+        "Databases",
+        items.get_items(items.Database),
+        page,
+        "/databases",
+    )
+
+
 @rt("/listsets")
 def get(page: int = 1):
     "Display listset items."
@@ -244,14 +258,50 @@ def get(page: int = 1):
     )
 
 
-@rt("/unrelated")
+@rt("/similar/{item:Item}")
+def get(item: items.Item, page: int = 1):
+    "Display items similiar to the given item."
+    similar = item.similar()
+    total_items = len(similar)
+    page = min(max(1, page), components.get_total_pages(total_items))
+    start = (page - 1) * constants.MAX_PAGE_ITEMS
+    end = page * constants.MAX_PAGE_ITEMS
+    table = components.get_items_table(similar[start:end])
+    pager = components.get_table_pager(page, total_items, f"/similar/{item.id}")
+    return (
+        Title("Similar items"),
+        Script(src="/clipboard.min.js"),
+        Script("new ClipboardJS('.to_clipboard');"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li("Similar items"),
+                    Li(components.search_form()),
+                ),
+                cls="main",
+            ),
+            cls="container",
+        ),
+        Main(
+            Card(components.get_items_table([item])),
+            Card(
+                Header("Similar items"),
+                table,
+                Footer(pager)
+            ),
+            cls="container"),
+    )
+
+
+@rt("/nosimilar")
 def get(page: int = 1):
-    "Display items having no relations."
+    "Display items having no similarites to any item."
     return components.get_items_table_page(
-        "Unrelated",
-        items.get_unrelated_items(),
+        "No similar",
+        items.get_no_similar_items(),
         page,
-        "/unrelated",
+        "/nosimilar",
     )
 
 

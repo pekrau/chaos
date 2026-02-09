@@ -1,6 +1,6 @@
-"File item pages."
+"Database item page."
 
-import pathlib
+import sqlite3
 import urllib.parse
 
 from fasthtml.common import *
@@ -15,16 +15,16 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get(request):
-    "Form for adding a file."
+    "Form for creating a database."
     return (
-        Title("Add file"),
+        Title("Create database"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add file"),
+                    Li("Create database"),
                 ),
-                cls="file",
+                cls="database",
             ),
             cls="container",
         ),
@@ -54,8 +54,7 @@ def get(request):
                     Input(
                         type="file",
                         name="upfile",
-                        placeholder="File...",
-                        required=True,
+                        placeholder="Load Sqlite3 database File...",
                     ),
                     cls="grid",
                 ),
@@ -68,7 +67,7 @@ def get(request):
                     type="submit",
                     value="Save",
                 ),
-                action="/file/",
+                action="/database/",
                 method="POST",
             ),
             Form(
@@ -89,76 +88,128 @@ def get(request):
 async def post(
     session,
     title: str,
-    upfile: UploadFile,
     text: str,
+    upfile: UploadFile = None,
     listsets: list[str] = None,
     keywords: list[str] = None,
 ):
-    "Actually add the file."
-    filename = pathlib.Path(upfile.filename)
-    ext = filename.suffix
-    if ext == ".md":
-        raise components.Error("Upload of Markdown file is disallowed.")
-    file = items.File()
+    "Actually create the database."
+    database = items.Database()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
-    file.owner = session["auth"]
-    file.title = title.strip() or filename.stem
-    filecontent = await upfile.read()
-    filename = file.id + ext
-    file.frontmatter["filename"] = filename
+    database.owner = session["auth"]
+    database.title = title.strip()
+    database.frontmatter["filename"] = database.id + ".sqlite"
+    if upfile.filename:
+        try:
+            with open(database.filepath, "wb") as outfile:
+                outfile.write(await upfile.read())
+        except OSError as error:
+            raise components.Error(error)
     try:
-        with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
-            outfile.write(filecontent)
-    except OSError as error:
+        cnx = sqlite3.connect(database.filepath)
+    except sqlite3.Error as error:
         raise components.Error(error)
-    file.text = text.strip()
+    cnx.close()
+    database.text = text.strip()
     for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
-        listset.add(file)
+        listset.add(database)
         listset.write()
-    file.keywords = keywords or list()
-    file.write()
-    return components.redirect(file.url)
+    database.keywords = keywords or list()
+    database.write()
+    return components.redirect(database.url)
 
 
-@rt("/{file:Item}")
-def get(file: items.Item):
-    "View the metadata for the file."
-    assert isinstance(file, items.File)
+@rt("/{database:Item}")
+def get(database: items.Item):
+    "View the metadata for the database."
+    assert isinstance(database, items.Database)
+    if tables := database.tables():
+        tables_cards = [Card(
+            Header(
+                "Table ",
+                Strong(tablename),
+                " ",
+                A(f"{table['count']} rows", href="#", role="button", cls="thin"),
+            ),
+            Table(
+                Tbody(
+                    *[Tr(
+                        Td(row["name"]),
+                        Td(row["type"]),
+                        Td("" if row["null"] else "NOT NULL"),
+                        Td("PRIMARY KEY" if row["primary"] else ""),
+                        Td(I("No default") if row["default"]  is None else row["default"]),
+                    )
+                      for row in table["rows"]]
+                ),
+                cls="compressed",
+            ),
+        )
+                        for tablename, table in tables.items()]
+    else:
+        tables_cards = [Card(I("No tables defined."))]
+    if views := database.views():
+        views_cards = [Card(
+            Header(
+                "View ",
+                Strong(viewname),
+                " ",
+                A(f"{view['count']} rows", href="#", role="button", cls="thin"),
+            ),
+            Table(
+                Tbody(
+                    *[Tr(
+                        Td(row["name"]),
+                        Td(row["type"]),
+                        Td("" if row["null"] else "NOT NULL"),
+                        Td("PRIMARY KEY" if row["primary"] else ""),
+                        Td(I("No default") if row["default"]  is None else row["default"]),
+                    )
+                      for row in view["rows"]]
+                ),
+                cls="compressed",
+            ),
+        )
+                       for viewname, view in views.items()]
+    else:
+        views_cards = [Card(I("No views defined."))]
     return (
-        Title(file.title),
+        Title(database.title),
         Script(src="/clipboard.min.js"),
         Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_mimetype_icon(file.file_mimetype, title="File"), Strong(file.title)),
-                    Li(*components.get_item_links(file)),
+                    Li(components.get_database_icon(), Strong(database.title)),
+                    Li(*components.get_item_links(database)),
                 ),
                 Ul(Li(components.search_form())),
-                cls="file",
+                cls="database",
             ),
             cls="container",
         ),
         Main(
             Card(
                 Strong(
-                    A(file.filename, href=file.bin_url)
-                )
+                    A(database.filename, href=database.bin_url, title="Download Sqlite file")
+                ),
             ),
-            components.get_text_card(file),
-            components.get_listsets_card(file),
-            components.get_keywords_card(file),
+            *tables_cards,
+            *views_cards,
+            components.get_text_card(database),
+            components.get_listsets_card(database),
+            components.get_keywords_card(database),
             cls="container",
         ),
         Footer(
             Hr(),
             Div(
-                Div(file.modified_local),
-                Div(f"{file.size:,d} + {file.file_size:,d} bytes"),
-                Div(file.owner),
+                Div(database.modified_local),
+                Div(f"{database.size:,d} + {database.file_size:,d} bytes"),
+                Div(database.owner),
                 cls="grid",
             ),
             cls="container",
@@ -166,19 +217,19 @@ def get(file: items.Item):
     )
 
 
-@rt("/{file:Item}/edit")
-def get(request, file: items.Item):
-    "Form for editing metadata for the file."
-    assert isinstance(file, items.File)
+@rt("/{database:Item}/edit")
+def get(request, database: items.Item):
+    "Form for editing metadata for the database."
+    assert isinstance(database, items.Database)
     return (
         Title("Edit"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{file.title}'"),
+                    Li(f"Edit '{database.title}'"),
                 ),
-                cls="file",
+                cls="database",
             ),
             cls="container",
         ),
@@ -188,25 +239,28 @@ def get(request, file: items.Item):
                     Input(
                         type="text",
                         name="title",
-                        value=file.title,
+                        value=database.title,
                         required=True,
                         placeholder="Title...",
                     ),
                     Details(
                         Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(file)),
+                        Ul(*components.get_listsets_dropdown(database)),
                         cls="dropdown",
                     ),
                     Details(
                         Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(file.keywords)),
+                        Ul(*components.get_keywords_dropdown(database.keywords)),
                         cls="dropdown",
                     ),
                     cls="grid",
                 ),
                 Div(
                     Label(
-                        Span("Current file: ", A(file.filename, href=file.bin_url)),
+                        Span(
+                            "Current database: ",
+                            A(database.filename, href=database.bin_url),
+                        ),
                         Input(
                             type="file",
                             name="upfile",
@@ -215,7 +269,7 @@ def get(request, file: items.Item):
                     cls="grid",
                 ),
                 Textarea(
-                    file.text,
+                    database.text,
                     name="text",
                     rows=10,
                     autofocus=True,
@@ -224,7 +278,7 @@ def get(request, file: items.Item):
                     type="submit",
                     value="Save",
                 ),
-                action=f"{file.url}/edit",
+                action=f"{database.url}/edit",
                 method="POST",
             ),
             Form(
@@ -241,53 +295,53 @@ def get(request, file: items.Item):
     )
 
 
-@rt("/{file:Item}/edit")
+@rt("/{database:Item}/edit")
 async def post(
-    file: items.Item,
+    database: items.Item,
     title: str,
     upfile: UploadFile,
     text: str,
     listsets: list[str] = None,
     keywords: list[str] = None,
 ):
-    "Actually edit the file."
-    assert isinstance(file, items.File)
-    file.title = title.strip() or file.filename.stem
+    "Actually edit the database."
+    assert isinstance(database, items.Database)
+    database.title = title.strip() or database.filename.stem
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
             raise components.Error("Upload of Markdown file is disallowed.")
         filecontent = await upfile.read()
-        filename = file.id + ext  # The mimetype may change on file contents update.
+        filename = database.id + ext  # The mimetype may change on file contents update.
         try:
             with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
                 outfile.write(filecontent)
         except OSError as error:
             raise components.Error(error)
-    file.text = text.strip()
+    database.text = text.strip()
     for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
-        listset.add(file)
+        listset.add(database)
         listset.write()
-    file.keywords = keywords or list()
-    file.write()
-    return components.redirect(file.url)
+    database.keywords = keywords or list()
+    database.write()
+    return components.redirect(database.url)
 
 
-@rt("/{file:Item}/copy")
-def get(request, file: items.Item):
-    "Form for making a copy of the file."
-    assert isinstance(file, items.File)
+@rt("/{database:Item}/copy")
+def get(request, database: items.Item):
+    "Form for making a copy of the database."
+    assert isinstance(database, items.Database)
     return (
         Title("Copy"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Copy '{file.title}'"),
+                    Li(f"Copy '{database.title}'"),
                 ),
-                cls="file",
+                cls="database",
             ),
             cls="container",
         ),
@@ -296,7 +350,7 @@ def get(request, file: items.Item):
                 Input(
                     type="text",
                     name="title",
-                    value=file.title,
+                    value=database.title,
                     placeholder="Title...",
                     required=True,
                     autofocus=True,
@@ -305,7 +359,7 @@ def get(request, file: items.Item):
                     type="submit",
                     value="Save",
                 ),
-                action=f"{file.url}/copy",
+                action=f"{database.url}/copy",
                 method="POST",
             ),
             Form(
@@ -323,50 +377,50 @@ def get(request, file: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(session, source: items.File, title: str):
-    "Actually copy the file."
-    assert isinstance(source, items.File)
-    filename = pathlib.Path(source.filename)
-    file = items.File()
+def post(session, source: items.Database, title: str):
+    "Actually copy the database."
+    assert isinstance(source, items.Database)
+    databasename = pathlib.Path(source.databasename)
+    database = items.Database()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
-    file.owner = session["auth"]
-    file.title = title.strip() or filename.stem
-    file.text = source.text
+    database.owner = session["auth"]
+    database.title = title.strip() or databasename.stem
+    database.text = source.text
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
-    filename = file.id + filename.suffix
+    filename = database.id + filename.suffix
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise components.Error(error)
-    file.frontmatter["filename"] = filename
-    file.keywords = source.keywords
-    file.write()
-    return components.redirect(file.url)
+    database.frontmatter["filename"] = filename
+    database.keywords = source.keywords
+    database.write()
+    return components.redirect(database.url)
 
 
-@rt("/{file:Item}/delete")
-def get(request, file: items.Item):
-    "Ask for confirmation to delete the file."
-    assert isinstance(file, items.File)
+@rt("/{database:Item}/delete")
+def get(request, database: items.Item):
+    "Ask for confirmation to delete the database."
+    assert isinstance(database, items.Database)
     target = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if target == f"/file/{file.id}":
-        target = "/files"
+    if target == f"/database/{database.id}":
+        target = "/databases"
     return (
         Title("Delete"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{file.title}'"),
+                    Li(f"Delete '{database.title}'"),
                 ),
-                cls="file",
+                cls="database",
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the file? All data will be lost."),
+            P("Really delete the database? All data will be lost."),
             Form(
                 Input(
                     type="submit",
@@ -377,7 +431,7 @@ def get(request, file: items.Item):
                     name="target",
                     value=target,
                 ),
-                action=f"{file.url}/delete",
+                action=f"{database.url}/delete",
                 method="POST",
             ),
             Form(
@@ -394,9 +448,9 @@ def get(request, file: items.Item):
     )
 
 
-@rt("/{file:Item}/delete")
-def post(file: items.Item, target: str):
-    "Actually delete the file."
-    assert isinstance(file, items.File)
-    file.delete()
+@rt("/{database:Item}/delete")
+def post(database: items.Item, target: str):
+    "Actually delete the database."
+    assert isinstance(database, items.Database)
+    database.delete()
     return components.redirect(target)

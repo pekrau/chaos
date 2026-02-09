@@ -3,9 +3,10 @@
 from http import HTTPStatus as HTTP
 import mimetypes
 import pathlib
+import urllib.parse
+
 
 from fasthtml.common import *
-import marko
 
 import components
 import constants
@@ -42,13 +43,13 @@ def get(request):
                         autofocus=True,
                     ),
                     Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=list())),
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(None)),
                         cls="dropdown",
                     ),
                     Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(None)),
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(keywords=list())),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -60,33 +61,6 @@ def get(request):
                         placeholder="image...",
                         required=True,
                         accept=",".join(constants.IMAGE_MIMETYPES),
-                    ),
-                    Details(
-                        Summary("Process request..."),
-                        Ul(
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="process",
-                                        value="none",
-                                        checked=True,
-                                    ),
-                                    "None",
-                                ),
-                            ),
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="process",
-                                        value="extract_text",
-                                    ),
-                                    "Extract text from image",
-                                ),
-                            ),
-                        ),
-                        cls="dropdown",
                     ),
                     cls="grid",
                 ),
@@ -122,9 +96,8 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    keywords: list[str] = None,
     listsets: list[str] = None,
-    process: str = "",
+    keywords: list[str] = None,
 ):
     "Actually add the image."
     filename = pathlib.Path(upfile.filename)
@@ -146,14 +119,12 @@ async def post(
     except OSError as error:
         raise components.Error(error)
     image.text = text.strip()
-    image.keywords = keywords or list()
-    for id in (listsets or list()):
+    for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
         listset.add(image)
         listset.write()
-    if process and process != "none":
-        image.frontmatter["process"] = process
+    image.keywords = keywords or list()
     image.write()
     return components.redirect(image.url)
 
@@ -162,8 +133,6 @@ async def post(
 def get(image: items.Item):
     "View the metadata for the image."
     assert isinstance(image, items.Image)
-    if process := image.frontmatter.get("process", ""):
-        process = Card(f"Process request: {process}")
     return (
         Title(image.title),
         Script(src="/clipboard.min.js"),
@@ -172,7 +141,7 @@ def get(image: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(Strong(image.title)),
+                    Li(components.get_image_icon(), Strong(image.title)),
                     Li(*components.get_item_links(image)),
                 ),
                 Ul(Li(components.search_form())),
@@ -181,16 +150,15 @@ def get(image: items.Item):
             cls="container",
         ),
         Main(
-            process,
             Card(
                 A(
-                    Img(src=image.data_url, title=image.filename, cls="display"),
-                    href=image.data_url,
+                    Img(src=image.bin_url, title=image.filename, cls="display"),
+                    href=image.bin_url,
                 )
             ),
-            Card(NotStr(marko.convert(image.text))),
-            components.get_keywords_items_card(image),
+            components.get_text_card(image),
             components.get_listsets_card(image),
+            components.get_keywords_card(image),
             cls="container",
         ),
         Footer(
@@ -233,13 +201,13 @@ def get(request, image: items.Item):
                         placeholder="Title...",
                     ),
                     Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(image.keywords)),
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(image)),
                         cls="dropdown",
                     ),
                     Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(image)),
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(image.keywords)),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -251,37 +219,10 @@ def get(request, image: items.Item):
                             name="upfile",
                         ),
                         Img(
-                            src=image.data_url,
+                            src=image.bin_url,
                             title=image.filename,
                             cls="display",
                         ),
-                    ),
-                    Details(
-                        Summary("Process request..."),
-                        Ul(
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="process",
-                                        value="none",
-                                        checked=True,
-                                    ),
-                                    "None",
-                                ),
-                            ),
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="process",
-                                        value="extract_text",
-                                    ),
-                                    "Extract text from image",
-                                ),
-                            ),
-                        ),
-                        cls="dropdown",
                     ),
                     cls="grid",
                 ),
@@ -319,9 +260,8 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    keywords: list[str] = None,
     listsets: list[str] = None,
-    process: str = None,
+    keywords: list[str] = None,
 ):
     "Actually edit the image."
     assert isinstance(image, items.Image)
@@ -338,16 +278,12 @@ async def post(
         except OSError as error:
             raise components.Error(error)
     image.text = text.strip()
-    image.keywords = keywords or list()
-    for id in (listsets or list()):
+    for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
         listset.add(image)
         listset.write()
-    if process and process != "none":
-        image.frontmatter["process"] = process
-    else:
-        image.frontmatter.pop("process", None)
+    image.keywords = keywords or list()
     image.write()
     return components.redirect(image.url)
 
@@ -427,6 +363,9 @@ def post(session, source: items.File, title: str):
 def get(request, image: items.Item):
     "Ask for confirmation to delete the file image."
     assert isinstance(image, items.Image)
+    target = urllib.parse.urlsplit(request.headers["Referer"]).path
+    if target == f"/image/{image.id}":
+        target = "/images"
     return (
         Title("Delete"),
         Header(
@@ -449,7 +388,7 @@ def get(request, image: items.Item):
                 Input(
                     type="hidden",
                     name="target",
-                    value=request.headers["Referer"],
+                    value=target,
                 ),
                 action=f"{image.url}/delete",
                 method="POST",

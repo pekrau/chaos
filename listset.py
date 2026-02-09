@@ -1,7 +1,8 @@
 "Listset (ordered set) item pages."
 
+import urllib.parse
+
 from fasthtml.common import *
-import marko
 
 import components
 import constants
@@ -37,13 +38,13 @@ def get(request):
                         autofocus=True,
                     ),
                     Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=list())),
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(None)),
                         cls="dropdown",
                     ),
                     Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(None)),
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(keywords=list())),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -80,15 +81,21 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, text: str, keywords: list[str] = None, listsets: list[str] = None, add: str = ""):
+def post(
+    session,
+    title: str,
+    text: str,
+    listsets: list[str] = None,
+    keywords: list[str] = None,
+    add: str = "",
+):
     "Actually add the listset."
     listset = items.Listset()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     listset.owner = session["auth"]
     listset.title = title.strip() or "no title"
     listset.text = text.strip()
-    listset.keywords = keywords or list()
-    for id in (listsets or list()):
+    for id in listsets or list():
         other = items.get(id)
         assert isinstance(other, items.Listset)
         other.add(listset)
@@ -104,6 +111,7 @@ def post(session, title: str, text: str, keywords: list[str] = None, listsets: l
                 listset.add(item)
             except ValueError:
                 pass
+    listset.keywords = keywords or list()
     listset.write()
     return components.redirect(listset.url)
 
@@ -120,7 +128,7 @@ def get(listset: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(Strong(listset.title)),
+                    Li(components.get_listset_icon(), Strong(listset.title)),
                     Li(*components.get_item_links(listset)),
                 ),
                 Ul(Li(components.search_form())),
@@ -129,10 +137,10 @@ def get(listset: items.Item):
             cls="container",
         ),
         Main(
-            Card(NotStr(marko.convert(listset.text))),
+            components.get_text_card(listset),
             Card(components.get_items_table(listset.items)),
             components.get_listsets_card(listset),
-            components.get_keywords_items_card(listset),
+            components.get_keywords_card(listset),
             cls="container",
         ),
         Footer(
@@ -175,13 +183,13 @@ def get(request, listset: items.Item):
                         required=True,
                     ),
                     Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(listset.keywords)),
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(listset)),
                         cls="dropdown",
                     ),
                     Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(listset)),
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(listset.keywords)),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -226,17 +234,16 @@ def post(
     title: str,
     text: str,
     form: dict,
-    keywords: list[str] = None,
     listsets: list[str] = None,
     add: str = "",
     remove: list[str] = None,
+    keywords: list[str] = None,
 ):
     "Actually edit the listset."
     assert isinstance(listset, items.Listset)
     listset.title = (title or "no title").strip()
     listset.text = text.strip()
-    listset.keywords = keywords or list()
-    for id in (listsets or list()):
+    for id in listsets or list():
         other = items.get(id)
         assert isinstance(other, items.Listset)
         other.add(listset)
@@ -261,6 +268,7 @@ def post(
                 listset.add(item)
             except ValueError:
                 pass
+    listset.keywords = keywords or list()
     listset.write()
     return components.redirect(listset.url)
 
@@ -321,8 +329,8 @@ def post(session, source: items.File, title: str):
     listset.owner = session["auth"]
     listset.title = title.strip()
     listset.text = source.text
-    listset.keywords = source.keywords
     listset.frontmatter["items"] = list(source.frontmatter["items"])
+    listset.keywords = source.keywords
     listset.write()
     return components.redirect(listset.url)
 
@@ -331,7 +339,9 @@ def post(session, source: items.File, title: str):
 def get(request, listset: items.Item):
     "Ask for confirmation to delete the listset."
     assert isinstance(listset, items.Listset)
-
+    target = urllib.parse.urlsplit(request.headers["Referer"]).path
+    if target == f"/listset/{listset.id}":
+        target = "/listsets"
     return (
         Title("Delete"),
         Header(
@@ -354,7 +364,7 @@ def get(request, listset: items.Item):
                 Input(
                     type="hidden",
                     name="target",
-                    value=request.headers["Referer"],
+                    value=target,
                 ),
                 action=f"{listset.url}/delete",
                 method="POST",

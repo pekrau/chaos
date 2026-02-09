@@ -1,7 +1,8 @@
 "Note item pages."
 
+import urllib.parse
+
 from fasthtml.common import *
-import marko
 
 import components
 import constants
@@ -38,13 +39,13 @@ def get(request):
                         autofocus=True,
                     ),
                     Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=list())),
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(None)),
                         cls="dropdown",
                     ),
                     Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(None)),
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(keywords=list())),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -76,19 +77,25 @@ def get(request):
 
 
 @rt("/")
-def post(session, title: str, text: str, keywords: list[str] = None, listsets: list[str] = None):
+def post(
+    session,
+    title: str,
+    text: str,
+    listsets: list[str] = None,
+    keywords: list[str] = None,
+):
     "Actually add the note."
     note = items.Note()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     note.owner = session["auth"]
     note.title = title.strip() or "no title"
     note.text = text.strip()
-    note.keywords = keywords or list()
-    for id in (listsets or list()):
+    for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
         listset.add(note)
         listset.write()
+    note.keywords = keywords or list()
     note.write()
     return components.redirect(note.url)
 
@@ -105,7 +112,10 @@ def get(note: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(Strong(note.title)),
+                    Li(
+                        components.get_note_icon(),
+                        Strong(note.title)
+                    ),
                     Li(*components.get_item_links(note)),
                 ),
                 Ul(Li(components.search_form())),
@@ -114,9 +124,9 @@ def get(note: items.Item):
             cls="container",
         ),
         Main(
-            Card(NotStr(marko.convert(note.text))),
-            components.get_keywords_items_card(note),
+            components.get_text_card(note),
             components.get_listsets_card(note),
+            components.get_keywords_card(note),
             cls="container",
         ),
         Footer(
@@ -159,13 +169,13 @@ def get(request, note: items.Item):
                         required=True,
                     ),
                     Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(note.keywords)),
+                        Summary("Add to listsets..."),
+                        Ul(*components.get_listsets_dropdown(note)),
                         cls="dropdown",
                     ),
                     Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(note)),
+                        Summary("Keywords..."),
+                        Ul(*components.get_keywords_dropdown(note.keywords)),
                         cls="dropdown",
                     ),
                     cls="grid",
@@ -199,17 +209,23 @@ def get(request, note: items.Item):
 
 
 @rt("/{note:Item}/edit")
-def post(note: items.Item, title: str, text: str, keywords: list[str] = None, listsets: list[str] = None):
+def post(
+    note: items.Item,
+    title: str,
+    text: str,
+    listsets: list[str] = None,
+    keywords: list[str] = None,
+):
     "Actually edit the note."
     assert isinstance(note, items.Note)
     note.title = title or "no title"
     note.text = text.strip()
-    note.keywords = keywords or list()
-    for id in (listsets or list()):
+    for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
         listset.add(note)
         listset.write()
+    note.keywords = keywords or list()
     note.write()
     return components.redirect(note.url)
 
@@ -279,6 +295,9 @@ def post(session, source: items.File, title: str):
 def get(request, note: items.Item):
     "Ask for confirmation to delete the note."
     assert isinstance(note, items.Note)
+    target = urllib.parse.urlsplit(request.headers["Referer"]).path
+    if target == f"/note/{note.id}":
+        target = "/notes"
     return (
         Title("Delete"),
         Header(
@@ -301,7 +320,7 @@ def get(request, note: items.Item):
                 Input(
                     type="hidden",
                     name="target",
-                    value=request.headers["Referer"],
+                    value=target,
                 ),
                 action=f"{note.url}/delete",
                 method="POST",

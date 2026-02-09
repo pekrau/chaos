@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (0, 15, 5)
+VERSION = (0, 16, 0)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -36,22 +36,13 @@ DOCX_MIMETYPE = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
 EPUB_MIMETYPE = "application/epub+zip"
-
+SQLITE_MIMETYPE = "application/vnd.sqlite3"
 
 IMAGE_MIMETYPES = {
     PNG_MIMETYPE,
     JPEG_MIMETYPE,
     WEBP_MIMETYPE,
     GIF_MIMETYPE,
-}
-
-OCR_LANGUAGES = ["sv", "en"]
-OCR_GPU = bool(os.environ.get("CHAOS_OCR_GPU"))
-
-TEXTUAL_MIMETYPES = {
-    PDF_MIMETYPE,
-    DOCX_MIMETYPE,
-    EPUB_MIMETYPE,
 }
 
 MAX_PAGE_ITEMS = 20

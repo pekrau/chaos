@@ -323,6 +323,7 @@ class Database(GenericFile):
             return self._cnx
         except AttributeError:
             self._cnx = sqlite3.connect(self.filepath)
+            self._cnx.autocommit = True
             return self._cnx
 
     def __del__(self):
@@ -372,12 +373,6 @@ class Database(GenericFile):
                     null=not row[3],
                     default=row[4],
                     primary=bool(row[5]),
-                    min=self.cnx.execute(
-                        f"SELECT MIN({row[1]}) FROM {name}"
-                    ).fetchone()[0],
-                    max=self.cnx.execute(
-                        f"SELECT MAX({row[1]}) FROM {name}"
-                    ).fetchone()[0],
                 )
             )
         result["sql"] = self.cnx.execute(

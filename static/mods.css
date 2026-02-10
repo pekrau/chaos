@@ -32,61 +32,9 @@ img.norescale {
     max-width: none;
 };
 
-nav {
-    outline-width: 3px;
-    outline-style: solid;
-    padding: 0px 10px;
-    border-radius: 4px;
-}
-
-nav.main {
-    outline-color: lightgray;
-}
-
-nav.login {
-    outline-color: gray;
-}
-
-nav.note {
-    outline-color: cyan;
-}
-
-nav.link {
-    outline-color: deepskyblue;
-}
-
-nav.file {
-    outline-color: mediumpurple;
-}
-
-nav.image {
-    outline-color: seagreen;
-}
-
-nav.listset {
-    outline-color: firebrick;
-}
-
-nav.database {
-    outline-color: darkred;
-}
-
-nav.keyword {
-    outline-color: orange;
-}
-
-nav.search {
-    outline-color: tomato;
-}
-
 form.search {
     padding-top: 0px;
     margin-bottom: 2px;
-}
-
-a.thin {
-    padding: 0px 8px;
-    margin: 2px;
 }
 
 a.nomargin {
@@ -97,6 +45,11 @@ a.button {
     border: 1px solid #ddd;
     padding: 2px 8px;
     margin: 6px;
+}
+
+a.thin {
+    padding: 0px 8px;
+    margin: 2px;
 }
 
 table.compressed > tbody > tr > td {

@@ -18,16 +18,15 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get(request):
-    "Form for creating a database."
+    "Form for adding a database."
     return (
-        Title("Create database"),
+        Title("Add database"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Create database"),
+                    Li(components.get_database_icon(), "Add database"),
                 ),
-                cls="database",
             ),
             cls="container",
         ),
@@ -128,114 +127,6 @@ async def post(
 def get(database: items.Item):
     "View the metadata for the database."
     assert isinstance(database, items.Database)
-    if tables := database.tables():
-        tables_cards = [
-            Card(
-                Header(
-                    "Table ",
-                    Strong(tablename),
-                    " ",
-                    A(
-                        f"{table['count']} rows",
-                        href=f"/database/{database.id}/rows/{tablename}",
-                        role="button",
-                        cls="thin",
-                    ),
-                    A(
-                        "CSV",
-                        href=f"/database/{database.id}/csv/{tablename}",
-                        role="button",
-                        cls="thin secondary",
-                    ),
-                    A(
-                        "JSON",
-                        href=f"/database/{database.id}/json/{tablename}",
-                        role="button",
-                        cls="thin secondary",
-                    ),
-                    A("Schema", href="#", role="button", cls="outline thin"),
-                ),
-                Table(
-                    Thead(
-                        Tr(
-                            Th("Row"),
-                            Th("Type"),
-                            Th("Min"),
-                            Th("Max"),
-                        ),
-                    ),
-                    Tbody(
-                        *[
-                            Tr(
-                                Td(row["name"]),
-                                Td(row["type"]),
-                                Td(row["min"]),
-                                Td(row["max"]),
-                            )
-                            for row in table["rows"]
-                        ]
-                    ),
-                    cls="compressed",
-                ),
-            )
-            for tablename, table in tables.items()
-        ]
-    else:
-        tables_cards = [Card(I("No tables defined."))]
-    if views := database.views():
-        views_cards = [
-            Card(
-                Header(
-                    "View ",
-                    Strong(viewname),
-                    " ",
-                    A(
-                        f"{view['count']} rows",
-                        href=f"/database/{database.id}/rows/{viewname}",
-                        role="button",
-                        cls="thin",
-                    ),
-                    A(
-                        "CSV",
-                        href=f"/database/{database.id}/csv/{viewname}",
-                        role="button",
-                        cls="thin secondary",
-                    ),
-                    A(
-                        "JSON",
-                        href=f"/database/{database.id}/json/{viewname}",
-                        role="button",
-                        cls="thin secondary",
-                    ),
-                    A("Schema", href="#", role="button", cls="outline thin"),
-                ),
-                Table(
-                    Thead(
-                        Tr(
-                            Th("Row"),
-                            Th("Type"),
-                            Th("Min"),
-                            Th("Max"),
-                        ),
-                    ),
-                    Tbody(
-                        *[
-                            Tr(
-                                Td(row["name"]),
-                                Td(row["type"]),
-                                Td(row["min"]),
-                                Td(row["max"]),
-                            )
-                            for row in view["rows"]
-                        ]
-                    ),
-                    cls="compressed",
-                ),
-            )
-            for viewname, view in views.items()
-        ]
-    else:
-        views_cards = [Card(I("No views defined."))]
     return (
         Title(database.title),
         Script(src="/clipboard.min.js"),
@@ -248,11 +139,16 @@ def get(database: items.Item):
                     Li(*components.get_item_links(database)),
                 ),
                 Ul(Li(components.search_form())),
-                cls="database",
             ),
             cls="container",
         ),
         Main(
+            Card(get_database_overview(database, full=False)),
+            Form(
+                Input(type="submit", value="SQL command"),
+                action=f"/database/{database.id}/sql",
+                method="POST",
+            ),
             Card(
                 Strong(
                     A(
@@ -263,8 +159,6 @@ def get(database: items.Item):
                     )
                 ),
             ),
-            *tables_cards,
-            *views_cards,
             components.get_text_card(database),
             components.get_listsets_card(database),
             components.get_keywords_card(database),
@@ -283,27 +177,127 @@ def get(database: items.Item):
     )
 
 
-@rt("/{database:Item}/rows/{name}")
+@rt("/{database:Item}/row/{name}")
 def get(request, database: items.Item, name: str):
-    "Display row values from table or view."
+    "Add a row to the table."
     assert isinstance(database, items.Database)
+    title = f"Add row to table {name}"
     info = database.get_info(name)
-    title = f"{database.title}; {info['type']} {name}"
-    rows = database.cnx.execute(f"SELECT * FROM {name}").fetchall()
+    inputs = []
+    for row in info["rows"]:
+        label = f"{row['name']} {row['type']} {not row['null'] and 'NOT NULL' or ''} {row['primary'] and 'PRIMARY KEY' or ''}",
+        kwargs = dict(name=row["name"], required=not row["null"])
+        if row["type"] == "INTEGER":
+            inputs.append((label, Input(type="number", step="1", **kwargs)))
+        elif row["type"] == "REAL":
+            inputs.append((label, Input(type="number", **kwargs)))
+        else:
+            inputs.append((label, Input(type="text", **kwargs)))
     return (
         Title(title),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_database_icon(), Strong(title)),
+                    Li(Strong(title)),
                 ),
-                Ul(Li(components.search_form())),
-                cls="database",
             ),
             cls="container",
         ),
         Main(
+            Form(
+                Fieldset(*[Label(i[0], i[1]) for i in inputs]),
+                Input(type="hidden", name="_target", value=request.headers["Referer"]),
+                Input(type="submit", value="Add"),
+                action=f"/database/{database.id}/row/{name}",
+                method="POST",
+            ),
+            Form(
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
+                ),
+                action=f"/database/{database.id}",
+                method="GET",
+            ),
+            cls="container",
+        ),
+    )
+
+@rt("/{database:Item}/row/{name}")
+def post(request, database: items.Item, name: str, _target: str, form: dict):
+    "Actually add the row to the table."
+    assert isinstance(database, items.Database)
+    info = database.get_info(name)
+    columns = []
+    values = []
+    try:
+        for row in info["rows"]:
+            columns.append(row["name"])
+            if row["type"] == "INTEGER":
+                if value := form[row["name"]]:
+                    value = int(value)
+                elif row['null']:
+                    value = None
+                else:
+                    raise ValueError(f"{row['name']} requries a value")
+            elif row["type"] == "REAL":
+                if value := form[row["name"]]:
+                    value = float(value)
+                elif row['null']:
+                    value = None
+                else:
+                    raise ValueError(f"{row['name']} requries a value")
+            else:
+                if value := form[row["name"]]:
+                    pass
+                elif row['null']:
+                    value = None
+                else:
+                    value = ""
+            values.append(value)
+    except (TypeError, ValueError) as error:
+        raise errors.Error(error)
+    database.cnx.execute(f"INSERT INTO {name} ({','.join(columns)}) VALUES ({','.join('?' * len(values))})", values)
+    return components.redirect(_target)
+
+
+@rt("/{database:Item}/rows/{name}")
+def get(request, database: items.Item, name: str):
+    "Display row values from table or view."
+    assert isinstance(database, items.Database)
+    info = database.get_info(name)
+    title = f"{info['type'].capitalize()} {name}"
+    rows = database.cnx.execute(f"SELECT * FROM {name}").fetchall()
+    db_card = Card(
+        Div(components.get_database_icon(), A(database.title, href=database.url)),
+        Div(f"{len(rows)} rows"),
+        Div(
+            A(
+                "Add row",
+                href=f"/database/{database.id}/row/{name}",
+                role="button",
+                cls="thin",
+            ),
+            cls="right",
+        ),
+        cls="grid",
+    )
+    return (
+        Title(title),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(Strong(title)),
+                ),
+                Ul(Li(components.search_form())),
+            ),
+            cls="container",
+        ),
+        Main(
+            db_card,
             Table(
                 Thead(
                     Tr(*[Th(row["name"], Br(), row["type"]) for row in info["rows"]])
@@ -312,6 +306,7 @@ def get(request, database: items.Item, name: str):
                 cls="compressed",
                 id="rows",
             ),
+            db_card,
             cls="container",
         ),
         Footer(
@@ -342,7 +337,7 @@ def get(request, database: items.Item, name: str):
         status_code=HTTP.OK,
         headers={
             "Content-Type": constants.CSV_MIMETYPE,
-            "Content-Disposition": f'attachment; filename="{name}.csv"',
+            "Content-Disposition": f'attachment; filename="{database.id}_{name}.csv"',
         },
     )
 
@@ -360,6 +355,71 @@ def get(request, database: items.Item, name: str):
     }
 
 
+@rt("/{database:Item}/sql")
+def post(request, database: items.Item, sql: str = None):
+    "Execute a SQL command."
+    headers = []
+    result = []
+    error_card = ""
+    if sql:
+        try:
+            cursor = database.cnx.execute(sql)
+        except sqlite3.Error as error:
+            error_card = Card(Header("Error", style="color: red;"), Pre(str(error)))
+        else:
+            result = cursor.fetchall()
+            if cursor.description:
+                headers = [t[0] for t in cursor.description]
+            else:
+                headers = []
+    if headers or result:
+        result_card = Card(
+            Table(
+                Thead(*[Tr(*[Th(h) for h in headers])]),
+                Tbody(*[Tr(*[Td(r) for r in row]) for row in result])),
+        )
+    else:
+        result_card = ""
+    return (
+        Title(f"{database.title} SQL command"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(components.get_database_icon(), Strong(database.title), " SQL command"),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            Card(get_database_overview(database)),
+            Card(
+                Form(
+                    Fieldset(
+                        Label("SQL command"),
+                        Textarea(sql or "", name="sql", autofocus=True),
+                    ),
+                    Input(type="submit", value="Execute"),
+                    action=f"/database/{database.id}/sql",
+                    method="POST",
+                ),
+                Form(
+                    Input(
+                        type="submit",
+                        value="Cancel",
+                        cls="secondary",
+                    ),
+                    action=f"/database/{database.id}",
+                    method="GET",
+                ),
+            ),
+            error_card,
+            result_card,
+            cls="container",
+        ),
+    )
+
+
 @rt("/{database:Item}/edit")
 def get(request, database: items.Item):
     "Form for editing metadata for the database."
@@ -372,7 +432,6 @@ def get(request, database: items.Item):
                     Li(components.get_nav_menu()),
                     Li(f"Edit '{database.title}'"),
                 ),
-                cls="database",
             ),
             cls="container",
         ),
@@ -484,7 +543,6 @@ def get(request, database: items.Item):
                     Li(components.get_nav_menu()),
                     Li(f"Copy '{database.title}'"),
                 ),
-                cls="database",
             ),
             cls="container",
         ),
@@ -558,7 +616,6 @@ def get(request, database: items.Item):
                     Li(components.get_nav_menu()),
                     Li(f"Delete '{database.title}'"),
                 ),
-                cls="database",
             ),
             cls="container",
         ),
@@ -597,3 +654,56 @@ def post(database: items.Item, target: str):
     assert isinstance(database, items.Database)
     database.delete()
     return components.redirect(target)
+
+
+def get_database_overview(database, full=True):
+    "Get an overview of the basic structure of the database."
+    rows = []
+    items = list(database.tables().items()) + list(database.views().items())
+    for name, item in items:
+        if full:
+            columns = Ul(*[Li(f"{r['name']} {r['type']} {not r['null'] and 'NOT NULL' or ''} {r['primary'] and 'PRIMARY KEY' or ''}") for r in item['rows']])
+        else:
+            columns = ""
+        if item["type"] == "table":
+            add_row = A(
+                "Add row",
+                href=f"/database/{database.id}/row/{name}",
+                role="button",
+                cls="thin",
+            )
+        else:
+            add_row = ""
+
+        rows.append(
+            Tr(
+                Th(
+                    f"{item['type'].capitalize()} ",
+                    Strong(name),
+                    columns,
+                ),
+                Td(
+                    add_row,
+                    A(
+                        f"{item['count']} rows",
+                        href=f"/database/{database.id}/rows/{name}",
+                        role="button",
+                        cls="thin",
+                    ),
+                    A(
+                        "CSV",
+                        href=f"/database/{database.id}/csv/{name}",
+                        role="button",
+                        cls="thin secondary",
+                    ),
+                    A(
+                        "JSON",
+                        href=f"/database/{database.id}/json/{name}",
+                        role="button",
+                        cls="thin secondary",
+                    ),
+                    cls="right",
+                ),
+            ),
+        )
+    return Table(Tbody(*rows))

@@ -231,7 +231,6 @@ def get_items_table_page(title, items, page, href, after=""):
                     Li(title),
                     Li(search_form()),
                 ),
-                cls="main",
             ),
             cls="container",
         ),

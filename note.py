@@ -21,9 +21,8 @@ def get(request):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add note"),
+                    Li(components.get_note_icon(), "Add note")
                 ),
-                cls="note",
             ),
             cls="container",
         ),
@@ -115,7 +114,6 @@ def get(note: items.Item):
                     Li(*components.get_item_links(note)),
                 ),
                 Ul(Li(components.search_form())),
-                cls="note",
             ),
             cls="container",
         ),
@@ -150,7 +148,6 @@ def get(request, note: items.Item):
                     Li(components.get_nav_menu()),
                     Li(f"Edit '{note.title}'"),
                 ),
-                cls="note",
             ),
             cls="container",
         ),
@@ -238,7 +235,6 @@ def get(request, note: items.Item):
                     Li(components.get_nav_menu()),
                     Li(f"Copy '{note.title}'"),
                 ),
-                cls="note",
             ),
             cls="container",
         ),
@@ -302,7 +298,6 @@ def get(request, note: items.Item):
                     Li(components.get_nav_menu()),
                     Li(f"Delete '{note.title}'"),
                 ),
-                cls="note",
             ),
             cls="container",
         ),

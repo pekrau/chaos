@@ -1,5 +1,8 @@
 "Database item page."
 
+import csv
+from http import HTTPStatus as HTTP
+import io
 import sqlite3
 import urllib.parse
 
@@ -7,8 +10,8 @@ from fasthtml.common import *
 
 import components
 import constants
+import errors
 import items
-
 
 app, rt = components.get_app_rt()
 
@@ -104,11 +107,11 @@ async def post(
             with open(database.filepath, "wb") as outfile:
                 outfile.write(await upfile.read())
         except OSError as error:
-            raise components.Error(error)
+            raise errors.Error(error)
     try:
         cnx = sqlite3.connect(database.filepath)
     except sqlite3.Error as error:
-        raise components.Error(error)
+        raise errors.Error(error)
     cnx.close()
     database.text = text.strip()
     for id in listsets or list():
@@ -126,53 +129,111 @@ def get(database: items.Item):
     "View the metadata for the database."
     assert isinstance(database, items.Database)
     if tables := database.tables():
-        tables_cards = [Card(
-            Header(
-                "Table ",
-                Strong(tablename),
-                " ",
-                A(f"{table['count']} rows", href="#", role="button", cls="thin"),
-            ),
-            Table(
-                Tbody(
-                    *[Tr(
-                        Td(row["name"]),
-                        Td(row["type"]),
-                        Td("" if row["null"] else "NOT NULL"),
-                        Td("PRIMARY KEY" if row["primary"] else ""),
-                        Td(I("No default") if row["default"]  is None else row["default"]),
-                    )
-                      for row in table["rows"]]
+        tables_cards = [
+            Card(
+                Header(
+                    "Table ",
+                    Strong(tablename),
+                    " ",
+                    A(
+                        f"{table['count']} rows",
+                        href=f"/database/{database.id}/rows/{tablename}",
+                        role="button",
+                        cls="thin",
+                    ),
+                    A(
+                        "CSV",
+                        href=f"/database/{database.id}/csv/{tablename}",
+                        role="button",
+                        cls="thin secondary",
+                    ),
+                    A(
+                        "JSON",
+                        href=f"/database/{database.id}/json/{tablename}",
+                        role="button",
+                        cls="thin secondary",
+                    ),
+                    A("Schema", href="#", role="button", cls="outline thin"),
                 ),
-                cls="compressed",
-            ),
-        )
-                        for tablename, table in tables.items()]
+                Table(
+                    Thead(
+                        Tr(
+                            Th("Row"),
+                            Th("Type"),
+                            Th("Min"),
+                            Th("Max"),
+                        ),
+                    ),
+                    Tbody(
+                        *[
+                            Tr(
+                                Td(row["name"]),
+                                Td(row["type"]),
+                                Td(row["min"]),
+                                Td(row["max"]),
+                            )
+                            for row in table["rows"]
+                        ]
+                    ),
+                    cls="compressed",
+                ),
+            )
+            for tablename, table in tables.items()
+        ]
     else:
         tables_cards = [Card(I("No tables defined."))]
     if views := database.views():
-        views_cards = [Card(
-            Header(
-                "View ",
-                Strong(viewname),
-                " ",
-                A(f"{view['count']} rows", href="#", role="button", cls="thin"),
-            ),
-            Table(
-                Tbody(
-                    *[Tr(
-                        Td(row["name"]),
-                        Td(row["type"]),
-                        Td("" if row["null"] else "NOT NULL"),
-                        Td("PRIMARY KEY" if row["primary"] else ""),
-                        Td(I("No default") if row["default"]  is None else row["default"]),
-                    )
-                      for row in view["rows"]]
+        views_cards = [
+            Card(
+                Header(
+                    "View ",
+                    Strong(viewname),
+                    " ",
+                    A(
+                        f"{view['count']} rows",
+                        href=f"/database/{database.id}/rows/{viewname}",
+                        role="button",
+                        cls="thin",
+                    ),
+                    A(
+                        "CSV",
+                        href=f"/database/{database.id}/csv/{viewname}",
+                        role="button",
+                        cls="thin secondary",
+                    ),
+                    A(
+                        "JSON",
+                        href=f"/database/{database.id}/json/{viewname}",
+                        role="button",
+                        cls="thin secondary",
+                    ),
+                    A("Schema", href="#", role="button", cls="outline thin"),
                 ),
-                cls="compressed",
-            ),
-        )
-                       for viewname, view in views.items()]
+                Table(
+                    Thead(
+                        Tr(
+                            Th("Row"),
+                            Th("Type"),
+                            Th("Min"),
+                            Th("Max"),
+                        ),
+                    ),
+                    Tbody(
+                        *[
+                            Tr(
+                                Td(row["name"]),
+                                Td(row["type"]),
+                                Td(row["min"]),
+                                Td(row["max"]),
+                            )
+                            for row in view["rows"]
+                        ]
+                    ),
+                    cls="compressed",
+                ),
+            )
+            for viewname, view in views.items()
+        ]
     else:
         views_cards = [Card(I("No views defined."))]
     return (
@@ -194,7 +255,12 @@ def get(database: items.Item):
         Main(
             Card(
                 Strong(
-                    A(database.filename, href=database.bin_url, title="Download Sqlite file")
+                    A(
+                        components.get_file_icon(),
+                        database.filename,
+                        href=database.bin_url,
+                        title="Download Sqlite file",
+                    )
                 ),
             ),
             *tables_cards,
@@ -215,6 +281,83 @@ def get(database: items.Item):
             cls="container",
         ),
     )
+
+
+@rt("/{database:Item}/rows/{name}")
+def get(request, database: items.Item, name: str):
+    "Display row values from table or view."
+    assert isinstance(database, items.Database)
+    info = database.get_info(name)
+    title = f"{database.title}; {info['type']} {name}"
+    rows = database.cnx.execute(f"SELECT * FROM {name}").fetchall()
+    return (
+        Title(title),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(components.get_database_icon(), Strong(title)),
+                ),
+                Ul(Li(components.search_form())),
+                cls="database",
+            ),
+            cls="container",
+        ),
+        Main(
+            Table(
+                Thead(
+                    Tr(*[Th(row["name"], Br(), row["type"]) for row in info["rows"]])
+                ),
+                Tbody(*[Tr(*[Td(i) for i in row]) for row in rows]),
+                cls="compressed",
+                id="rows",
+            ),
+            cls="container",
+        ),
+        Footer(
+            Hr(),
+            Div(
+                Div(database.modified_local),
+                Div(f"{database.size:,d} + {database.file_size:,d} bytes"),
+                Div(database.owner),
+                cls="grid",
+            ),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/csv/{name:str}")
+def get(request, database: items.Item, name: str):
+    info = database.get_info(name)
+    outfile = io.StringIO()
+    writer = csv.writer(
+        outfile, dialect="unix", delimiter=",", quoting=csv.QUOTE_NONNUMERIC
+    )
+    header = [row["name"] for row in info["rows"]]
+    writer.writerow(header)
+    writer.writerows(database.cnx.execute(f"SELECT {','.join(header)} FROM {name}"))
+    return Response(
+        content=outfile.getvalue(),
+        status_code=HTTP.OK,
+        headers={
+            "Content-Type": constants.CSV_MIMETYPE,
+            "Content-Disposition": f'attachment; filename="{name}.csv"',
+        },
+    )
+
+
+@rt("/{database:Item}/json/{name:str}")
+def get(request, database: items.Item, name: str):
+    info = database.get_info(name)
+    header = [row["name"] for row in info["rows"]]
+    return {
+        "$id": f"database {database.id}; {info['type']} {name}",
+        "data": [
+            dict(zip(header, row))
+            for row in database.cnx.execute(f"SELECT {','.join(header)} FROM {name}")
+        ],
+    }
 
 
 @rt("/{database:Item}/edit")
@@ -310,14 +453,14 @@ async def post(
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
-            raise components.Error("Upload of Markdown file is disallowed.")
+            raise errors.Error("Upload of Markdown file is disallowed.")
         filecontent = await upfile.read()
         filename = database.id + ext  # The mimetype may change on file contents update.
         try:
             with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
                 outfile.write(filecontent)
         except OSError as error:
-            raise components.Error(error)
+            raise errors.Error(error)
     database.text = text.strip()
     for id in listsets or list():
         listset = items.get(id)
@@ -393,7 +536,7 @@ def post(session, source: items.Database, title: str):
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
-        raise components.Error(error)
+        raise errors.Error(error)
     database.frontmatter["filename"] = filename
     database.keywords = source.keywords
     database.write()

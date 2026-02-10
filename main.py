@@ -285,12 +285,9 @@ def get(item: items.Item, page: int = 1):
         ),
         Main(
             Card(components.get_items_table([item])),
-            Card(
-                Header("Similar items"),
-                table,
-                Footer(pager)
-            ),
-            cls="container"),
+            Card(Header("Similar items"), table, Footer(pager)),
+            cls="container",
+        ),
     )
 
 

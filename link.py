@@ -8,7 +8,6 @@ import components
 import constants
 import items
 
-
 app, rt = components.get_app_rt()
 
 

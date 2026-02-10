@@ -15,8 +15,8 @@ import marko
 import yaml
 
 import constants
+import errors
 import settings
-
 
 # Key: item id; value: item instance.
 lookup = {}
@@ -110,8 +110,8 @@ class Item:
 
     @property
     def size(self):
-        "Size of the item text, in bytes."
-        return len(self.text)
+        "Size of the item Markdown file, in bytes."
+        return self.path.stat().st_size
 
     @property
     def modified(self):
@@ -187,7 +187,9 @@ class Item:
         "Return the sorted list of similar items."
         return [
             get(k)
-            for k, v in sorted(self.similarities.items(), key=lambda r: r[1], reverse=True)
+            for k, v in sorted(
+                self.similarities.items(), key=lambda r: r[1], reverse=True
+            )
         ]
 
     def score(self, term):
@@ -315,47 +317,74 @@ class File(GenericFile):
 class Database(GenericFile):
     "Database (Sqlite3) item class."
 
+    @property
+    def cnx(self):
+        try:
+            return self._cnx
+        except AttributeError:
+            self._cnx = sqlite3.connect(self.filepath)
+            return self._cnx
+
+    def __del__(self):
+        try:
+            self._cnx.close()
+            del self._cnx
+        except AttributeError:
+            pass
+
     def tables(self):
         "Return the definitions of all tables."
-        cnx = sqlite3.connect(self.filepath)
         names = [
             cursor[0]
-            for cursor in cnx.execute(
+            for cursor in self.cnx.execute(
                 "SELECT name FROM sqlite_schema WHERE type='table'"
             )
         ]
         result = {}
         for name in [n for n in names if not n.startswith("_")]:
-            result[name] = self.get_info(cnx, name)
-        cnx.close()
+            result[name] = self.get_info(name)
         return result
 
     def views(self):
         "Return the infos of all views."
-        cnx = sqlite3.connect(self.filepath)
         names = [
             cursor[0]
-            for cursor in cnx.execute(
+            for cursor in self.cnx.execute(
                 "SELECT name FROM sqlite_schema WHERE type='view'"
             )
         ]
         result = {}
         for name in [n for n in names if not n.startswith("_")]:
-            result[name] = self.get_info(cnx, name)
-        cnx.close()
+            result[name] = self.get_info(name)
         return result
 
-    def get_info(self, cnx, name):
-        result = dict(rows=list())
-        cursor = cnx.execute(f"pragma table_info({name})")
+    def get_info(self, name):
+        result = dict(rows=[])
+        try:
+            cursor = self.cnx.execute(f"pragma table_info({name})")
+        except sqlite3.Error as error:
+            raise errors.Error(error)
         for row in cursor:
             result["rows"].append(
-                dict(name=row[1], type=row[2], null=not row[3], default=row[4], primary=bool(row[5]))
+                dict(
+                    name=row[1],
+                    type=row[2],
+                    null=not row[3],
+                    default=row[4],
+                    primary=bool(row[5]),
+                    min=self.cnx.execute(
+                        f"SELECT MIN({row[1]}) FROM {name}"
+                    ).fetchone()[0],
+                    max=self.cnx.execute(
+                        f"SELECT MAX({row[1]}) FROM {name}"
+                    ).fetchone()[0],
+                )
             )
-        result["sql"] = cnx.execute(
+        result["sql"] = self.cnx.execute(
             "SELECT sql FROM sqlite_schema WHERE name=?", (name,)
-        ).fetchone()
-        result["count"] = cnx.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
+        ).fetchone()[0]
+        result["type"] = result["sql"].split()[1].lower()
+        result["count"] = self.cnx.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
         return result
 
 
@@ -453,7 +482,7 @@ def get_total_keyword_items(keyword):
 def get_no_similar_items():
     "Get the items with no similars sorted by modified time."
     global lookup
-    result = [i for i in lookup.values() if len(i.similar) == 0]
+    result = [i for i in lookup.values() if len(i.similar()) == 0]
     result.sort(key=lambda e: e.modified, reverse=True)
     return result
 

@@ -9,7 +9,6 @@ import constants
 import items
 import settings
 
-
 app, rt = components.get_app_rt()
 
 
@@ -112,10 +111,7 @@ def get(note: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(
-                        components.get_note_icon(),
-                        Strong(note.title)
-                    ),
+                    Li(components.get_note_icon(), Strong(note.title)),
                     Li(*components.get_item_links(note)),
                 ),
                 Ul(Li(components.search_form())),

@@ -10,9 +10,9 @@ from fasthtml.common import *
 
 import components
 import constants
+import errors
 import items
 import settings
-
 
 app, rt = components.get_app_rt()
 
@@ -102,10 +102,10 @@ async def post(
     "Actually add the image."
     filename = pathlib.Path(upfile.filename)
     if upfile.content_type not in constants.IMAGE_MIMETYPES:
-        raise components.Error("Cannot upload non-image file.")
+        raise errors.Error("Cannot upload non-image file.")
     ext = filename.suffix
     if ext == ".md":
-        raise components.Error("Upload of Markdown file is disallowed.")
+        raise errors.Error("Upload of Markdown file is disallowed.")
     image = items.Image()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     image.owner = session["auth"]
@@ -117,7 +117,7 @@ async def post(
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
-        raise components.Error(error)
+        raise errors.Error(error)
     image.text = text.strip()
     for id in listsets or list():
         listset = items.get(id)
@@ -269,14 +269,14 @@ async def post(
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
-            raise components.Error("Upload of Markdown file is disallowed.")
+            raise errors.Error("Upload of Markdown file is disallowed.")
         filecontent = await upfile.read()
         filename = image.id + ext  # The mimetype may change on file contents update.
         try:
             with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
                 outfile.write(filecontent)
         except OSError as error:
-            raise components.Error(error)
+            raise errors.Error(error)
     image.text = text.strip()
     for id in listsets or list():
         listset = items.get(id)
@@ -352,7 +352,7 @@ def post(session, source: items.File, title: str):
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
-        raise components.Error(error)
+        raise errors.Error(error)
     image.frontmatter["filename"] = filename
     image.keywords = source.keywords
     image.write()

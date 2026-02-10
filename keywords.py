@@ -4,6 +4,7 @@ from fasthtml.common import *
 
 import components
 import constants
+import errors
 import items
 import settings
 
@@ -85,11 +86,11 @@ def post(keyword: str):
     "Actually add a keyword."
     keyword = keyword.strip()
     if not keyword:
-        raise components.Error("No new keyword provided.")
+        raise errors.Error("No new keyword provided.")
     try:
         settings.keywords.add(keyword)
     except ValueError as error:
-        raise components.Error(error)
+        raise errors.Error(error)
     settings.write()
     return components.redirect("/keywords")
 

@@ -8,6 +8,7 @@ from fasthtml.common import *
 import marko
 
 import constants
+import errors
 import settings
 import items
 
@@ -27,17 +28,14 @@ class ItemConvertor(Convertor):
 register_url_convertor("Item", ItemConvertor())
 
 
-class Error(Exception):
-    "Custom exception; return response with message and status code."
+class CsvConvertor(StringConvertor):
+    "Accept name with CSV extension."
 
-    def __init__(self, message, status_code=HTTP.BAD_REQUEST):
-        super().__init__(message)
-        self.status_code = status_code
+    # regex = "[^./]+\\.csv"
+    regex = r"[^/.]+\.csv"
 
 
-def error_handler(request, exc):
-    "Return a response with the message and status code."
-    return Response(content=str(exc), status_code=exc.status_code)
+register_url_convertor("Csv", CsvConvertor())
 
 
 def set_auth_before(request, session):
@@ -64,7 +62,7 @@ def get_app_rt(routes=None):
         ),
         hdrs=(Link(rel="stylesheet", href="/mods.css", type="text/css"),),
         exception_handlers={
-            Error: error_handler,
+            errors.Error: errors.error_handler,
         },
         routes=routes,
     )
@@ -80,30 +78,30 @@ def redirect(href):
 def get_icon(filename, title="", **kwargs):
     defaults = dict(cls="icon")
     defaults.update(kwargs)
-    return Img(
-        src=f"/{filename}",
-        title=title,
-        width="24",
-        height="24",
-        **defaults
-    )
+    return Img(src=f"/{filename}", title=title, width="24", height="24", **defaults)
+
 
 def get_note_icon(title="Note"):
     return get_icon("card-text.svg", title=title)
 
+
 def get_link_icon(title="Link"):
     return get_icon("box-arrow-up-right.svg", title=title)
+
 
 def get_image_icon(title="Image"):
     return get_icon("file-earmark-image.svg", title=title)
 
+
 def get_listset_icon(title="Listset"):
     return get_icon("list-ul.svg", title=title)
+
 
 def get_database_icon(title="Database"):
     return get_icon("database.svg", title=title)
 
-def get_mimetype_icon(mimetype, title=""):
+
+def get_file_icon(mimetype=None, title=""):
     match mimetype:
         case constants.PDF_MIMETYPE:
             return get_icon("file-earmark-pdf.svg", title=title)
@@ -182,13 +180,16 @@ def get_item_copy_link(item):
 
 
 def get_item_id_to_clipboard(item):
-    return get_icon("info-square.svg", title="Copy identifier to clipboard",
-                    cls="icon to_clipboard")
+    return get_icon(
+        "info-square.svg", title="Copy identifier to clipboard", cls="icon to_clipboard"
+    )
 
 
 def get_item_md_link_to_clipboard(item):
-    return get_icon("markdown.svg", title="Copy Markdown link to clipboard",
-                    cls="icon to_clipboard")
+    return get_icon(
+        "markdown.svg", title="Copy Markdown link to clipboard", cls="icon to_clipboard"
+    )
+
 
 def get_item_delete_link(item):
     return A(
@@ -259,7 +260,10 @@ def get_keywords_card(item):
     if keywords_links := get_keywords_links(item):
         return Card(
             Div("Keywords: ", keywords_links),
-            Div(A("Similar items", href=f"/similar/{item.id}", role="button"), cls="right"),
+            Div(
+                A("Similar items", href=f"/similar/{item.id}", role="button"),
+                cls="right",
+            ),
         )
     else:
         return Card(I("No keywords."))
@@ -292,9 +296,7 @@ def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
                 icon = A(get_image_icon(title="View image"), href=item.bin_url)
             case "File":
                 icon = A(
-                    get_mimetype_icon(
-                        item.file_mimetype, title="View or download file"
-                    ),
+                    get_file_icon(item.file_mimetype, title="View or download file"),
                     href=item.bin_url,
                 )
             case "Listset":

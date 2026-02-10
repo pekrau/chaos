@@ -7,8 +7,8 @@ from fasthtml.common import *
 
 import components
 import constants
+import errors
 import items
-
 
 app, rt = components.get_app_rt()
 
@@ -98,7 +98,7 @@ async def post(
     filename = pathlib.Path(upfile.filename)
     ext = filename.suffix
     if ext == ".md":
-        raise components.Error("Upload of Markdown file is disallowed.")
+        raise errors.Error("Upload of Markdown file is disallowed.")
     file = items.File()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
     file.owner = session["auth"]
@@ -110,7 +110,7 @@ async def post(
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
-        raise components.Error(error)
+        raise errors.Error(error)
     file.text = text.strip()
     for id in listsets or list():
         listset = items.get(id)
@@ -134,7 +134,10 @@ def get(file: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_mimetype_icon(file.file_mimetype, title="File"), Strong(file.title)),
+                    Li(
+                        components.get_file_icon(file.file_mimetype, title="File"),
+                        Strong(file.title),
+                    ),
                     Li(*components.get_item_links(file)),
                 ),
                 Ul(Li(components.search_form())),
@@ -143,11 +146,7 @@ def get(file: items.Item):
             cls="container",
         ),
         Main(
-            Card(
-                Strong(
-                    A(file.filename, href=file.bin_url)
-                )
-            ),
+            Card(Strong(A(file.filename, href=file.bin_url))),
             components.get_text_card(file),
             components.get_listsets_card(file),
             components.get_keywords_card(file),
@@ -256,14 +255,14 @@ async def post(
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
-            raise components.Error("Upload of Markdown file is disallowed.")
+            raise errors.Error("Upload of Markdown file is disallowed.")
         filecontent = await upfile.read()
         filename = file.id + ext  # The mimetype may change on file contents update.
         try:
             with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
                 outfile.write(filecontent)
         except OSError as error:
-            raise components.Error(error)
+            raise errors.Error(error)
     file.text = text.strip()
     for id in listsets or list():
         listset = items.get(id)
@@ -339,7 +338,7 @@ def post(session, source: items.File, title: str):
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
-        raise components.Error(error)
+        raise errors.Error(error)
     file.frontmatter["filename"] = filename
     file.keywords = source.keywords
     file.write()

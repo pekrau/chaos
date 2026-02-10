@@ -6,7 +6,6 @@ import yaml
 
 import constants
 
-
 keywords = set()
 
 

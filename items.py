@@ -317,30 +317,30 @@ class File(GenericFile):
 class Database(GenericFile):
     "Database (Sqlite3) item class."
 
-    @property
-    def cnx(self):
+    def __enter__(self):
         try:
-            return self._cnx
-        except AttributeError:
-            self._cnx = sqlite3.connect(self.filepath)
-            self._cnx.autocommit = True
-            return self._cnx
-
-    def __del__(self):
-        try:
-            self._cnx.close()
-            del self._cnx
+            self.cnx
         except AttributeError:
             pass
+        else:
+            raise KeyError("Sqlite connection already open")
+        self.cnx = sqlite3.connect(self.filepath)
+        self.cnx.autocommit = True
+        return self.cnx
+
+    def __exit__(self, etyp, einst, etb):
+        self.cnx.close()
+        del self.cnx
 
     def tables(self):
         "Return the definitions of all tables."
-        names = [
-            cursor[0]
-            for cursor in self.cnx.execute(
-                "SELECT name FROM sqlite_schema WHERE type='table'"
-            )
-        ]
+        with self as cnx:
+            names = [
+                cursor[0]
+                for cursor in cnx.execute(
+                    "SELECT name FROM sqlite_schema WHERE type='table'"
+                )
+            ]
         result = {}
         for name in [n for n in names if not n.startswith("_")]:
             result[name] = self.get_info(name)
@@ -348,12 +348,13 @@ class Database(GenericFile):
 
     def views(self):
         "Return the infos of all views."
-        names = [
-            cursor[0]
-            for cursor in self.cnx.execute(
-                "SELECT name FROM sqlite_schema WHERE type='view'"
-            )
-        ]
+        with self as cnx:
+            names = [
+                cursor[0]
+                for cursor in cnx.execute(
+                    "SELECT name FROM sqlite_schema WHERE type='view'"
+                )
+            ]
         result = {}
         for name in [n for n in names if not n.startswith("_")]:
             result[name] = self.get_info(name)
@@ -361,25 +362,26 @@ class Database(GenericFile):
 
     def get_info(self, name):
         result = dict(rows=[])
-        try:
-            cursor = self.cnx.execute(f"pragma table_info({name})")
-        except sqlite3.Error as error:
-            raise errors.Error(error)
-        for row in cursor:
-            result["rows"].append(
-                dict(
-                    name=row[1],
-                    type=row[2],
-                    null=not row[3],
-                    default=row[4],
-                    primary=bool(row[5]),
+        with self as cnx:
+            try:
+                cursor = cnx.execute(f"pragma table_info({name})")
+            except sqlite3.Error as error:
+                raise errors.Error(error)
+            for row in cursor:
+                result["rows"].append(
+                    dict(
+                        name=row[1],
+                        type=row[2],
+                        null=not row[3],
+                        default=row[4],
+                        primary=bool(row[5]),
+                    )
                 )
-            )
-        result["sql"] = self.cnx.execute(
-            "SELECT sql FROM sqlite_schema WHERE name=?", (name,)
-        ).fetchone()[0]
-        result["type"] = result["sql"].split()[1].lower()
-        result["count"] = self.cnx.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
+            result["sql"] = cnx.execute(
+                "SELECT sql FROM sqlite_schema WHERE name=?", (name,)
+            ).fetchone()[0]
+            result["type"] = result["sql"].split()[1].lower()
+            result["count"] = cnx.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
         return result
 
 

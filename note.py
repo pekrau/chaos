@@ -21,7 +21,7 @@ def get(request):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_note_icon(), "Add note")
+                    Li(components.get_note_icon(), "Add note"),
                 ),
             ),
             cls="container",
@@ -287,9 +287,9 @@ def post(session, source: items.File, title: str):
 def get(request, note: items.Item):
     "Ask for confirmation to delete the note."
     assert isinstance(note, items.Note)
-    target = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if target == f"/note/{note.id}":
-        target = "/notes"
+    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
+    if redirect == f"/note/{note.id}":
+        redirect = "/notes"
     return (
         Title("Delete"),
         Header(
@@ -310,8 +310,8 @@ def get(request, note: items.Item):
                 ),
                 Input(
                     type="hidden",
-                    name="target",
-                    value=target,
+                    name="redirect",
+                    value=redirect,
                 ),
                 action=f"{note.url}/delete",
                 method="POST",
@@ -331,8 +331,8 @@ def get(request, note: items.Item):
 
 
 @rt("/{note:Item}/delete")
-def post(note: items.Item, target: str):
+def post(note: items.Item, redirect: str):
     "Actually delete the note."
     assert isinstance(note, items.Note)
     note.delete()
-    return components.redirect(target)
+    return components.redirect(redirect)

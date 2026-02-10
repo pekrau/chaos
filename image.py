@@ -53,16 +53,14 @@ def get(request):
                     ),
                     cls="grid",
                 ),
-                Div(
-                    Input(
-                        type="file",
-                        name="upfile",
-                        placeholder="image...",
-                        required=True,
-                        accept=",".join(constants.IMAGE_MIMETYPES),
-                    ),
-                    cls="grid",
+                Input(
+                    type="file",
+                    name="upfile",
+                    required=True,
+                    accept=",".join(constants.IMAGE_MIMETYPES),
+                    aria_describedby="file-helper",
                 ),
+                Small("Image file: PNG, JPEG, WEBP or GIF.", id="file-helper"),
                 Textarea(
                     name="text",
                     rows=10,
@@ -359,9 +357,9 @@ def post(session, source: items.File, title: str):
 def get(request, image: items.Item):
     "Ask for confirmation to delete the file image."
     assert isinstance(image, items.Image)
-    target = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if target == f"/image/{image.id}":
-        target = "/images"
+    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
+    if redirect == f"/image/{image.id}":
+        redirect = "/images"
     return (
         Title("Delete"),
         Header(
@@ -382,8 +380,8 @@ def get(request, image: items.Item):
                 ),
                 Input(
                     type="hidden",
-                    name="target",
-                    value=target,
+                    name="redirect",
+                    value=redirect,
                 ),
                 action=f"{image.url}/delete",
                 method="POST",
@@ -403,8 +401,8 @@ def get(request, image: items.Item):
 
 
 @rt("/{image:Item}/delete")
-def post(image: items.Item, target: str):
+def post(image: items.Item, redirect: str):
     "Actually delete the image."
     assert isinstance(image, items.Image)
     image.delete()
-    return components.redirect(target)
+    return components.redirect(redirect)

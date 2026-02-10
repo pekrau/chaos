@@ -4,6 +4,10 @@
     text-align: right;
 }
 
+.top {
+    vertical-align: top;
+}
+
 .to_clipboard {
     cursor: pointer
 }

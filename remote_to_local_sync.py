@@ -21,7 +21,7 @@ from timer import Timer
 timer = Timer()
 
 
-def update(url, apikey, targetdir):
+def update(url, apikey, target_dir):
     """Get the current state of the remote site and update the local data.
     Return a dictionary with statistics.
     """
@@ -33,7 +33,7 @@ def update(url, apikey, targetdir):
 
     remote_items = response.json()
 
-    targetdir = Path(targetdir)
+    target_dir = Path(target_dir)
     items.read_items()
     local_items = items.get_all()
 
@@ -64,14 +64,14 @@ def update(url, apikey, targetdir):
             raise IOError("empty TGZ file from remote")
         try:
             tf = tarfile.open(fileobj=io.BytesIO(content), mode="r:gz")
-            tf.extractall(path=targetdir)
+            tf.extractall(path=target_dir)
         except tarfile.TarError as message:
             raise IOError(f"tar file error: {message}")
 
     # Delete local items that do not exist in the remote.
     delete_items = set(local_items.keys()).difference(remote_items.keys())
     for name in delete_items:
-        path = targetdir / name
+        path = target_dir / name
         if not path.suffix:
             path = path.with_suffix(".md")
         path.unlink()
@@ -91,8 +91,8 @@ def update(url, apikey, targetdir):
 
 if __name__ == "__main__":
     url = os.environ["CHAOS_REMOTE_URL"]
-    targetdir = os.environ["CHAOS_DIR"]
-    result = update(url, os.environ["CHAOS_APIKEY"], targetdir)
+    target_dir = os.environ["CHAOS_DIR"]
+    result = update(url, os.environ["CHAOS_APIKEY"], target_dir)
     if result:
-        print(f"{timer.now}, instance {url}, target {targetdir}")
+        print(f"{timer.now}, instance {url}, target {target_dir}")
         print(", ".join([f"{k}={v}" for k, v in result.items()]))

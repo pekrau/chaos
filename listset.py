@@ -334,9 +334,9 @@ def post(session, source: items.File, title: str):
 def get(request, listset: items.Item):
     "Ask for confirmation to delete the listset."
     assert isinstance(listset, items.Listset)
-    target = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if target == f"/listset/{listset.id}":
-        target = "/listsets"
+    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
+    if redirect == f"/listset/{listset.id}":
+        redirect = "/listsets"
     return (
         Title("Delete"),
         Header(
@@ -357,8 +357,8 @@ def get(request, listset: items.Item):
                 ),
                 Input(
                     type="hidden",
-                    name="target",
-                    value=target,
+                    name="redirect",
+                    value=redirect,
                 ),
                 action=f"{listset.url}/delete",
                 method="POST",
@@ -378,9 +378,8 @@ def get(request, listset: items.Item):
 
 
 @rt("/{listset:Item}/delete")
-def post(listset: items.Item, target: str):
+def post(listset: items.Item, redirect: str):
     "Actually delete the listset."
     assert isinstance(listset, items.Listset)
-    # XXX Remove from lookup lists in other items.
     listset.delete()
-    return components.redirect(target)
+    return components.redirect(redirect)

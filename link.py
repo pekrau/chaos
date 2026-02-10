@@ -313,9 +313,9 @@ def post(session, source: items.File, title: str):
 def get(request, link: items.Item):
     "Ask for confirmation to delete the link."
     assert isinstance(link, items.Link)
-    target = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if target == f"/link/{link.id}":
-        target = "/links"
+    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
+    if redirect == f"/link/{link.id}":
+        redirect = "/links"
     return (
         Title("Delete"),
         Header(
@@ -336,8 +336,8 @@ def get(request, link: items.Item):
                 ),
                 Input(
                     type="hidden",
-                    name="target",
-                    value=target,
+                    name="redirect",
+                    value=redirect,
                 ),
                 action=f"{link.url}/delete",
                 method="POST",
@@ -357,8 +357,8 @@ def get(request, link: items.Item):
 
 
 @rt("/{link:Item}/delete")
-def post(link: items.Item, target: str):
+def post(link: items.Item, redirect: str):
     "Actually delete the link."
     assert isinstance(link, items.Link)
     link.delete()
-    return components.redirect(target)
+    return components.redirect(redirect)

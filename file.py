@@ -49,14 +49,10 @@ def get(request):
                     ),
                     cls="grid",
                 ),
-                Div(
-                    Input(
-                        type="file",
-                        name="upfile",
-                        placeholder="File...",
-                        required=True,
-                    ),
-                    cls="grid",
+                Input(
+                    type="file",
+                    name="upfile",
+                    required=True,
                 ),
                 Textarea(
                     name="text",
@@ -345,9 +341,9 @@ def post(session, source: items.File, title: str):
 def get(request, file: items.Item):
     "Ask for confirmation to delete the file."
     assert isinstance(file, items.File)
-    target = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if target == f"/file/{file.id}":
-        target = "/files"
+    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
+    if redirect == f"/file/{file.id}":
+        redirect = "/files"
     return (
         Title("Delete"),
         Header(
@@ -368,8 +364,8 @@ def get(request, file: items.Item):
                 ),
                 Input(
                     type="hidden",
-                    name="target",
-                    value=target,
+                    name="redirect",
+                    value=redirect,
                 ),
                 action=f"{file.url}/delete",
                 method="POST",
@@ -389,8 +385,8 @@ def get(request, file: items.Item):
 
 
 @rt("/{file:Item}/delete")
-def post(file: items.Item, target: str):
+def post(file: items.Item, redirect: str):
     "Actually delete the file."
     assert isinstance(file, items.File)
     file.delete()
-    return components.redirect(target)
+    return components.redirect(redirect)

@@ -52,14 +52,12 @@ def get(request):
                     ),
                     cls="grid",
                 ),
-                Div(
-                    Input(
-                        type="file",
-                        name="upfile",
-                        placeholder="Load Sqlite3 database File...",
-                    ),
-                    cls="grid",
+                Input(
+                    type="file",
+                    name="upfile",
+                    aria_describedby="file-helper",
                 ),
+                Small("Binary Sqlite3 database file (optional).", id="file-helper"),
                 Textarea(
                     name="text",
                     rows=10,
@@ -107,9 +105,11 @@ async def post(
                 outfile.write(await upfile.read())
         except OSError as error:
             raise errors.Error(error)
+    # Test that file really is an Sqlite3 file.
     try:
         cnx = sqlite3.connect(database.filepath)
     except sqlite3.Error as error:
+        database.filepath.unlink()
         raise errors.Error(error)
     cnx.close()
     database.text = text.strip()
@@ -144,10 +144,18 @@ def get(database: items.Item):
         ),
         Main(
             Card(get_database_overview(database, full=False)),
-            Form(
-                Input(type="submit", value="SQL command"),
-                action=f"/database/{database.id}/sql",
-                method="POST",
+            Div(
+                Form(
+                    Input(type="submit", value="SQL command"),
+                    action=f"/database/{database.id}/sql",
+                    method="POST",
+                ),
+                Form(
+                    Input(type="submit", value="Create table from CSV file"),
+                    action=f"/database/{database.id}/csv",
+                    method="GET",
+                ),
+                cls="grid",
             ),
             Card(
                 Strong(
@@ -185,7 +193,9 @@ def get(request, database: items.Item, name: str):
     info = database.get_info(name)
     inputs = []
     for row in info["rows"]:
-        label = f"{row['name']} {row['type']} {not row['null'] and 'NOT NULL' or ''} {row['primary'] and 'PRIMARY KEY' or ''}",
+        label = (
+            f"{row['name']} {row['type']} {not row['null'] and 'NOT NULL' or ''} {row['primary'] and 'PRIMARY KEY' or ''}",
+        )
         kwargs = dict(name=row["name"], required=not row["null"])
         if row["type"] == "INTEGER":
             inputs.append((label, Input(type="number", step="1", **kwargs)))
@@ -207,7 +217,9 @@ def get(request, database: items.Item, name: str):
         Main(
             Form(
                 Fieldset(*[Label(i[0], i[1]) for i in inputs]),
-                Input(type="hidden", name="_target", value=request.headers["Referer"]),
+                Input(
+                    type="hidden", name="_redirect", value=request.headers["Referer"]
+                ),
                 Input(type="submit", value="Add"),
                 action=f"/database/{database.id}/row/{name}",
                 method="POST",
@@ -225,8 +237,9 @@ def get(request, database: items.Item, name: str):
         ),
     )
 
+
 @rt("/{database:Item}/row/{name}")
-def post(request, database: items.Item, name: str, _target: str, form: dict):
+def post(database: items.Item, name: str, _redirect: str, form: dict):
     "Actually add the row to the table."
     assert isinstance(database, items.Database)
     info = database.get_info(name)
@@ -238,38 +251,43 @@ def post(request, database: items.Item, name: str, _target: str, form: dict):
             if row["type"] == "INTEGER":
                 if value := form[row["name"]]:
                     value = int(value)
-                elif row['null']:
+                elif row["null"]:
                     value = None
                 else:
                     raise ValueError(f"{row['name']} requries a value")
             elif row["type"] == "REAL":
                 if value := form[row["name"]]:
                     value = float(value)
-                elif row['null']:
+                elif row["null"]:
                     value = None
                 else:
                     raise ValueError(f"{row['name']} requries a value")
             else:
                 if value := form[row["name"]]:
                     pass
-                elif row['null']:
+                elif row["null"]:
                     value = None
                 else:
                     value = ""
             values.append(value)
     except (TypeError, ValueError) as error:
         raise errors.Error(error)
-    database.cnx.execute(f"INSERT INTO {name} ({','.join(columns)}) VALUES ({','.join('?' * len(values))})", values)
-    return components.redirect(_target)
+    with database as cnx:
+        cnx.execute(
+            f"INSERT INTO {name} ({','.join(columns)}) VALUES ({','.join('?' * len(values))})",
+            values,
+        )
+    return components.redirect(_redirect)
 
 
 @rt("/{database:Item}/rows/{name}")
-def get(request, database: items.Item, name: str):
+def get(database: items.Item, name: str):
     "Display row values from table or view."
     assert isinstance(database, items.Database)
     info = database.get_info(name)
     title = f"{info['type'].capitalize()} {name}"
-    rows = database.cnx.execute(f"SELECT * FROM {name}").fetchall()
+    with database as cnx:
+        rows = cnx.execute(f"SELECT * FROM {name}").fetchall()
     db_card = Card(
         Div(components.get_database_icon(), A(database.title, href=database.url)),
         Div(f"{len(rows)} rows"),
@@ -323,7 +341,7 @@ def get(request, database: items.Item, name: str):
 
 
 @rt("/{database:Item}/csv/{name:str}")
-def get(request, database: items.Item, name: str):
+def get(database: items.Item, name: str):
     info = database.get_info(name)
     outfile = io.StringIO()
     writer = csv.writer(
@@ -331,7 +349,8 @@ def get(request, database: items.Item, name: str):
     )
     header = [row["name"] for row in info["rows"]]
     writer.writerow(header)
-    writer.writerows(database.cnx.execute(f"SELECT {','.join(header)} FROM {name}"))
+    with database as cnx:
+        writer.writerows(cnx.execute(f"SELECT {','.join(header)} FROM {name}"))
     return Response(
         content=outfile.getvalue(),
         status_code=HTTP.OK,
@@ -343,40 +362,41 @@ def get(request, database: items.Item, name: str):
 
 
 @rt("/{database:Item}/json/{name:str}")
-def get(request, database: items.Item, name: str):
+def get(database: items.Item, name: str):
     info = database.get_info(name)
     header = [row["name"] for row in info["rows"]]
+    with database as cnx:
+        rows = cnx.execute(f"SELECT {','.join(header)} FROM {name}").fetchall()
     return {
         "$id": f"database {database.id}; {info['type']} {name}",
-        "data": [
-            dict(zip(header, row))
-            for row in database.cnx.execute(f"SELECT {','.join(header)} FROM {name}")
-        ],
+        "data": [dict(zip(header, row)) for row in rows],
     }
 
 
 @rt("/{database:Item}/sql")
-def post(request, database: items.Item, sql: str = None):
+def post(database: items.Item, sql: str = None):
     "Execute a SQL command."
     headers = []
     result = []
     error_card = ""
     if sql:
-        try:
-            cursor = database.cnx.execute(sql)
-        except sqlite3.Error as error:
-            error_card = Card(Header("Error", style="color: red;"), Pre(str(error)))
-        else:
-            result = cursor.fetchall()
-            if cursor.description:
-                headers = [t[0] for t in cursor.description]
+        with database as cnx:
+            try:
+                cursor = cnx.execute(sql)
+            except sqlite3.Error as error:
+                error_card = Card(Header("Error", style="color: red;"), Pre(str(error)))
             else:
-                headers = []
+                result = cursor.fetchall()
+                if cursor.description:
+                    headers = [t[0] for t in cursor.description]
+                else:
+                    headers = []
     if headers or result:
         result_card = Card(
             Table(
                 Thead(*[Tr(*[Th(h) for h in headers])]),
-                Tbody(*[Tr(*[Td(r) for r in row]) for row in result])),
+                Tbody(*[Tr(*[Td(r) for r in row]) for row in result]),
+            ),
         )
     else:
         result_card = ""
@@ -386,7 +406,11 @@ def post(request, database: items.Item, sql: str = None):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_database_icon(), Strong(database.title), " SQL command"),
+                    Li(
+                        components.get_database_icon(),
+                        Strong(database.title),
+                        " SQL command",
+                    ),
                 ),
             ),
             cls="container",
@@ -605,9 +629,9 @@ def post(session, source: items.Database, title: str):
 def get(request, database: items.Item):
     "Ask for confirmation to delete the database."
     assert isinstance(database, items.Database)
-    target = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if target == f"/database/{database.id}":
-        target = "/databases"
+    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
+    if redirect == f"/database/{database.id}":
+        redirect = "/databases"
     return (
         Title("Delete"),
         Header(
@@ -628,8 +652,8 @@ def get(request, database: items.Item):
                 ),
                 Input(
                     type="hidden",
-                    name="target",
-                    value=target,
+                    name="redirect",
+                    value=redirect,
                 ),
                 action=f"{database.url}/delete",
                 method="POST",
@@ -649,11 +673,11 @@ def get(request, database: items.Item):
 
 
 @rt("/{database:Item}/delete")
-def post(database: items.Item, target: str):
+def post(database: items.Item, redirect: str):
     "Actually delete the database."
     assert isinstance(database, items.Database)
     database.delete()
-    return components.redirect(target)
+    return components.redirect(redirect)
 
 
 def get_database_overview(database, full=True):
@@ -662,7 +686,14 @@ def get_database_overview(database, full=True):
     items = list(database.tables().items()) + list(database.views().items())
     for name, item in items:
         if full:
-            columns = Ul(*[Li(f"{r['name']} {r['type']} {not r['null'] and 'NOT NULL' or ''} {r['primary'] and 'PRIMARY KEY' or ''}") for r in item['rows']])
+            columns = Ul(
+                *[
+                    Li(
+                        f"{r['name']} {r['type']} {not r['null'] and 'NOT NULL' or ''} {r['primary'] and 'PRIMARY KEY' or ''}"
+                    )
+                    for r in item["rows"]
+                ]
+            )
         else:
             columns = ""
         if item["type"] == "table":
@@ -702,7 +733,7 @@ def get_database_overview(database, full=True):
                         role="button",
                         cls="thin secondary",
                     ),
-                    cls="right",
+                    cls="right top",
                 ),
             ),
         )

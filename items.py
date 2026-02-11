@@ -364,28 +364,45 @@ class Database(GenericFile):
         return result
 
     def get_info(self, name):
-        result = dict(rows=[])
-        with self as cnx:
-            try:
+        try:
+            with self as cnx:
                 cursor = cnx.execute(f"pragma table_info({name})")
-            except sqlite3.Error as error:
-                raise errors.Error(error)
-            for row in cursor:
-                result["rows"].append(
-                    dict(
-                        name=row[1],
-                        type=row[2],
-                        null=not row[3],
-                        default=row[4],
-                        primary=bool(row[5]),
+                rows = []
+                for row in cursor:
+                    rows.append(
+                        dict(
+                            name=row[1],
+                            type=row[2],
+                            null=not row[3],
+                            default=row[4],
+                            primary=bool(row[5]),
+                        )
                     )
-                )
-            result["sql"] = cnx.execute(
-                "SELECT sql FROM sqlite_schema WHERE name=?", (name,)
-            ).fetchone()[0]
-            result["type"] = result["sql"].split()[1].lower()
-            result["count"] = cnx.execute(f"SELECT COUNT(*) FROM {name}").fetchone()[0]
+                if not rows:
+                    raise KeyError("no such table or view")
+                result = dict(rows=rows)
+                result["sql"] = cnx.execute(
+                    "SELECT sql FROM sqlite_schema WHERE name=?", (name,)
+                ).fetchone()[0]
+                result["type"] = result["sql"].split()[1].lower()
+                result["count"] = cnx.execute(
+                    f"SELECT COUNT(*) FROM {name}"
+                ).fetchone()[0]
+        except (sqlite3.Error, KeyError) as error:
+            raise errors.Error(error)
         return result
+
+
+class Graphic(Item):
+    "Graphic item class."
+
+    @property
+    def format(self):
+        return self.frontmatter["format"]
+
+    @property
+    def specification(self):
+        return self.frontmatter["specification"]
 
 
 def get(itemid):
@@ -432,6 +449,8 @@ def read_items(dirpath=None):
                     item = File(path)
             elif "items" in frontmatter:
                 item = Listset(path)
+            elif "format" in frontmatter:
+                item = Graphic(path)
             else:
                 item = Note(path)
             lookup[item.id] = item

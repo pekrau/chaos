@@ -3,6 +3,7 @@
 import csv
 from http import HTTPStatus as HTTP
 import io
+import json
 import sqlite3
 import urllib.parse
 
@@ -130,7 +131,6 @@ def get(database: items.Item):
     return (
         Title(database.title),
         Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
@@ -193,12 +193,14 @@ def get(database: items.Item):
             ),
             cls="container",
         ),
+        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
     )
 
 
 @rt("/{database:Item}/sql")
 def get(database: items.Item):
     "Download the database in SQL format."
+    assert isinstance(database, items.Database)
     outfile = io.StringIO()
     outfile.write(f"/* Database {database.id} */\n\n")
     with database as cnx:
@@ -216,7 +218,7 @@ def get(database: items.Item):
 
 
 @rt("/{database:Item}/row/{name}")
-def get(request, database: items.Item, name: str):
+def get(session, request, database: items.Item, name: str):
     "Add a row to the table."
     assert isinstance(database, items.Database)
     title = f"Add row to table {name}"
@@ -226,7 +228,9 @@ def get(request, database: items.Item, name: str):
         label = (
             f"{row['name']} {row['type']} {not row['null'] and 'NOT NULL' or ''} {row['primary'] and 'PRIMARY KEY' or ''}",
         )
-        kwargs = dict(name=row["name"], required=not row["null"])
+        kwargs = dict(
+            name=row["name"], required=not row["null"], autofocus=not bool(inputs)
+        )
         if row["type"] == "INTEGER":
             inputs.append((label, Input(type="number", step="1", **kwargs)))
         elif row["type"] == "REAL":
@@ -234,22 +238,27 @@ def get(request, database: items.Item, name: str):
         else:
             inputs.append((label, Input(type="text", **kwargs)))
     return (
-        Title(title),
+        Title(f"Add row to table {name}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(Strong(title)),
+                    Li("Add row to ", Strong(f"table {name}")),
                 ),
             ),
             cls="container",
         ),
         Main(
+            Card(
+                A(
+                    f"{info['count']} rows",
+                    href=f"/database/{database.id}/rows/{name}",
+                    role="button",
+                    cls="thin",
+                ),
+            ),
             Form(
                 Fieldset(*[Label(i[0], i[1]) for i in inputs]),
-                Input(
-                    type="hidden", name="_redirect", value=request.headers["Referer"]
-                ),
                 Input(type="submit", value="Add"),
                 action=f"/database/{database.id}/row/{name}",
                 method="POST",
@@ -269,7 +278,7 @@ def get(request, database: items.Item, name: str):
 
 
 @rt("/{database:Item}/row/{name}")
-def post(database: items.Item, name: str, _redirect: str, form: dict):
+def post(session, database: items.Item, name: str, form: dict):
     "Actually add the row to the table."
     assert isinstance(database, items.Database)
     info = database.get_info(name)
@@ -307,7 +316,8 @@ def post(database: items.Item, name: str, _redirect: str, form: dict):
             f"INSERT INTO {name} ({','.join(columns)}) VALUES ({','.join('?' * len(values))})",
             values,
         )
-    return components.redirect(_redirect)
+    add_toast(session, "Row added.", "success")
+    return components.redirect(f"/database/{database.id}/row/{name}")
 
 
 @rt("/{database:Item}/rows/{name}")
@@ -319,15 +329,25 @@ def get(database: items.Item, name: str):
     with database as cnx:
         rows = cnx.execute(f"SELECT * FROM {name}").fetchall()
     db_card = Card(
-        Div(components.get_database_icon(), A(database.title, href=database.url)),
         Div(
+            components.get_database_icon(),
+            A(database.title, href=database.url),
+        ),
+        Div(
+            Button(
+                f"{info['count']} rows",
+                cls="secondary outline thin",
+                style="margin-left: 1em;",
+            ),
             A(
                 "Add row",
                 href=f"/database/{database.id}/row/{name}",
                 role="button",
                 cls="thin",
+                style="margin-left: 1em;",
             ),
-            Button(f"{len(rows)} rows", cls="secondary outline thin"),
+        ),
+        Div(
             A(
                 components.get_file_icon(constants.CSV_MIMETYPE),
                 "CSV",
@@ -387,17 +407,18 @@ def get(database: items.Item, name: str):
 @rt("/{database:Item}/csv/{name:str}")
 def get(database: items.Item, name: str):
     "Download the table or view in CSV format."
+    assert isinstance(database, items.Database)
     info = database.get_info(name)
     outfile = io.StringIO()
-    writer = csv.writer(
-        outfile, dialect="unix", delimiter=",", quoting=csv.QUOTE_NONNUMERIC
-    )
+    writer = csv.writer(outfile, quoting=csv.QUOTE_MINIMAL)
     colnames = [row["name"] for row in info["rows"]]
     writer.writerow(colnames)
     with database as cnx:
         writer.writerows(cnx.execute(f"SELECT {','.join(colnames)} FROM {name}"))
+    outfile.seek(0)
+    content = outfile.read().encode("utf-8")
     return Response(
-        content=outfile.getvalue(),
+        content=content,
         status_code=HTTP.OK,
         headers={
             "Content-Type": constants.CSV_MIMETYPE,
@@ -409,6 +430,7 @@ def get(database: items.Item, name: str):
 @rt("/{database:Item}/json/{name:str}")
 def get(database: items.Item, name: str):
     "Get the table or view in JSON format."
+    assert isinstance(database, items.Database)
     info = database.get_info(name)
     colnames = [row["name"] for row in info["rows"]]
     with database as cnx:
@@ -422,6 +444,7 @@ def get(database: items.Item, name: str):
 @rt("/{database:Item}/execute")
 def post(database: items.Item, sql: str = None):
     "Execute a SQL command."
+    assert isinstance(database, items.Database)
     colnames = []
     result = []
     error_card = ""
@@ -519,21 +542,22 @@ def post(database: items.Item, sql: str):
     "Execute a SQL command and download the result as CSV."
     assert isinstance(database, items.Database)
     assert sql
-    outfile = io.StringIO()
-    writer = csv.writer(
-        outfile, dialect="unix", delimiter=",", quoting=csv.QUOTE_NONNUMERIC
-    )
     with database as cnx:
         try:
             cursor = cnx.execute(sql)
         except sqlite3.Error as error:
             errors.Error(str(error))
         else:
-            if cursor.description:
-                writer.writerow([t[0] for t in cursor.description])
-            writer.writerows(cursor.fetchall())
+            header = [t[0] for t in cursor.description]
+            rows = cursor.fetchall()
+    outfile = io.StringIO()
+    writer = csv.writer(outfile, quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(header)
+    writer.writerows(rows)
+    outfile.seek(0)
+    content = outfile.read().encode("utf-8")
     return Response(
-        content=outfile.getvalue(),
+        content=content,
         status_code=HTTP.OK,
         headers={
             "Content-Type": constants.CSV_MIMETYPE,
@@ -833,13 +857,15 @@ def get_database_overview(database, full=True):
                     columns,
                 ),
                 Td(
-                    add_row,
                     A(
                         f"{item['count']} rows",
                         href=f"/database/{database.id}/rows/{name}",
                         role="button",
                         cls="thin",
                     ),
+                    add_row,
+                ),
+                Td(
                     A(
                         components.get_file_icon(constants.CSV_MIMETYPE),
                         "CSV",

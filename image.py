@@ -133,7 +133,6 @@ def get(image: items.Item):
     return (
         Title(image.title),
         Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
@@ -167,6 +166,7 @@ def get(image: items.Item):
             ),
             cls="container",
         ),
+        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
     )
 
 

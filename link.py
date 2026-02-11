@@ -112,7 +112,6 @@ def get(link: items.Item):
     return (
         Title(link.title),
         Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
@@ -149,6 +148,7 @@ def get(link: items.Item):
             ),
             cls="container",
         ),
+        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
     )
 
 

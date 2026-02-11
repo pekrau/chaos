@@ -112,6 +112,10 @@ def get_database_icon(title="Database"):
     return get_icon("database.svg", title=title)
 
 
+def get_graphic_icon(title="Graphic"):
+    return get_icon("graph-up.svg", title=title)
+
+
 def get_listset_icon(title="Listset"):
     return get_icon("list-ul.svg", title=title)
 
@@ -135,6 +139,7 @@ def get_nav_menu():
             Li(A("Images", href="/images")),
             Li(A("Files", href="/files")),
             Li(A("Databases", href="/databases")),
+            Li(A("Graphics", href="/graphics")),
             Li(A("Listsets", href="/listsets")),
             Li(A("No keywords", href="/nokeywords")),
             Li(A("No similar", href="/nosimilar")),
@@ -180,13 +185,19 @@ def get_item_copy_link(item):
 
 def get_item_id_to_clipboard(item):
     return get_icon(
-        "info-square.svg", title="Copy identifier to clipboard", cls="icon to_clipboard"
+        "info-square.svg",
+        title="Copy identifier to clipboard",
+        cls="icon to_clipboard",
+        data_clipboard_text=item.id,
     )
 
 
 def get_item_md_link_to_clipboard(item):
     return get_icon(
-        "markdown.svg", title="Copy Markdown link to clipboard", cls="icon to_clipboard"
+        "markdown.svg",
+        title="Copy Markdown link to clipboard",
+        cls="icon to_clipboard",
+        data_clipboard_text=f"[{item.title}]({item.url})",
     )
 
 
@@ -222,7 +233,6 @@ def get_items_table_page(title, items, page, href, after=""):
     return (
         Title(title),
         Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
@@ -234,6 +244,7 @@ def get_items_table_page(title, items, page, href, after=""):
             cls="container",
         ),
         Main(table, pager, after, cls="container"),
+        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
     )
 
 
@@ -290,6 +301,8 @@ def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
                 )
             case "Database":
                 icon = A(get_database_icon(), href=item.url)
+            case "Graphic":
+                icon = A(get_graphic_icon(), href=item.url)
             case "Image":
                 icon = A(get_image_icon(title="View image"), href=item.bin_url)
             case "File":

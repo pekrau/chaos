@@ -1,28 +1,28 @@
-"File item pages."
+"Graphic item pages."
 
-import pathlib
+import json
 import urllib.parse
 
 from fasthtml.common import *
 
 import components
 import constants
-import errors
 import items
+import settings
 
 app, rt = components.get_app_rt()
 
 
 @rt("/")
 def get(request):
-    "Form for adding a file."
+    "Form for adding a graphic."
     return (
-        Title("Add file"),
+        Title("Add graphic"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_file_icon(), "Add file"),
+                    Li(components.get_graphic_icon(), "Add graphic"),
                 ),
             ),
             cls="container",
@@ -49,21 +49,29 @@ def get(request):
                     ),
                     cls="grid",
                 ),
-                Input(
-                    type="file",
-                    name="upfile",
-                    required=True,
-                ),
                 Textarea(
                     name="text",
                     rows=10,
                     placeholder="Text...",
                 ),
+                Select(
+                    Option(
+                        "Select graphic format", selected=True, disabled=True, value=""
+                    ),
+                    *[Option(f) for f in constants.GRAPHIC_FORMATS],
+                    name="format",
+                ),
+                Textarea(
+                    name="specification",
+                    rows=10,
+                    placeholder="Specification...",
+                    cls="specification",
+                ),
                 Input(
                     type="submit",
                     value="Save",
                 ),
-                action="/file/",
+                action="/graphic/",
                 method="POST",
             ),
             Form(
@@ -81,95 +89,106 @@ def get(request):
 
 
 @rt("/")
-async def post(
+def post(
     session,
     title: str,
-    upfile: UploadFile,
     text: str,
+    format: str,
+    specification: str,
     listsets: list[str] = None,
     keywords: list[str] = None,
 ):
-    "Actually add the file."
-    filename = pathlib.Path(upfile.filename)
-    ext = filename.suffix
-    if ext == ".md":
-        raise errors.Error("Upload of Markdown file is disallowed.")
-    file = items.File()
+    "Actually add the graphic."
+    graphic = items.Graphic()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
-    file.owner = session["auth"]
-    file.title = title.strip() or filename.stem
-    filecontent = await upfile.read()
-    filename = file.id + ext
-    file.frontmatter["filename"] = filename
-    try:
-        with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
-            outfile.write(filecontent)
-    except OSError as error:
-        raise errors.Error(error)
-    file.text = text.strip()
+    graphic.owner = session["auth"]
+    graphic.title = title.strip() or "no title"
+    graphic.text = text.strip()
+    if format == constants.VEGA_LITE:
+        graphic.frontmatter["format"] = format
+        try:
+            graphic.frontmatter["specification"] = json.dumps(
+                json.loads(specification.strip()), indent=2, ensure_ascii=False
+            )
+        except json.decoder.JSONDecodeError as error:
+            errors.Error(str(error))
+    else:
+        errors.Error("unknown graphics format.")
     for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
-        listset.add(file)
+        listset.add(graphic)
         listset.write()
-    file.keywords = keywords or list()
-    file.write()
-    return components.redirect(file.url)
+    graphic.keywords = keywords or list()
+    graphic.write()
+    return components.redirect(graphic.url)
 
 
-@rt("/{file:Item}")
-def get(file: items.Item):
-    "View the metadata for the file."
-    assert isinstance(file, items.File)
+@rt("/{graphic:Item}")
+def get(graphic: items.Item):
+    "View the graphic."
+    assert isinstance(graphic, items.Graphic)
     return (
-        Title(file.title),
+        Title(graphic.title),
         Script(src="/clipboard.min.js"),
+        Script(src="https://cdn.jsdelivr.net/npm/vega@6"),
+        Script(src="https://cdn.jsdelivr.net/npm/vega-lite@6"),
+        Script(src="https://cdn.jsdelivr.net/npm/vega-embed@7"),
+        # Script(src="https://cdn.jsdelivr.net/npm/vega@5.25"),
+        # Script(src="https://cdn.jsdelivr.net/npm/vega-lite@5.12"),
+        # Script(src="https://cdn.jsdelivr.net/npm/vega-embed@6.22"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(
-                        components.get_file_icon(file.file_mimetype, title="File"),
-                        Strong(file.title),
-                    ),
-                    Li(*components.get_item_links(file)),
+                    Li(components.get_graphic_icon(), Strong(graphic.title)),
+                    Li(*components.get_item_links(graphic)),
                 ),
                 Ul(Li(components.search_form())),
             ),
             cls="container",
         ),
         Main(
-            Card(Strong(A(file.filename, href=file.bin_url))),
-            components.get_text_card(file),
-            components.get_listsets_card(file),
-            components.get_keywords_card(file),
+            Div(id="graphic"),
+            components.get_text_card(graphic),
+            components.get_listsets_card(graphic),
+            components.get_keywords_card(graphic),
             cls="container",
         ),
         Footer(
             Hr(),
             Div(
-                Div(file.modified_local),
-                Div(f"{file.size:,d} + {file.file_size:,d} bytes"),
-                Div(file.owner),
+                Div(graphic.modified_local),
+                Div(f"{graphic.size} bytes"),
+                Div(graphic.owner),
                 cls="grid",
             ),
             cls="container",
         ),
         Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        Script(
+            f"""
+const spec = {graphic.specification};
+vegaEmbed("#graphic", spec, {{downloadFileName: "filename"}})
+.then(result=>console.log(result))
+.catch(console.warn);
+""",
+            type="text/javascript",
+        ),
     )
 
 
-@rt("/{file:Item}/edit")
-def get(request, file: items.Item):
-    "Form for editing metadata for the file."
-    assert isinstance(file, items.File)
+@rt("/{graphic:Item}/edit")
+def get(request, graphic: items.Item):
+    "Form for editing a graphic."
+    assert isinstance(graphic, items.Graphic)
     return (
         Title("Edit"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{file.title}'"),
+                    Li(f"Edit '{graphic.title}'"),
                 ),
             ),
             cls="container",
@@ -180,43 +199,46 @@ def get(request, file: items.Item):
                     Input(
                         type="text",
                         name="title",
-                        value=file.title,
-                        required=True,
+                        value=graphic.title,
                         placeholder="Title...",
+                        required=True,
                     ),
                     Details(
                         Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(file)),
+                        Ul(*components.get_listsets_dropdown(graphic)),
                         cls="dropdown",
                     ),
                     Details(
                         Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(file.keywords)),
+                        Ul(*components.get_keywords_dropdown(graphic.keywords)),
                         cls="dropdown",
                     ),
                     cls="grid",
                 ),
-                Div(
-                    Label(
-                        Span("Current file: ", A(file.filename, href=file.bin_url)),
-                        Input(
-                            type="file",
-                            name="upfile",
-                        ),
-                    ),
-                    cls="grid",
-                ),
                 Textarea(
-                    file.text,
+                    graphic.text,
                     name="text",
                     rows=10,
+                    placeholder="Text...",
                     autofocus=True,
+                ),
+                Input(
+                    type="text",
+                    name="format",
+                    value=graphic.format,
+                    disabled=True,
+                ),
+                Textarea(
+                    graphic.specification,
+                    name="specification",
+                    rows=10,
+                    cls="specification",
                 ),
                 Input(
                     type="submit",
                     value="Save",
                 ),
-                action=f"{file.url}/edit",
+                action=f"{graphic.url}/edit",
                 method="POST",
             ),
             Form(
@@ -233,51 +255,49 @@ def get(request, file: items.Item):
     )
 
 
-@rt("/{file:Item}/edit")
-async def post(
-    file: items.Item,
+@rt("/{graphic:Item}/edit")
+def post(
+    graphic: items.Item,
     title: str,
-    upfile: UploadFile,
     text: str,
+    specification: str,
     listsets: list[str] = None,
     keywords: list[str] = None,
 ):
-    "Actually edit the file."
-    assert isinstance(file, items.File)
-    file.title = title.strip() or file.filename.stem
-    if upfile.filename:
-        ext = pathlib.Path(upfile.filename).suffix
-        if ext == ".md":
-            raise errors.Error("Upload of Markdown file is disallowed.")
-        filecontent = await upfile.read()
-        filename = file.id + ext  # The mimetype may change on file contents update.
+    "Actually edit the graphic."
+    assert isinstance(graphic, items.Graphic)
+    graphic.title = title or "no title"
+    graphic.text = text.strip()
+    if graphic.format == constants.VEGA_LITE:
         try:
-            with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
-                outfile.write(filecontent)
-        except OSError as error:
-            raise errors.Error(error)
-    file.text = text.strip()
+            graphic.frontmatter["specification"] = json.dumps(
+                json.loads(specification.strip()), indent=2, ensure_ascii=False
+            )
+        except json.decoder.JSONDecodeError as error:
+            errors.Error(str(error))
+    else:
+        errors.Error("unknown graphics format.")
     for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
-        listset.add(file)
+        listset.add(graphic)
         listset.write()
-    file.keywords = keywords or list()
-    file.write()
-    return components.redirect(file.url)
+    graphic.keywords = keywords or list()
+    graphic.write()
+    return components.redirect(graphic.url)
 
 
-@rt("/{file:Item}/copy")
-def get(request, file: items.Item):
-    "Form for making a copy of the file."
-    assert isinstance(file, items.File)
+@rt("/{graphic:Item}/copy")
+def get(request, graphic: items.Item):
+    "Form for making a copy of the graphic."
+    assert isinstance(graphic, items.Graphic)
     return (
         Title("Copy"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Copy '{file.title}'"),
+                    Li(f"Copy '{graphic.title}'"),
                 ),
             ),
             cls="container",
@@ -287,16 +307,16 @@ def get(request, file: items.Item):
                 Input(
                     type="text",
                     name="title",
-                    value=file.title,
+                    value=graphic.title,
                     placeholder="Title...",
                     required=True,
                     autofocus=True,
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Copy",
                 ),
-                action=f"{file.url}/copy",
+                action=f"{graphic.url}/copy",
                 method="POST",
             ),
             Form(
@@ -315,48 +335,40 @@ def get(request, file: items.Item):
 
 @rt("/{source:Item}/copy")
 def post(session, source: items.File, title: str):
-    "Actually copy the file."
-    assert isinstance(source, items.File)
-    filename = pathlib.Path(source.filename)
-    file = items.File()
+    "Actually copy the graphic."
+    assert isinstance(source, items.Graphic)
+    graphic = items.Graphic()
     # XXX For some reason, 'auth' is not set in 'request.scope'?
-    file.owner = session["auth"]
-    file.title = title.strip() or filename.stem
-    file.text = source.text
-    with open(source.filepath, "rb") as infile:
-        filecontent = infile.read()
-    filename = file.id + filename.suffix
-    try:
-        with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
-            outfile.write(filecontent)
-    except OSError as error:
-        raise errors.Error(error)
-    file.frontmatter["filename"] = filename
-    file.keywords = source.keywords
-    file.write()
-    return components.redirect(file.url)
+    graphic.owner = session["auth"]
+    graphic.title = title.strip()
+    graphic.text = source.text
+    graphic.frontmatter["format"] = source.format
+    graphic.frontmatter["specification"] = source.specification
+    graphic.keywords = source.keywords
+    graphic.write()
+    return components.redirect(graphic.url)
 
 
-@rt("/{file:Item}/delete")
-def get(request, file: items.Item):
-    "Ask for confirmation to delete the file."
-    assert isinstance(file, items.File)
+@rt("/{graphic:Item}/delete")
+def get(request, graphic: items.Item):
+    "Ask for confirmation to delete the graphic."
+    assert isinstance(graphic, items.Graphic)
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/file/{file.id}":
-        redirect = "/files"
+    if redirect == f"/graphic/{graphic.id}":
+        redirect = "/graphics"
     return (
         Title("Delete"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{file.title}'"),
+                    Li(f"Delete '{graphic.title}'"),
                 ),
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the file? All data will be lost."),
+            P("Really delete the graphic? All data will be lost."),
             Form(
                 Input(
                     type="submit",
@@ -367,7 +379,7 @@ def get(request, file: items.Item):
                     name="redirect",
                     value=redirect,
                 ),
-                action=f"{file.url}/delete",
+                action=f"{graphic.url}/delete",
                 method="POST",
             ),
             Form(
@@ -384,9 +396,9 @@ def get(request, file: items.Item):
     )
 
 
-@rt("/{file:Item}/delete")
-def post(file: items.Item, redirect: str):
-    "Actually delete the file."
-    assert isinstance(file, items.File)
-    file.delete()
+@rt("/{graphic:Item}/delete")
+def post(graphic: items.Item, redirect: str):
+    "Actually delete the graphic."
+    assert isinstance(graphic, items.Graphic)
+    graphic.delete()
     return components.redirect(redirect)

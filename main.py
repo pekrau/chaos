@@ -30,6 +30,7 @@ import link
 import file
 import image
 import database
+import graphic
 import listset
 import keywords
 import api
@@ -41,6 +42,7 @@ app, rt = components.get_app_rt(
         Mount("/file", file.app),
         Mount("/image", image.app),
         Mount("/database", database.app),
+        Mount("/graphic", graphic.app),
         Mount("/listset", listset.app),
         Mount("/keywords", keywords.app),
         Mount("/api", api.app),
@@ -201,6 +203,16 @@ def get():
             ),
             Form(
                 Button(
+                    components.get_graphic_icon(),
+                    "Add graphic",
+                    type="submit",
+                    cls="outline",
+                ),
+                method="GET",
+                action="/graphic",
+            ),
+            Form(
+                Button(
                     components.get_listset_icon(),
                     "Add listset",
                     type="submit",
@@ -316,6 +328,17 @@ def get(page: int = 1):
     )
 
 
+@rt("/graphics")
+def get(page: int = 1):
+    "Display graphics items."
+    return components.get_items_table_page(
+        "Graphics",
+        items.get_items(items.Graphic),
+        page,
+        "/graphics",
+    )
+
+
 @rt("/listsets")
 def get(page: int = 1):
     "Display listset items."
@@ -351,7 +374,6 @@ def get(item: items.Item, page: int = 1):
     return (
         Title("Similar items"),
         Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
@@ -368,6 +390,7 @@ def get(item: items.Item, page: int = 1):
             Card(Header("Similar items"), table, Footer(pager)),
             cls="container",
         ),
+        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
     )
 
 

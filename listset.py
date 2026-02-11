@@ -121,7 +121,6 @@ def get(listset: items.Item):
     return (
         Title(listset.title),
         Script(src="/clipboard.min.js"),
-        Script("new ClipboardJS('.to_clipboard');"),
         Header(
             Nav(
                 Ul(
@@ -150,6 +149,7 @@ def get(listset: items.Item):
             ),
             cls="container",
         ),
+        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
     )
 
 

@@ -325,10 +325,13 @@ class Database(GenericFile):
         else:
             raise KeyError("Sqlite connection already open")
         self.cnx = sqlite3.connect(self.filepath)
-        self.cnx.autocommit = True
         return self.cnx
 
     def __exit__(self, etyp, einst, etb):
+        if etyp is None:
+            self.cnx.commit()
+        else:
+            self.cnx.rollback()
         self.cnx.close()
         del self.cnx
 

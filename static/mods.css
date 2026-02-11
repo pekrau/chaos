@@ -8,8 +8,17 @@
     vertical-align: top;
 }
 
+.center {
+    text-align: center;
+}
+
 .to_clipboard {
     cursor: pointer
+}
+
+.thin {
+    padding: 0px 8px;
+    margin: 2px;
 }
 
 img.white {
@@ -49,11 +58,6 @@ a.button {
     border: 1px solid #ddd;
     padding: 2px 8px;
     margin: 6px;
-}
-
-a.thin {
-    padding: 0px 8px;
-    margin: 2px;
 }
 
 table.compressed > tbody > tr > td {

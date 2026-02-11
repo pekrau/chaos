@@ -89,27 +89,31 @@ def get_link_icon(title="Link"):
     return get_icon("box-arrow-up-right.svg", title=title)
 
 
+def get_file_icon(mimetype=None, title="", **kwargs):
+    match mimetype:
+        case constants.PDF_MIMETYPE:
+            return get_icon("file-earmark-pdf.svg", title=title, **kwargs)
+        case constants.DOCX_MIMETYPE:
+            return get_icon("file-earmark-word.svg", title=title, **kwargs)
+        case constants.EPUB_MIMETYPE:
+            return get_icon("file-earmark-text.svg", title=title, **kwargs)
+        case constants.CSV_MIMETYPE:
+            return get_icon("filetype-csv.svg", title=title, **kwargs)
+        case constants.JSON_MIMETYPE:
+            return get_icon("filetype-json.svg", title=title, **kwargs)
+    return get_icon("file-earmark-binary.svg", title=title, **kwargs)
+
+
 def get_image_icon(title="Image"):
     return get_icon("file-earmark-image.svg", title=title)
-
-
-def get_listset_icon(title="Listset"):
-    return get_icon("list-ul.svg", title=title)
 
 
 def get_database_icon(title="Database"):
     return get_icon("database.svg", title=title)
 
 
-def get_file_icon(mimetype=None, title=""):
-    match mimetype:
-        case constants.PDF_MIMETYPE:
-            return get_icon("file-earmark-pdf.svg", title=title)
-        case constants.DOCX_MIMETYPE:
-            return get_icon("file-earmark-word.svg", title=title)
-        case constants.EPUB_MIMETYPE:
-            return get_icon("file-earmark-text.svg", title=title)
-    return get_icon("file-earmark-binary.svg", title=title)
+def get_listset_icon(title="Listset"):
+    return get_icon("list-ul.svg", title=title)
 
 
 def get_nav_menu():
@@ -124,12 +128,7 @@ def get_nav_menu():
         ),
         Ul(
             Li(A("Home", href="/")),
-            Li(A("Add note...", href="/note/")),
-            Li(A("Add link...", href="/link/")),
-            Li(A("Add image...", href="/image/")),
-            Li(A("Add file...", href="/file/")),
-            Li(A("Add database...", href="/database/")),
-            Li(A("Add listset...", href="/listset/")),
+            Li(A("Add...", href="/add/")),
             Li(A("Keywords", href="/keywords")),
             Li(A("Notes", href="/notes")),
             Li(A("Links", href="/links")),

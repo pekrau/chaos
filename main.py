@@ -134,6 +134,86 @@ def post(session, username: str, password: str):
     return components.redirect(session.pop("path", None) or "/")
 
 
+@rt("/add")
+def get():
+    "Page for selecting type of item to add."
+    return (
+        Title("Add item..."),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li("Add item..."),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            Form(
+                Button(
+                    components.get_note_icon(),
+                    "Add note",
+                    type="submit",
+                    cls="outline",
+                ),
+                method="GET",
+                action="/note",
+            ),
+            Form(
+                Button(
+                    components.get_link_icon(),
+                    "Add link",
+                    type="submit",
+                    cls="outline",
+                ),
+                method="GET",
+                action="/link",
+            ),
+            Form(
+                Button(
+                    components.get_image_icon(),
+                    "Add image",
+                    type="submit",
+                    cls="outline",
+                ),
+                method="GET",
+                action="/image",
+            ),
+            Form(
+                Button(
+                    components.get_file_icon(),
+                    "Add file",
+                    type="submit",
+                    cls="outline",
+                ),
+                method="GET",
+                action="/file",
+            ),
+            Form(
+                Button(
+                    components.get_database_icon(),
+                    "Add database",
+                    type="submit",
+                    cls="outline",
+                ),
+                method="GET",
+                action="/database",
+            ),
+            Form(
+                Button(
+                    components.get_listset_icon(),
+                    "Add listset",
+                    type="submit",
+                    cls="outline",
+                ),
+                method="GET",
+                action="/listset",
+            ),
+            cls="container",
+        ),
+    )
+
+
 @rt("/bin/{file:Item}")
 def get(file: items.Item):
     "Return the binary data of the file or image item."

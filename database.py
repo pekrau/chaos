@@ -147,7 +147,7 @@ def get(database: items.Item):
             Div(
                 Form(
                     Input(type="submit", value="SQL command"),
-                    action=f"/database/{database.id}/sql",
+                    action=f"/database/{database.id}/execute",
                     method="POST",
                 ),
                 Form(
@@ -158,14 +158,25 @@ def get(database: items.Item):
                 cls="grid",
             ),
             Card(
-                Strong(
+                Div(
                     A(
                         components.get_file_icon(),
                         database.filename,
                         href=database.bin_url,
                         title="Download Sqlite file",
-                    )
+                    ),
+                    " (Sqlite binary file)",
                 ),
+                Div(
+                    A(
+                        components.get_icon("filetype-sql.svg"),
+                        f"{database.id}.sql",
+                        href=f"/database/{database.id}/sql",
+                        title="Download SQL file",
+                    ),
+                    " (SQL text file)",
+                ),
+                cls="grid",
             ),
             components.get_text_card(database),
             components.get_listsets_card(database),
@@ -182,6 +193,25 @@ def get(database: items.Item):
             ),
             cls="container",
         ),
+    )
+
+
+@rt("/{database:Item}/sql")
+def get(database: items.Item):
+    "Download the database in SQL format."
+    outfile = io.StringIO()
+    outfile.write(f"/* Database {database.id} */\n\n")
+    with database as cnx:
+        for line in cnx.iterdump():
+            outfile.write(line)
+            outfile.write("\n")
+    return Response(
+        content=outfile.getvalue(),
+        status_code=HTTP.OK,
+        headers={
+            "Content-Type": constants.TEXT_MIMETYPE,
+            "Content-Disposition": f'attachment; filename="{database.id}.sql"',
+        },
     )
 
 
@@ -290,13 +320,27 @@ def get(database: items.Item, name: str):
         rows = cnx.execute(f"SELECT * FROM {name}").fetchall()
     db_card = Card(
         Div(components.get_database_icon(), A(database.title, href=database.url)),
-        Div(f"{len(rows)} rows"),
         Div(
             A(
                 "Add row",
                 href=f"/database/{database.id}/row/{name}",
                 role="button",
                 cls="thin",
+            ),
+            Button(f"{len(rows)} rows", cls="secondary outline thin"),
+            A(
+                components.get_file_icon(constants.CSV_MIMETYPE),
+                "CSV",
+                href=f"/database/{database.id}/csv/{name}",
+                cls="secondary",
+                style="margin-left: 1em;",
+            ),
+            A(
+                components.get_file_icon(constants.JSON_MIMETYPE),
+                "JSON",
+                href=f"/database/{database.id}/json/{name}",
+                cls="secondary",
+                style="margin-left: 1em;",
             ),
             cls="right",
         ),
@@ -342,15 +386,16 @@ def get(database: items.Item, name: str):
 
 @rt("/{database:Item}/csv/{name:str}")
 def get(database: items.Item, name: str):
+    "Download the table or view in CSV format."
     info = database.get_info(name)
     outfile = io.StringIO()
     writer = csv.writer(
         outfile, dialect="unix", delimiter=",", quoting=csv.QUOTE_NONNUMERIC
     )
-    header = [row["name"] for row in info["rows"]]
-    writer.writerow(header)
+    colnames = [row["name"] for row in info["rows"]]
+    writer.writerow(colnames)
     with database as cnx:
-        writer.writerows(cnx.execute(f"SELECT {','.join(header)} FROM {name}"))
+        writer.writerows(cnx.execute(f"SELECT {','.join(colnames)} FROM {name}"))
     return Response(
         content=outfile.getvalue(),
         status_code=HTTP.OK,
@@ -363,20 +408,21 @@ def get(database: items.Item, name: str):
 
 @rt("/{database:Item}/json/{name:str}")
 def get(database: items.Item, name: str):
+    "Get the table or view in JSON format."
     info = database.get_info(name)
-    header = [row["name"] for row in info["rows"]]
+    colnames = [row["name"] for row in info["rows"]]
     with database as cnx:
-        rows = cnx.execute(f"SELECT {','.join(header)} FROM {name}").fetchall()
+        rows = cnx.execute(f"SELECT {','.join(colnames)} FROM {name}").fetchall()
     return {
         "$id": f"database {database.id}; {info['type']} {name}",
-        "data": [dict(zip(header, row)) for row in rows],
+        "data": [dict(zip(colnames, row)) for row in rows],
     }
 
 
-@rt("/{database:Item}/sql")
+@rt("/{database:Item}/execute")
 def post(database: items.Item, sql: str = None):
     "Execute a SQL command."
-    headers = []
+    colnames = []
     result = []
     error_card = ""
     if sql:
@@ -388,14 +434,38 @@ def post(database: items.Item, sql: str = None):
             else:
                 result = cursor.fetchall()
                 if cursor.description:
-                    headers = [t[0] for t in cursor.description]
+                    colnames = [t[0] for t in cursor.description]
                 else:
-                    headers = []
-    if headers or result:
+                    colnames = []
+    if colnames or result:
         result_card = Card(
+            Header(
+                Strong(f"{len(result)} rows", cls="center"),
+                Form(
+                    Input(type="hidden", name="sql", value=sql),
+                    Input(
+                        type="submit",
+                        value="Download CSV",
+                        cls="contrast",
+                    ),
+                    method="POST",
+                    action=f"/database/{database.id}/execute/csv",
+                ),
+                Form(
+                    Input(type="hidden", name="sql", value=sql),
+                    Input(
+                        type="submit",
+                        value="Get JSON",
+                        cls="contrast",
+                    ),
+                    method="POST",
+                    action=f"/database/{database.id}/execute/json",
+                ),
+                cls="grid",
+            ),
             Table(
-                Thead(*[Tr(*[Th(h) for h in headers])]),
-                Tbody(*[Tr(*[Td(r) for r in row]) for row in result]),
+                Thead(*[Tr(*[Th(c) for c in colnames])]),
+                Tbody(*[Tr(*[Td(v) for v in row]) for row in result]),
             ),
         )
     else:
@@ -424,7 +494,7 @@ def post(database: items.Item, sql: str = None):
                         Textarea(sql or "", name="sql", autofocus=True),
                     ),
                     Input(type="submit", value="Execute"),
-                    action=f"/database/{database.id}/sql",
+                    action=f"/database/{database.id}/execute",
                     method="POST",
                 ),
                 Form(
@@ -442,6 +512,55 @@ def post(database: items.Item, sql: str = None):
             cls="container",
         ),
     )
+
+
+@rt("/{database:Item}/execute/csv")
+def post(database: items.Item, sql: str):
+    "Execute a SQL command and download the result as CSV."
+    assert isinstance(database, items.Database)
+    assert sql
+    outfile = io.StringIO()
+    writer = csv.writer(
+        outfile, dialect="unix", delimiter=",", quoting=csv.QUOTE_NONNUMERIC
+    )
+    with database as cnx:
+        try:
+            cursor = cnx.execute(sql)
+        except sqlite3.Error as error:
+            errors.Error(str(error))
+        else:
+            if cursor.description:
+                writer.writerow([t[0] for t in cursor.description])
+            writer.writerows(cursor.fetchall())
+    return Response(
+        content=outfile.getvalue(),
+        status_code=HTTP.OK,
+        headers={
+            "Content-Type": constants.CSV_MIMETYPE,
+            "Content-Disposition": f'attachment; filename="query.csv"',
+        },
+    )
+
+
+@rt("/{database:Item}/execute/json")
+def post(database: items.Item, sql: str, filename: str = ""):
+    "Execute a SQL command and return the result as JSON."
+    assert isinstance(database, items.Database)
+    assert sql
+    with database as cnx:
+        try:
+            cursor = cnx.execute(sql)
+        except sqlite3.Error as error:
+            errors.Error(str(error))
+        else:
+            if cursor.description:
+                colnames = [t[0] for t in cursor.description]
+            rows = cursor.fetchall()
+    return {
+        "$id": f"database {database.id}",
+        "query": sql,
+        "data": [dict(zip(colnames, row)) for row in rows],
+    }
 
 
 @rt("/{database:Item}/edit")
@@ -722,16 +841,18 @@ def get_database_overview(database, full=True):
                         cls="thin",
                     ),
                     A(
+                        components.get_file_icon(constants.CSV_MIMETYPE),
                         "CSV",
                         href=f"/database/{database.id}/csv/{name}",
-                        role="button",
-                        cls="thin secondary",
+                        cls="secondary",
+                        style="margin-left: 1em;",
                     ),
                     A(
+                        components.get_file_icon(constants.JSON_MIMETYPE),
                         "JSON",
                         href=f"/database/{database.id}/json/{name}",
-                        role="button",
-                        cls="thin secondary",
+                        cls="secondary",
+                        style="margin-left: 1em;",
                     ),
                     cls="right top",
                 ),

@@ -397,8 +397,8 @@ class Graphic(Item):
     "Graphic item class."
 
     @property
-    def format(self):
-        return self.frontmatter["format"]
+    def graphic(self):
+        return self.frontmatter["graphic"]
 
     @property
     def specification(self):
@@ -449,7 +449,7 @@ def read_items(dirpath=None):
                     item = File(path)
             elif "items" in frontmatter:
                 item = Listset(path)
-            elif "format" in frontmatter:
+            elif "graphic" in frontmatter:
                 item = Graphic(path)
             else:
                 item = Note(path)

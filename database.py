@@ -439,6 +439,17 @@ def get(database: items.Item, name: str):
         "$id": f"database {database.id}; {info['type']} {name}",
         "data": [dict(zip(colnames, row)) for row in rows],
     }
+    # content = json.dumps(result, ensure_ascii=False)
+    # response = Response(
+    #     headers={
+    #         "Content-Type": f"{constants.JSON_MIMETYPE}",
+    #         "Content-Disposition": f'attachment; filename="{database.id}_{name}.json"',
+    #         "Access-Control-Allow-Origin": "*",
+    #     },
+    #     content=content,
+    #     status_code=HTTP.OK,
+    # )
+    # return response
 
 
 @rt("/{database:Item}/execute")

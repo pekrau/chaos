@@ -4,6 +4,7 @@ import json
 import urllib.parse
 
 from fasthtml.common import *
+import requests
 
 import components
 import constants
@@ -57,10 +58,10 @@ def get(request):
                 ),
                 Select(
                     Option(
-                        "Select graphic format", selected=True, disabled=True, value=""
+                        "Select graphic type", selected=True, disabled=True, value=""
                     ),
-                    *[Option(f) for f in constants.GRAPHIC_FORMATS],
-                    name="format",
+                    *[Option(f) for f in constants.GRAPHIC_TYPES],
+                    name="graphic_type",
                 ),
                 Textarea(
                     name="specification",
@@ -94,7 +95,7 @@ def post(
     session,
     title: str,
     text: str,
-    format: str,
+    graphic_type: str,
     specification: str,
     listsets: list[str] = None,
     keywords: list[str] = None,
@@ -105,8 +106,8 @@ def post(
     graphic.owner = session["auth"]
     graphic.title = title.strip() or "no title"
     graphic.text = text.strip()
-    if format == constants.VEGA_LITE:
-        graphic.frontmatter["format"] = format
+    if graphic_type == constants.VEGA_LITE:
+        graphic.frontmatter["graphic"] = graphic_type
         try:
             graphic.frontmatter["specification"] = json.dumps(
                 json.loads(specification.strip()), indent=2, ensure_ascii=False
@@ -114,7 +115,7 @@ def post(
         except json.decoder.JSONDecodeError as error:
             errors.Error(str(error))
     else:
-        errors.Error("unknown graphics format.")
+        errors.Error("unknown graphic type.")
     for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
@@ -135,9 +136,6 @@ def get(graphic: items.Item):
         Script(src="https://cdn.jsdelivr.net/npm/vega@6"),
         Script(src="https://cdn.jsdelivr.net/npm/vega-lite@6"),
         Script(src="https://cdn.jsdelivr.net/npm/vega-embed@7"),
-        # Script(src="https://cdn.jsdelivr.net/npm/vega@5.25"),
-        # Script(src="https://cdn.jsdelivr.net/npm/vega-lite@5.12"),
-        # Script(src="https://cdn.jsdelivr.net/npm/vega-embed@6.22"),
         Header(
             Nav(
                 Ul(
@@ -225,8 +223,8 @@ def get(request, graphic: items.Item):
                 ),
                 Input(
                     type="text",
-                    name="format",
-                    value=graphic.format,
+                    name="graphic",
+                    value=graphic.graphic,
                     disabled=True,
                 ),
                 Textarea(
@@ -269,7 +267,7 @@ def post(
     assert isinstance(graphic, items.Graphic)
     graphic.title = title or "no title"
     graphic.text = text.strip()
-    if graphic.format == constants.VEGA_LITE:
+    if graphic.graphic == constants.VEGA_LITE:
         try:
             graphic.frontmatter["specification"] = json.dumps(
                 json.loads(specification.strip()), indent=2, ensure_ascii=False
@@ -277,7 +275,7 @@ def post(
         except json.decoder.JSONDecodeError as error:
             errors.Error(str(error))
     else:
-        errors.Error("unknown graphics format.")
+        errors.Error("unknown graphic type.")
     for id in listsets or list():
         listset = items.get(id)
         assert isinstance(listset, items.Listset)
@@ -343,7 +341,7 @@ def post(session, source: items.File, title: str):
     graphic.owner = session["auth"]
     graphic.title = title.strip()
     graphic.text = source.text
-    graphic.frontmatter["format"] = source.format
+    graphic.frontmatter["graphic"] = source.graphic
     graphic.frontmatter["specification"] = source.specification
     graphic.keywords = source.keywords
     graphic.write()

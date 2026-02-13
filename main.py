@@ -18,7 +18,7 @@ import yaml
 from dotenv import load_dotenv
 
 load_dotenv()
-if len(sys.argv) >= 2:
+if os.environ.get("CHAOS_DEVELOPMENT"):
     os.environ["CHAOS_DIR"] = "/home/pekrau/Dropbox/chaos-development"
 
 import components

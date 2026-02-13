@@ -168,8 +168,8 @@ def get(graphic: items.Item):
         Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
         Script(
             f"""
-const spec = {graphic.specification};
-vegaEmbed("#graphic", spec, {{downloadFileName: "filename"}})
+const specification = {graphic.specification};
+vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
 .then(result=>console.log(result))
 .catch(console.warn);
 """,

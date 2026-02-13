@@ -418,12 +418,12 @@ def get(database: items.Item, name: str):
     outfile.seek(0)
     content = outfile.read().encode("utf-8")
     return Response(
-        content=content,
-        status_code=HTTP.OK,
         headers={
-            "Content-Type": constants.CSV_MIMETYPE,
+            "Content-Type": f"{constants.CSV_MIMETYPE}; charset=utf-8",
             "Content-Disposition": f'attachment; filename="{database.id}_{name}.csv"',
         },
+        content=content,
+        status_code=HTTP.OK,
     )
 
 

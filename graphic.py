@@ -7,6 +7,7 @@ from fasthtml.common import *
 
 import components
 import constants
+import errors
 import items
 import settings
 

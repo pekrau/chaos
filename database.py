@@ -239,9 +239,7 @@ def get(session, request, database: items.Item, name: str):
     info = database.get_tableview_info(name)
     inputs = []
     for column in info["columns"]:
-        label = [Strong(column["name"]),
-                 ", ",
-                 column["type"]]
+        label = [Strong(column["name"]), ", ", column["type"]]
         if not column["null"]:
             label.append(", NOT NULL")
         if column["primary"]:
@@ -545,7 +543,7 @@ def get(database: items.Item, name: str):
     outfile = io.StringIO()
     writer = csv.writer(outfile, quoting=csv.QUOTE_MINIMAL)
     column_names = [column["name"] for column in info["columns"]]
-    writer.writerow(colnames)
+    writer.writerow(column_names)
     with database as cnx:
         writer.writerows(cnx.execute(f"SELECT {','.join(column_names)} FROM {name}"))
     outfile.seek(0)
@@ -570,7 +568,7 @@ def get(database: items.Item, name: str):
         rows = cnx.execute(f"SELECT {','.join(column_names)} FROM {name}").fetchall()
     return {
         "$id": f"database {database.id}; {info['type']} {name}",
-        "data": [dict(zip(colnames, row)) for row in rows],
+        "data": [dict(zip(column_names, row)) for row in rows],
     }
 
 
@@ -578,7 +576,7 @@ def get(database: items.Item, name: str):
 def post(database: items.Item, sql: str = None):
     "Execute a SQL command."
     assert isinstance(database, items.Database)
-    colnames = []
+    column_names = []
     result = []
     error_card = ""
     if sql:
@@ -590,10 +588,8 @@ def post(database: items.Item, sql: str = None):
             else:
                 result = cursor.fetchall()
                 if cursor.description:
-                    colnames = [t[0] for t in cursor.description]
-                else:
-                    colnames = []
-    if colnames or result:
+                    column_names = [t[0] for t in cursor.description]
+    if column_names or result:
         result_card = Card(
             Header(
                 Strong(f"{len(result)} rows", cls="center"),
@@ -620,7 +616,7 @@ def post(database: items.Item, sql: str = None):
                 cls="grid",
             ),
             Table(
-                Thead(*[Tr(*[Th(c) for c in colnames])]),
+                Thead(*[Tr(*[Th(c) for c in column_names])]),
                 Tbody(*[Tr(*[Td(v) for v in row]) for row in result]),
             ),
         )
@@ -989,20 +985,16 @@ def get(session, request, database: items.Item):
                     Legend(
                         "Type of plot",
                         Label(
-                            Input(type="radio", name="type", value="scatter"),
-                            "Scatter"
+                            Input(type="radio", name="type", value="scatter"), "Scatter"
                         ),
-                        Label(
-                            Input(type="radio", name="type", value="line"),
-                            "Line"
-                        ),
+                        Label(Input(type="radio", name="type", value="line"), "Line"),
                         Label(
                             Input(type="radio", name="type", value="barchart"),
-                            "Bar chart"
+                            "Bar chart",
                         ),
                         Label(
                             Input(type="radio", name="type", value="piechart"),
-                            "Pie chart"
+                            "Pie chart",
                         ),
                     ),
                 ),
@@ -1022,7 +1014,7 @@ def get(session, request, database: items.Item):
             cls="container",
         ),
     )
-    
+
 
 @rt("/{database:Item}/plot")
 def post(session, request, database: items.Item):
@@ -1037,11 +1029,11 @@ def get_database_overview(database, full=False):
     items = list(database.tables().items()) + list(database.views().items())
     for name, item in items:
         spec = [
-                Li(
-                    f"{r['name']} {r['type']} {not r['null'] and 'NOT NULL' or ''} {r['primary'] and 'PRIMARY KEY' or ''}"
-                )
-                for r in item["columns"]
-            ]
+            Li(
+                f"{r['name']} {r['type']} {not r['null'] and 'NOT NULL' or ''} {r['primary'] and 'PRIMARY KEY' or ''}"
+            )
+            for r in item["columns"]
+        ]
         spec.append(Li(item["sql"]))
         if item["type"] == "table":
             add_row = A(
@@ -1064,7 +1056,7 @@ def get_database_overview(database, full=False):
                     Details(
                         Summary("Schema", role="button", cls="thin outline"),
                         Ul(*spec),
-                        open=full
+                        open=full,
                     ),
                 ),
                 Td(

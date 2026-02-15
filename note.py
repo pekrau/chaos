@@ -55,7 +55,7 @@ def get(request):
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Add note",
                 ),
                 action="/note/",
                 method="POST",
@@ -118,8 +118,11 @@ def get(note: items.Item):
         ),
         Main(
             components.get_text_card(note),
-            components.get_listsets_card(note),
-            components.get_keywords_card(note),
+            Div(
+                components.get_listsets_card(note),
+                components.get_keywords_card(note),
+                cls="grid",
+            ),
             cls="container",
         ),
         Footer(
@@ -250,7 +253,7 @@ def get(request, note: items.Item):
                 ),
                 Input(
                     type="submit",
-                    value="Copy",
+                    value="Copy note",
                 ),
                 action=f"{note.url}/copy",
                 method="POST",

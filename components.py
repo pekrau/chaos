@@ -270,7 +270,12 @@ def get_keywords_card(item):
         return Card(
             Div("Keywords: ", keywords_links),
             Div(
-                A("Similar items", href=f"/similar/{item.id}", role="button"),
+                A(
+                    "Similar items",
+                    href=f"/similar/{item.id}",
+                    role="button",
+                    cls="thin",
+                ),
                 cls="right",
             ),
         )

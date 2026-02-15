@@ -59,7 +59,7 @@ def get(request):
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Add listset",
                 ),
                 action="/listset/",
                 method="POST",
@@ -135,8 +135,11 @@ def get(listset: items.Item):
         Main(
             components.get_text_card(listset),
             Card(components.get_items_table(listset.items)),
-            components.get_listsets_card(listset),
-            components.get_keywords_card(listset),
+            Div(
+                components.get_listsets_card(listset),
+                components.get_keywords_card(listset),
+                cls="grid",
+            ),
             cls="container",
         ),
         Footer(
@@ -296,7 +299,7 @@ def get(request, listset: items.Item):
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Copy listset",
                 ),
                 action=f"{listset.url}/copy",
                 method="POST",

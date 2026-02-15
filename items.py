@@ -346,7 +346,7 @@ class Database(GenericFile):
             ]
         result = {}
         for name in [n for n in names if not n.startswith("_")]:
-            result[name] = self.get_info(name)
+            result[name] = self.get_tableview_info(name)
         return result
 
     def views(self):
@@ -360,16 +360,17 @@ class Database(GenericFile):
             ]
         result = {}
         for name in [n for n in names if not n.startswith("_")]:
-            result[name] = self.get_info(name)
+            result[name] = self.get_tableview_info(name)
         return result
 
-    def get_info(self, name):
+    def get_tableview_info(self, name):
+        "Get information about the table or view with the given name."
         try:
             with self as cnx:
                 cursor = cnx.execute(f"pragma table_info({name})")
-                rows = []
+                columns = []
                 for row in cursor:
-                    rows.append(
+                    columns.append(
                         dict(
                             name=row[1],
                             type=row[2],
@@ -378,9 +379,9 @@ class Database(GenericFile):
                             primary=bool(row[5]),
                         )
                     )
-                if not rows:
+                if not columns:
                     raise KeyError("no such table or view")
-                result = dict(rows=rows)
+                result = dict(columns=columns)
                 result["sql"] = cnx.execute(
                     "SELECT sql FROM sqlite_schema WHERE name=?", (name,)
                 ).fetchone()[0]
@@ -391,6 +392,10 @@ class Database(GenericFile):
         except (sqlite3.Error, KeyError) as error:
             raise errors.Error(error)
         return result
+
+    @property
+    def plots(self):
+        return self.frontmatter.get("plots") or []
 
 
 class Graphic(Item):

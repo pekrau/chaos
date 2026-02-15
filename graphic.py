@@ -71,7 +71,7 @@ def get(request):
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Add graphic",
                 ),
                 action="/graphic/",
                 method="POST",
@@ -150,8 +150,11 @@ def get(graphic: items.Item):
         Main(
             Div(id="graphic"),
             components.get_text_card(graphic),
-            components.get_listsets_card(graphic),
-            components.get_keywords_card(graphic),
+            Div(
+                components.get_listsets_card(graphic),
+                components.get_keywords_card(graphic),
+                cls="grid",
+            ),
             cls="container",
         ),
         Footer(
@@ -313,7 +316,7 @@ def get(request, graphic: items.Item):
                 ),
                 Input(
                     type="submit",
-                    value="Copy",
+                    value="Copy graphic",
                 ),
                 action=f"{graphic.url}/copy",
                 method="POST",

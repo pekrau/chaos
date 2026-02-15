@@ -61,7 +61,7 @@ def get(request):
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Add file",
                 ),
                 action="/file/",
                 method="POST",
@@ -141,8 +141,11 @@ def get(file: items.Item):
         Main(
             Card(Strong(A(file.filename, href=file.bin_url))),
             components.get_text_card(file),
-            components.get_listsets_card(file),
-            components.get_keywords_card(file),
+            Div(
+                components.get_listsets_card(file),
+                components.get_keywords_card(file),
+                cls="grid",
+            ),
             cls="container",
         ),
         Footer(
@@ -294,7 +297,7 @@ def get(request, file: items.Item):
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Copy file",
                 ),
                 action=f"{file.url}/copy",
                 method="POST",

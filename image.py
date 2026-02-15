@@ -68,7 +68,7 @@ def get(request):
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Add image",
                 ),
                 action="/image/",
                 method="POST",
@@ -152,8 +152,11 @@ def get(image: items.Item):
                 )
             ),
             components.get_text_card(image),
-            components.get_listsets_card(image),
-            components.get_keywords_card(image),
+            Div(
+                components.get_listsets_card(image),
+                components.get_keywords_card(image),
+                cls="grid",
+            ),
             cls="container",
         ),
         Footer(
@@ -310,7 +313,7 @@ def get(request, image: items.Item):
                 ),
                 Input(
                     type="submit",
-                    value="Copy",
+                    value="Copy image",
                 ),
                 action=f"{image.url}/copy",
                 method="POST",

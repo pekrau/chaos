@@ -60,7 +60,7 @@ def get(request):
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Add link",
                 ),
                 action="/link/",
                 method="POST",
@@ -134,8 +134,11 @@ def get(link: items.Item):
                 )
             ),
             components.get_text_card(link),
-            components.get_listsets_card(link),
-            components.get_keywords_card(link),
+            Div(
+                components.get_listsets_card(link),
+                components.get_keywords_card(link),
+                cls="grid",
+            ),
             cls="container",
         ),
         Footer(
@@ -275,7 +278,7 @@ def get(request, link: items.Item):
                 ),
                 Input(
                     type="submit",
-                    value="Save",
+                    value="Copy link",
                 ),
                 action=f"{link.url}/copy",
                 method="POST",

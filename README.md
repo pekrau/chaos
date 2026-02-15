@@ -1,6 +1,6 @@
 # chaos
 
-Web-based repository of notes, links, images and files with no intrinsic order.
+Web-based repository of notes, links, images, files and databases.
 
 Currently lacks user account handling; a single set of username & password
 is hard-wired in environment variables.

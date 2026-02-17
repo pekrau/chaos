@@ -1,18 +1,25 @@
 "Database item page."
 
 import csv
+import datetime
 from http import HTTPStatus as HTTP
 import io
 import json
 import sqlite3
 import urllib.parse
 
+import bokeh.embed
+import bokeh.models
+import bokeh.plotting
+import bokeh.resources
 from fasthtml.common import *
+import numpy as np
 
 import components
 import constants
 import errors
 import items
+from timer import Timer
 
 app, rt = components.get_app_rt()
 
@@ -126,18 +133,75 @@ async def post(
 
 @rt("/{database:Item}")
 def get(database: items.Item):
-    "View the metadata for the database."
+    "View the metadata and plots for the database."
     assert isinstance(database, items.Database)
+    timer = Timer()
     if database.plots:
-        plots = [
-            Div(A(p["title"], href=f"/database/{database.id}/plot/{p['name']}"))
-            for p in database.plots
-        ]
+        cdn = bokeh.resources.CDN.render()
+        scripts = []
+        plots = []
+        for title, plot in database.plots.items():
+            with database as cnx:
+                rows = cnx.execute(
+                    f"SELECT {plot['x']}, {plot['y']} FROM {plot['tableview']}"
+                ).fetchall()
+                x = [r[0] for r in rows]
+                y = [r[1] for r in rows]
+            info = database.get_tableview_info(plot["tableview"])
+            columns = dict([(c["name"], c["type"]) for c in info["columns"]])
+            if columns[plot["x"]] == "TEXT":
+                try:
+                    datetime.date.fromisoformat(x[0])
+                except ValueError:
+                    pass
+                else:
+                    x = np.array(x, dtype=np.datetime64)
+            if columns[plot["y"]] == "TEXT":
+                try:
+                    datetime.date.fromisoformat(y[0])
+                except ValueError:
+                    pass
+                else:
+                    y = np.array(y, dtype=np.datetime64)
+            p = bokeh.plotting.figure(
+                title=title, x_axis_label=plot["x"], y_axis_label=plot["y"]
+            )
+            match plot["type"]:
+                case "line":
+                    p.line(x, y)
+                case "scatter":
+                    p.scatter(x, y)
+                case _:
+                    raise NotImplementedError
+            script, div = bokeh.embed.components(p)
+            plots.append((div, plot))
+            scripts.append(script)
+        plots_table = Table(
+            Tbody(
+                *[
+                    Tr(
+                        Td(NotStr(d)),
+                        Td(
+                            A(
+                                "Edit",
+                                role="button",
+                                href=f"{database.url}/plot/{p['tableview']}/{p['name']}",
+                            )
+                        ),
+                    )
+                    for d, p in plots
+                ]
+            )
+        )
     else:
-        plots = [I("None.")]
+        cdn = ""
+        scripts = []
+        plots_table = I("None.")
+    ic(str(timer))
     return (
         Title(database.title),
         Script(src="/clipboard.min.js"),
+        NotStr(cdn),
         Header(
             Nav(
                 Ul(
@@ -151,45 +215,39 @@ def get(database: items.Item):
         ),
         Main(
             components.get_text_card(database),
-            Card(get_database_overview(database)),
+            Card(get_database_overview(database, add_plot=True)),
             Card(
                 Form(
                     Input(type="submit", value="SQL command"),
-                    action=f"/database/{database.id}/execute",
+                    action=f"{database.url}/execute",
                     method="POST",
                 ),
                 Form(
-                    Input(type="submit", value="Create table from CSV file"),
-                    action=f"/database/{database.id}/csv",
+                    Input(type="submit", value="Upload CSV file"),
+                    action=f"{database.url}/csv",
                     method="GET",
                 ),
                 Div(
-                    Div(
-                        A(
-                            components.get_file_icon(),
-                            "Sqlite binary file",
-                            href=database.bin_url,
-                            cls="secondary",
-                            title="Download Sqlite file",
-                        ),
+                    A(
+                        "Download Sqlite binary",
+                        href=database.bin_url,
+                        role="button",
+                        cls="secondary outline",
                     ),
-                    Div(
-                        A(
-                            components.get_icon("filetype-sql.svg"),
-                            "SQL text file",
-                            href=f"/database/{database.id}/sql",
-                            cls="secondary",
-                            title="Download SQL file",
-                        ),
-                        style="margin-top: 0.5em;",
+                ),
+                Div(
+                    A(
+                        "Download SQL text",
+                        href=f"{database.url}/sql",
+                        role="button",
+                        cls="secondary outline",
                     ),
-                    cls="right",
                 ),
                 cls="grid",
             ),
             Card(
                 Header("Plots"),
-                *plots,
+                plots_table,
             ),
             Div(
                 components.get_listsets_card(database),
@@ -209,6 +267,7 @@ def get(database: items.Item):
             cls="container",
         ),
         Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        NotStr("\n".join(scripts)),
     )
 
 
@@ -232,11 +291,11 @@ def get(database: items.Item):
     )
 
 
-@rt("/{database:Item}/row/{name}")
-def get(session, request, database: items.Item, name: str):
+@rt("/{database:Item}/row/{table}")
+def get(session, request, database: items.Item, table: str):
     "Add a row to the table."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(name)
+    info = database.get_tableview_info(table)
     inputs = []
     for column in info["columns"]:
         label = [Strong(column["name"]), ", ", column["type"]]
@@ -254,12 +313,12 @@ def get(session, request, database: items.Item, name: str):
         else:
             inputs.append((Div(*label), Input(type="text", **kwargs)))
     return (
-        Title(f"Add row to table {name}"),
+        Title(f"Add row to table {table}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add row to table ", Strong(name)),
+                    Li("Add row to table ", Strong(table)),
                 ),
             ),
             cls="container",
@@ -272,7 +331,7 @@ def get(session, request, database: items.Item, name: str):
                 ),
                 A(
                     f"{info['count']} rows",
-                    href=f"/database/{database.id}/rows/{name}",
+                    href=f"{database.url}/rows/{table}",
                     role="button",
                     cls="thin",
                 ),
@@ -281,7 +340,7 @@ def get(session, request, database: items.Item, name: str):
             Form(
                 Fieldset(*[Label(i[0], i[1]) for i in inputs]),
                 Input(type="submit", value="Add row"),
-                action=f"/database/{database.id}/row/{name}",
+                action=f"{database.url}/row/{table}",
                 method="POST",
             ),
             Form(
@@ -290,7 +349,7 @@ def get(session, request, database: items.Item, name: str):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=f"/database/{database.id}",
+                action=database.url,
                 method="GET",
             ),
             cls="container",
@@ -298,11 +357,11 @@ def get(session, request, database: items.Item, name: str):
     )
 
 
-@rt("/{database:Item}/row/{name}")
-def post(session, database: items.Item, name: str, form: dict):
+@rt("/{database:Item}/row/{table}")
+def post(session, database: items.Item, table: str, form: dict):
     "Actually add the row to the table."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(name)
+    info = database.get_tableview_info(table)
     columns = []
     values = []
     try:
@@ -334,21 +393,21 @@ def post(session, database: items.Item, name: str, form: dict):
         raise errors.Error(error)
     with database as cnx:
         cnx.execute(
-            f"INSERT INTO {name} ({','.join(columns)}) VALUES ({','.join('?' * len(values))})",
+            f"INSERT INTO {table} ({','.join(columns)}) VALUES ({','.join('?' * len(values))})",
             values,
         )
     add_toast(session, "Row added.", "success")
-    return components.redirect(f"/database/{database.id}/row/{name}")
+    return components.redirect(f"{database.url}/row/{table}")
 
 
-@rt("/{database:Item}/rows/{name}")
-def get(database: items.Item, name: str):
+@rt("/{database:Item}/rows/{tableview}")
+def get(database: items.Item, tableview: str):
     "Display row values from table or view."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(name)
-    title = f"{info['type'].capitalize()} {name}"
+    info = database.get_tableview_info(tableview)
+    title = f"{info['type'].capitalize()} {tableview}"
     with database as cnx:
-        rows = cnx.execute(f"SELECT * FROM {name}").fetchall()
+        rows = cnx.execute(f"SELECT * FROM {tableview}").fetchall()
     db_items = [
         Div(
             components.get_database_icon(),
@@ -362,7 +421,7 @@ def get(database: items.Item, name: str):
             ),
             A(
                 "Add row",
-                href=f"/database/{database.id}/row/{name}",
+                href=f"{database.url}/row/{tableview}",
                 role="button",
                 cls="thin",
                 style="margin-left: 1em;",
@@ -370,20 +429,16 @@ def get(database: items.Item, name: str):
         ),
         Div(
             A(
-                components.get_file_icon(constants.CSV_MIMETYPE),
-                "CSV",
-                href=f"/database/{database.id}/csv/{name}",
-                cls="secondary",
-                style="margin-left: 1em;",
-                title="Download CSV file",
+                "Download CSV",
+                href=f"{database.url}/csv/{tableview}",
+                role="button",
+                cls="secondary outline thin",
             ),
             A(
-                components.get_file_icon(constants.JSON_MIMETYPE),
-                "JSON",
-                href=f"/database/{database.id}/json/{name}",
-                cls="secondary",
-                style="margin-left: 1em;",
-                title="Download JSON file",
+                "Download JSON",
+                href=f"{database.url}/json/{tableview}",
+                role="button",
+                cls="secondary outline thin",
             ),
             cls="right",
         ),
@@ -431,7 +486,7 @@ def get(database: items.Item, name: str):
 @rt("/{database:Item}/csv")
 def get(request, database: items.Item):
     assert isinstance(database, items.Database)
-    title = "Create table from CSV file"
+    title = "Upload CSV file"
     return (
         Title(title),
         Header(
@@ -454,7 +509,7 @@ def get(request, database: items.Item):
                         "Table name",
                         Input(
                             type="text",
-                            name="name",
+                            name="table",
                             required=True,
                         ),
                     ),
@@ -488,15 +543,15 @@ def get(request, database: items.Item):
 
 
 @rt("/{database:Item}/csv")
-async def post(request, database: items.Item, name: str, upfile: UploadFile):
+async def post(request, database: items.Item, table: str, upfile: UploadFile):
     assert isinstance(database, items.Database)
     content = await upfile.read()
     reader = csv.reader(io.StringIO(content.decode("utf-8")))
     header = next(reader)
     rows = list(reader)
     columns = []
-    for pos, columnname in enumerate(header):
-        column = dict(name=columnname, type="INTEGER", null=False)
+    for pos, name in enumerate(header):
+        column = dict(name=name, type="INTEGER", null=False)
         columns.append(column)
         try:
             for row in rows:
@@ -527,47 +582,51 @@ async def post(request, database: items.Item, name: str, upfile: UploadFile):
     try:
         with database as cnx:
             sql = ", ".join([c["sql"] for c in columns])
-            cnx.execute(f"CREATE TABLE {name} ({sql})")
+            cnx.execute(f"CREATE TABLE {table} ({sql})")
             sql = f"({', '.join([c['name'] for c in columns])}) VALUES ({', '.join(['?'] * len(columns))})"
-            cnx.executemany(f"INSERT INTO {name} {sql}", rows)
+            cnx.executemany(f"INSERT INTO {table} {sql}", rows)
     except sqlite3.Error as error:
         raise errors.Error(error)
     return components.redirect(database.url)
 
 
-@rt("/{database:Item}/csv/{name:str}")
-def get(database: items.Item, name: str):
+@rt("/{database:Item}/csv/{tableview:str}")
+def get(database: items.Item, tableview: str):
     "Download the table or view in CSV format."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(name)
+    info = database.get_tableview_info(tableview)
     outfile = io.StringIO()
     writer = csv.writer(outfile, quoting=csv.QUOTE_MINIMAL)
     column_names = [column["name"] for column in info["columns"]]
     writer.writerow(column_names)
     with database as cnx:
-        writer.writerows(cnx.execute(f"SELECT {','.join(column_names)} FROM {name}"))
+        writer.writerows(
+            cnx.execute(f"SELECT {','.join(column_names)} FROM {tableview}")
+        )
     outfile.seek(0)
     content = outfile.read().encode("utf-8")
     return Response(
         headers={
             "Content-Type": f"{constants.CSV_MIMETYPE}; charset=utf-8",
-            "Content-Disposition": f'attachment; filename="{database.id}_{name}.csv"',
+            "Content-Disposition": f'attachment; filename="{database.id}_{tableview}.csv"',
         },
         content=content,
         status_code=HTTP.OK,
     )
 
 
-@rt("/{database:Item}/json/{name:str}")
-def get(database: items.Item, name: str):
+@rt("/{database:Item}/json/{tableview:str}")
+def get(database: items.Item, tableview: str):
     "Get the table or view in JSON format."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(name)
+    info = database.get_tableview_info(tableview)
     column_names = [column["name"] for column in info["columns"]]
     with database as cnx:
-        rows = cnx.execute(f"SELECT {','.join(column_names)} FROM {name}").fetchall()
+        rows = cnx.execute(
+            f"SELECT {','.join(column_names)} FROM {tableview}"
+        ).fetchall()
     return {
-        "$id": f"database {database.id}; {info['type']} {name}",
+        "$id": f"database {database.id}; {info['type']} {tableview}",
         "data": [dict(zip(column_names, row)) for row in rows],
     }
 
@@ -597,21 +656,30 @@ def post(database: items.Item, sql: str = None):
                     Input(type="hidden", name="sql", value=sql),
                     Input(
                         type="submit",
-                        value="Download CSV",
-                        cls="contrast",
+                        value="Create view",
                     ),
-                    method="POST",
-                    action=f"/database/{database.id}/execute/csv",
+                    method="GET",
+                    action=f"{database.url}/view",
                 ),
                 Form(
                     Input(type="hidden", name="sql", value=sql),
                     Input(
                         type="submit",
-                        value="Get JSON",
-                        cls="contrast",
+                        value="Download CSV",
+                        cls="secondary outline",
                     ),
                     method="POST",
-                    action=f"/database/{database.id}/execute/json",
+                    action=f"{database.url}/execute/csv",
+                ),
+                Form(
+                    Input(type="hidden", name="sql", value=sql),
+                    Input(
+                        type="submit",
+                        value="Download JSON",
+                        cls="secondary outline",
+                    ),
+                    method="POST",
+                    action=f"{database.url}/execute/json",
                 ),
                 cls="grid",
             ),
@@ -642,16 +710,16 @@ def post(database: items.Item, sql: str = None):
                     components.get_database_icon(),
                     A(database.title, href=database.url),
                 ),
-                get_database_overview(database, full=True),
+                get_database_overview(database, display=True),
             ),
             Card(
                 Form(
                     Fieldset(
                         Label("SQL command"),
-                        Textarea(sql or "", name="sql", autofocus=True),
+                        Input(type="text", name="sql", value=sql or "", autofocus=True),
                     ),
                     Input(type="submit", value="Execute"),
-                    action=f"/database/{database.id}/execute",
+                    action=f"{database.url}/execute",
                     method="POST",
                 ),
                 Form(
@@ -660,7 +728,7 @@ def post(database: items.Item, sql: str = None):
                         value="Cancel",
                         cls="secondary",
                     ),
-                    action=f"/database/{database.id}",
+                    action=database.url,
                     method="GET",
                 ),
             ),
@@ -902,12 +970,77 @@ def post(session, source: items.Database, title: str):
     return components.redirect(database.url)
 
 
+@rt("/{database:Item}/view")
+def get(request, database: items.Item, sql: str = None):
+    "Form for creating a view in the database."
+    assert isinstance(database, items.Database)
+    title = f"Create view in database {database.title}"
+    return (
+        Title(title),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(f"Create view in database {database.title}"),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            Form(
+                Fieldset(
+                    Label(
+                        "SQL select statement",
+                        Input(
+                            type="text",
+                            name="sql",
+                            value=sql or "",
+                        ),
+                    ),
+                    Label(
+                        "View name",
+                        Input(
+                            type="text",
+                            name="view",
+                        ),
+                    ),
+                ),
+                Input(
+                    type="submit",
+                    value="Create view",
+                ),
+                action=f"{database.url}/view",
+                method="POST",
+            ),
+            Form(
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
+                ),
+                action=database.url,
+                method="GET",
+            ),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/view")
+def post(request, database: items.Item, sql: str, view: str):
+    "Actually create a view in the database."
+    assert isinstance(database, items.Database)
+    with database as cnx:
+        cnx.execute(f"CREATE VIEW {view} AS {sql}")
+    return components.redirect(database.url)
+
+
 @rt("/{database:Item}/delete")
 def get(request, database: items.Item):
     "Ask for confirmation to delete the database."
     assert isinstance(database, items.Database)
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/database/{database.id}":
+    if redirect == database.url:
         redirect = "/databases"
     return (
         Title("Delete"),
@@ -957,17 +1090,18 @@ def post(database: items.Item, redirect: str):
     return components.redirect(redirect)
 
 
-@rt("/{database:Item}/plot")
-def get(session, request, database: items.Item):
-    "Add a plot to the database."
+@rt("/{database:Item}/plot/{tableview}")
+def get(session, request, database: items.Item, tableview: str):
+    "Add a plot for the given table or view in in the database."
     assert isinstance(database, items.Database)
+    info = database.get_tableview_info(tableview)
     return (
-        Title(f"Add a plot to the database {database.title}"),
+        Title("Add a plot"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Add a plot to the database ", Strong(database.title)),
+                    Li("Add a plot"),
                 ),
             ),
             cls="container",
@@ -980,27 +1114,51 @@ def get(session, request, database: items.Item):
                 ),
                 get_database_overview(database),
             ),
-            Form(
-                Fieldset(
-                    Legend(
-                        "Type of plot",
+            Card(
+                Header("X/Y plot"),
+                Form(
+                    Input(type="hidden", name="plot", value="xy"),
+                    Fieldset(
                         Label(
-                            Input(type="radio", name="type", value="scatter"), "Scatter"
-                        ),
-                        Label(Input(type="radio", name="type", value="line"), "Line"),
-                        Label(
-                            Input(type="radio", name="type", value="barchart"),
-                            "Bar chart",
-                        ),
-                        Label(
-                            Input(type="radio", name="type", value="piechart"),
-                            "Pie chart",
-                        ),
+                            "Title",
+                            Input(
+                                type="text",
+                                name="title",
+                                required=True,
+                            ),
+                        )
                     ),
+                    Fieldset(
+                        Label(
+                            "X axis",
+                            Select(
+                                Option("Select column", selected=True, disabled=True),
+                                *[Option(column["name"]) for column in info["columns"]],
+                                name="x",
+                            ),
+                        )
+                    ),
+                    Fieldset(
+                        Label(
+                            "Y axis",
+                            Select(
+                                Option("Select column", selected=True, disabled=True),
+                                *[Option(column["name"]) for column in info["columns"]],
+                                name="y",
+                            ),
+                        )
+                    ),
+                    Fieldset(
+                        Legend("Type"),
+                        Input(type="radio", id="scatter", name="type", value="scatter"),
+                        Label("Scatter", htmlFor="scatter"),
+                        Input(type="radio", id="line", name="type", value="line"),
+                        Label("Line", htmlFor="line"),
+                    ),
+                    Input(type="submit", value="Add X/Y plot"),
+                    action=f"{database.url}/plot/{tableview}",
+                    method="POST",
                 ),
-                Input(type="submit", value="Add plot"),
-                action=f"/database/{database.id}/plot",
-                method="POST",
             ),
             Form(
                 Input(
@@ -1008,7 +1166,7 @@ def get(session, request, database: items.Item):
                     value="Cancel",
                     cls="secondary",
                 ),
-                action=f"/database/{database.id}",
+                action=database.url,
                 method="GET",
             ),
             cls="container",
@@ -1016,18 +1174,64 @@ def get(session, request, database: items.Item):
     )
 
 
-@rt("/{database:Item}/plot")
-def post(session, request, database: items.Item):
-    "Actually add a plot to the database."
+@rt("/{database:Item}/plot/{tableview}")
+def post(session, request, database: items.Item, tableview: str, form: dict):
+    "Actually add a plot for the given table or view in in the database."
     assert isinstance(database, items.Database)
+    ic(form)
+    info = database.get_tableview_info(tableview)
+    title = form["title"]
+    if database.frontmatter.get("plots", {}).get(title):
+        raise errors.Error(f"plot '{title}' already defined")
+    result = dict(tableview=tableview, name=items.normalize(title), plot=form["plot"])
+    database.frontmatter.setdefault("plots", {})[title] = result
+    match form["plot"]:
+        case "xy":
+            result["x"] = form["x"]
+            result["y"] = form["y"]
+            result["type"] = form["type"]
+        case "barchart":
+            pass
+        case "piechart":
+            pass
+        case _:
+            raise NotImplementedError
+    database.write()
+    return components.redirect(database.url)
+
+
+@rt("/{database:Item}/plot/{tableview}/{plotname}")
+def get(session, request, database: items.Item, tableview: str, plotname: str):
+    "Edit the named plot for the given table or view in in the database."
+    assert isinstance(database, items.Database)
+    info = database.get_tableview_info(tableview)
     raise NotImplementedError
 
 
-def get_database_overview(database, full=False):
+@rt("/{database:Item}/plot/{tableview}/{plotname}")
+def post(
+    session, request, database: items.Item, tableview: str, plotname: str, form: dict
+):
+    "Actually ddit the named plot for the given table or view in in the database."
+    assert isinstance(database, items.Database)
+    info = database.get_tableview_info(tableview)
+    raise NotImplementedError
+
+
+def get_database_overview(database, display=False, add_plot=False):
     "Get an overview of the basic structure of the database."
     rows = []
     items = list(database.tables().items()) + list(database.views().items())
     for name, item in items:
+        if add_plot:
+            add_plot_button = A(
+                "Add plot",
+                href=f"{database.url}/plot/{name}",
+                role="button",
+                cls="thin",
+            )
+        else:
+            add_plot_button = ""
         spec = [
             Li(
                 f"{r['name']} {r['type']} {not r['null'] and 'NOT NULL' or ''} {r['primary'] and 'PRIMARY KEY' or ''}"
@@ -1036,14 +1240,14 @@ def get_database_overview(database, full=False):
         ]
         spec.append(Li(item["sql"]))
         if item["type"] == "table":
-            add_row = A(
+            add_row_button = A(
                 "Add row",
-                href=f"/database/{database.id}/row/{name}",
+                href=f"{database.url}/row/{name}",
                 role="button",
                 cls="thin",
             )
         else:
-            add_row = ""
+            add_row_button = ""
 
         rows.append(
             Tr(
@@ -1056,32 +1260,32 @@ def get_database_overview(database, full=False):
                     Details(
                         Summary("Schema", role="button", cls="thin outline"),
                         Ul(*spec),
-                        open=full,
+                        open=display,
                     ),
                 ),
                 Td(
                     A(
                         f"{item['count']} rows",
-                        href=f"/database/{database.id}/rows/{name}",
+                        href=f"{database.url}/rows/{name}",
                         role="button",
                         cls="thin",
                     ),
-                    add_row,
+                    add_row_button,
+                    add_plot_button,
                     cls="top",
                 ),
                 Td(
                     A(
-                        components.get_file_icon(constants.CSV_MIMETYPE),
-                        "CSV",
-                        href=f"/database/{database.id}/csv/{name}",
-                        cls="secondary",
+                        "Download CSV",
+                        href=f"{database.url}/csv/{name}",
+                        role="button",
+                        cls="secondary outline thin",
                     ),
                     A(
-                        components.get_file_icon(constants.JSON_MIMETYPE),
-                        "JSON",
-                        href=f"/database/{database.id}/json/{name}",
-                        cls="secondary",
-                        style="margin-left: 1em;",
+                        "Download JSON",
+                        href=f"{database.url}/json/{name}",
+                        role="button",
+                        cls="secondary outline thin",
                     ),
                     cls="right top",
                 ),

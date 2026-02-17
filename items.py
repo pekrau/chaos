@@ -70,14 +70,7 @@ class Item:
         assert title
         self.frontmatter["title"] = title
         if self.path is None:
-            filename = unicodedata.normalize("NFKD", title).encode("ASCII", "ignore")
-            filename = "".join(
-                [
-                    c if c in constants.FILENAME_CHARACTERS else "-"
-                    for c in filename.decode("utf-8")
-                ]
-            )
-            filename = filename.casefold()
+            filename = normalize(title)
             self._path = constants.DATA_DIR / f"{filename}.md"
             if self.id in lookup:
                 n = 2
@@ -395,7 +388,7 @@ class Database(GenericFile):
 
     @property
     def plots(self):
-        return self.frontmatter.get("plots") or []
+        return self.frontmatter.get("plots") or {}
 
 
 class Graphic(Item):
@@ -574,3 +567,15 @@ def get_statistics():
                 result["# listsets"] += 1
     result["# keywords"] = len(settings.keywords)
     return result
+
+
+def normalize(s):
+    "Normalize string to ASCII, lower case, replacing non-file characters with '-'."
+    result = unicodedata.normalize("NFKD", s).encode("ASCII", "ignore")
+    result = "".join(
+        [
+            c if c in constants.FILENAME_CHARACTERS else "-"
+            for c in result.decode("utf-8")
+        ]
+    )
+    return result.casefold()

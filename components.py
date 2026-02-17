@@ -97,10 +97,10 @@ def get_file_icon(mimetype=None, title="", **kwargs):
             return get_icon("file-earmark-word.svg", title=title, **kwargs)
         case constants.EPUB_MIMETYPE:
             return get_icon("file-earmark-text.svg", title=title, **kwargs)
-        case constants.CSV_MIMETYPE:
-            return get_icon("filetype-csv.svg", title=title, **kwargs)
-        case constants.JSON_MIMETYPE:
-            return get_icon("filetype-json.svg", title=title, **kwargs)
+        # case constants.CSV_MIMETYPE:
+        #     return get_icon("filetype-csv.svg", title=title, **kwargs)
+        # case constants.JSON_MIMETYPE:
+        #     return get_icon("filetype-json.svg", title=title, **kwargs)
     return get_icon("file-earmark-binary.svg", title=title, **kwargs)
 
 

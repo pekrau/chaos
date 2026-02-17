@@ -11,7 +11,7 @@ class Timer:
         self.process_time = time.process_time()
 
     def __str__(self):
-        return ", ".join(self.current.items())
+        return ", ".join([f"{t[0]}: {t[1]}" for t in self.current.items()])
 
     @property
     def elapsed(self):

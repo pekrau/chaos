@@ -237,8 +237,8 @@ def get_items_table_page(title, items, page, href, after=""):
                 Ul(
                     Li(get_nav_menu()),
                     Li(title),
-                    Li(search_form()),
                 ),
+                Ul(Li(search_form())),
             ),
             cls="container",
         ),

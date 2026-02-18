@@ -129,7 +129,7 @@ class Item:
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = copy.deepcopy(self.frontmatter)
-                if keyword := frontmatter.pop("keywords", None):
+                if keywords := frontmatter.pop("keywords", None):
                     frontmatter["keywords"] = list(keywords)
                 outfile.write("---\n")
                 outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))

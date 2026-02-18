@@ -178,12 +178,12 @@ def get(request, image: items.Item):
     "Form for editing metadata for the image."
     assert isinstance(image, items.Image)
     return (
-        Title("Edit"),
+        Title(f"Edit {image.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{image.title}'"),
+                    Li("Edit ", Strong(image.title)),
                 ),
             ),
             cls="container",
@@ -364,18 +364,18 @@ def get(request, image: items.Item):
     if redirect == f"/image/{image.id}":
         redirect = "/images"
     return (
-        Title("Delete"),
+        Title(f"Delete {image.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{image.title}'"),
+                    Li("Delete ", Strong(image.title)),
                 ),
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the image? All data will be lost."),
+            H3("Really delete the image? All data will be lost."),
             Form(
                 Input(
                     type="submit",

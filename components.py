@@ -160,7 +160,6 @@ def search_form(term=None):
             placeholder="Search...",
             aria_label="Search",
             value=term or "",
-            autofocus=True,
         ),
         cls="search",
         role="search",
@@ -178,7 +177,7 @@ def get_item_edit_link(item):
 
 def get_item_copy_link(item):
     return A(
-        get_icon("copy.svg", title=f"Edit {item.name}"),
+        get_icon("copy.svg", title=f"Copy {item.name}"),
         href=f"{item.url}/copy",
     )
 
@@ -249,8 +248,8 @@ def get_items_table_page(title, items, page, href, after=""):
 
 
 def get_text_card(item):
-    if item.text:
-        return Card(NotStr(marko.convert(item.text)))
+    if text := item.text:
+        return Card(NotStr(marko.convert(text)))
     else:
         return Card(I("No text."))
 

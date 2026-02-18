@@ -1,5 +1,6 @@
 "Item class and functions."
 
+import copy
 import datetime
 import mimetypes
 import os
@@ -84,7 +85,7 @@ class Item:
     @property
     def keywords(self):
         # This is a set, not a list.
-        return self.frontmatter["keywords"]
+        return self.frontmatter.get("keywords") or set()
 
     @keywords.setter
     def keywords(self, keywords):
@@ -127,8 +128,9 @@ class Item:
         "Write the item to file."
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
-                frontmatter = self.frontmatter.copy()
-                frontmatter["keywords"] = list(frontmatter.pop("keywords", list()))
+                frontmatter = copy.deepcopy(self.frontmatter)
+                if keyword := frontmatter.pop("keywords", None):
+                    frontmatter["keywords"] = list(keywords)
                 outfile.write("---\n")
                 outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
                 outfile.write("---\n")
@@ -310,14 +312,58 @@ class File(GenericFile):
 class Database(GenericFile):
     "Database (Sqlite3) item class."
 
+    def connect(self, readonly=False):
+        return _DatabaseConnection(self, readonly=readonly)
+
+    def get_schema(self):
+        "Return the definitions of tables and views in the database."
+        result = {}
+        with self.connect(readonly=True) as cnx:
+            names = []
+            for type in ["table", "view"]:
+                sql = f"SELECT name FROM sqlite_schema WHERE type='{type}'"
+                for (name,) in cnx.execute(sql):
+                    if not name.startswith("_"):
+                        names.append(name)
+            for name in names:
+                columns = {}
+                for row in cnx.execute(f"pragma table_info({name})"):
+                    columns[row[1]] = dict(
+                        type=row[2],
+                        null=not row[3],
+                        default=row[4],
+                        primary=bool(row[5]),
+                    )
+                relation = dict(columns=columns)
+                sql = cnx.execute(
+                    "SELECT sql FROM sqlite_schema WHERE name=?", (name,)
+                ).fetchone()[0]
+                relation["sql"] = sql
+                relation["type"] = sql.split()[1].lower()
+                relation["count"] = cnx.execute(
+                    f"SELECT COUNT(*) FROM {name}"
+                ).fetchone()[0]
+                result[name] = relation
+        return result
+
+    @property
+    def plots(self):
+        return self.frontmatter.get("plots") or {}
+
+
+class _DatabaseConnection:
+
+    def __init__(self, database, readonly=False):
+        self.database = database
+        self.readonly = readonly
+
     def __enter__(self):
-        try:
-            self.cnx
-        except AttributeError:
-            pass
+        if self.readonly:
+            self.cnx = sqlite3.connect(
+                f"file:{self.database.filepath}?mode=ro", uri=True
+            )
         else:
-            raise KeyError("Sqlite connection already open")
-        self.cnx = sqlite3.connect(self.filepath)
+            self.cnx = sqlite3.connect(self.database.filepath)
         return self.cnx
 
     def __exit__(self, etyp, einst, etb):
@@ -326,69 +372,6 @@ class Database(GenericFile):
         else:
             self.cnx.rollback()
         self.cnx.close()
-        del self.cnx
-
-    def tables(self):
-        "Return the definitions of all tables."
-        with self as cnx:
-            names = [
-                cursor[0]
-                for cursor in cnx.execute(
-                    "SELECT name FROM sqlite_schema WHERE type='table'"
-                )
-            ]
-        result = {}
-        for name in [n for n in names if not n.startswith("_")]:
-            result[name] = self.get_tableview_info(name)
-        return result
-
-    def views(self):
-        "Return the infos of all views."
-        with self as cnx:
-            names = [
-                cursor[0]
-                for cursor in cnx.execute(
-                    "SELECT name FROM sqlite_schema WHERE type='view'"
-                )
-            ]
-        result = {}
-        for name in [n for n in names if not n.startswith("_")]:
-            result[name] = self.get_tableview_info(name)
-        return result
-
-    def get_tableview_info(self, name):
-        "Get information about the table or view with the given name."
-        try:
-            with self as cnx:
-                cursor = cnx.execute(f"pragma table_info({name})")
-                columns = []
-                for row in cursor:
-                    columns.append(
-                        dict(
-                            name=row[1],
-                            type=row[2],
-                            null=not row[3],
-                            default=row[4],
-                            primary=bool(row[5]),
-                        )
-                    )
-                if not columns:
-                    raise KeyError("no such table or view")
-                result = dict(columns=columns)
-                result["sql"] = cnx.execute(
-                    "SELECT sql FROM sqlite_schema WHERE name=?", (name,)
-                ).fetchone()[0]
-                result["type"] = result["sql"].split()[1].lower()
-                result["count"] = cnx.execute(
-                    f"SELECT COUNT(*) FROM {name}"
-                ).fetchone()[0]
-        except (sqlite3.Error, KeyError) as error:
-            raise errors.Error(error)
-        return result
-
-    @property
-    def plots(self):
-        return self.frontmatter.get("plots") or {}
 
 
 class Graphic(Item):
@@ -452,7 +435,7 @@ def read_items(dirpath=None):
             else:
                 item = Note(path)
             lookup[item.id] = item
-            frontmatter["keywords"] = set(frontmatter.pop("keywords", list()))
+            frontmatter["keywords"] = set(frontmatter.pop("keywords", []))
             item.frontmatter = frontmatter
             item.text = text
     set_all_similarities()

@@ -1,5 +1,6 @@
 "Database item page."
 
+import copy
 import csv
 import datetime
 from http import HTTPStatus as HTTP
@@ -14,6 +15,7 @@ import bokeh.plotting
 import bokeh.resources
 from fasthtml.common import *
 import numpy as np
+import webcolors
 
 import components
 import constants
@@ -135,73 +137,41 @@ async def post(
 def get(database: items.Item):
     "View the metadata and plots for the database."
     assert isinstance(database, items.Database)
-    timer = Timer()
-    if database.plots:
-        cdn = bokeh.resources.CDN.render()
-        scripts = []
-        plots = []
-        for title, plot in database.plots.items():
-            with database as cnx:
-                rows = cnx.execute(
-                    f"SELECT {plot['x']}, {plot['y']} FROM {plot['tableview']}"
-                ).fetchall()
-                x = [r[0] for r in rows]
-                y = [r[1] for r in rows]
-            info = database.get_tableview_info(plot["tableview"])
-            columns = dict([(c["name"], c["type"]) for c in info["columns"]])
-            if columns[plot["x"]] == "TEXT":
-                try:
-                    datetime.date.fromisoformat(x[0])
-                except ValueError:
-                    pass
-                else:
-                    x = np.array(x, dtype=np.datetime64)
-            if columns[plot["y"]] == "TEXT":
-                try:
-                    datetime.date.fromisoformat(y[0])
-                except ValueError:
-                    pass
-                else:
-                    y = np.array(y, dtype=np.datetime64)
-            p = bokeh.plotting.figure(
-                title=title, x_axis_label=plot["x"], y_axis_label=plot["y"]
-            )
-            match plot["type"]:
-                case "line":
-                    p.line(x, y)
-                case "scatter":
-                    p.scatter(x, y)
-                case _:
-                    raise NotImplementedError
-            script, div = bokeh.embed.components(p)
-            plots.append((div, plot))
-            scripts.append(script)
+    schema = database.get_schema()
+    plot_rows = [
+        Tr(
+            Td(
+                A(
+                    plot["title"],
+                    href=f"{database.url}/plot/{name}",
+                )
+            ),
+            Td(
+                schema[plot["relation"]]["type"].capitalize(),
+                " ",
+                Strong(plot["relation"]),
+            ),
+            Td(plot["type"]),
+        )
+        for name, plot in database.plots.items()
+    ]
+    if plot_rows:
         plots_table = Table(
-            Tbody(
-                *[
-                    Tr(
-                        Td(NotStr(d)),
-                        Td(
-                            A(
-                                "Edit",
-                                role="button",
-                                href=f"{database.url}/plot/{p['tableview']}/{p['name']}",
-                            )
-                        ),
-                    )
-                    for d, p in plots
-                ]
-            )
+            Thead(
+                Tr(
+                    Th("Plot"),
+                    Th("Relation"),
+                    Th("Type"),
+                ),
+            ),
+            Tbody(*plot_rows),
         )
     else:
-        cdn = ""
-        scripts = []
         plots_table = I("None.")
-    ic(str(timer))
+
     return (
         Title(database.title),
         Script(src="/clipboard.min.js"),
-        NotStr(cdn),
         Header(
             Nav(
                 Ul(
@@ -215,7 +185,7 @@ def get(database: items.Item):
         ),
         Main(
             components.get_text_card(database),
-            Card(get_database_overview(database, add_plot=True)),
+            Card(get_database_overview(database)),
             Card(
                 Form(
                     Input(type="submit", value="SQL command"),
@@ -248,6 +218,13 @@ def get(database: items.Item):
             Card(
                 Header("Plots"),
                 plots_table,
+                Footer(
+                    Form(
+                        Input(type="submit", value="Add plot"),
+                        action=f"{database.url}/plot",
+                        method="GET",
+                    ),
+                ),
             ),
             Div(
                 components.get_listsets_card(database),
@@ -267,7 +244,6 @@ def get(database: items.Item):
             cls="container",
         ),
         Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
-        NotStr("\n".join(scripts)),
     )
 
 
@@ -277,7 +253,7 @@ def get(database: items.Item):
     assert isinstance(database, items.Database)
     outfile = io.StringIO()
     outfile.write(f"/* Database {database.id} */\n\n")
-    with database as cnx:
+    with database.connect(readonly=True) as cnx:
         for line in cnx.iterdump():
             outfile.write(line)
             outfile.write("\n")
@@ -292,19 +268,19 @@ def get(database: items.Item):
 
 
 @rt("/{database:Item}/row/{table}")
-def get(session, request, database: items.Item, table: str):
+def get(request, database: items.Item, table: str):
     "Add a row to the table."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(table)
+    schema = database.get_schema()
     inputs = []
-    for column in info["columns"]:
-        label = [Strong(column["name"]), ", ", column["type"]]
+    for name, column in schema[table]["columns"].items():
+        label = [Strong(name), ", ", column["type"]]
         if not column["null"]:
             label.append(", NOT NULL")
         if column["primary"]:
             label.append(", PRIMARY KEY")
         kwargs = dict(
-            name=column["name"], required=not column["null"], autofocus=not bool(inputs)
+            name=name, required=not column["null"], autofocus=not bool(inputs)
         )
         if column["type"] == "INTEGER":
             inputs.append((Div(*label), Input(type="number", step="1", **kwargs)))
@@ -330,7 +306,7 @@ def get(session, request, database: items.Item, table: str):
                     A(database.title, href=database.url),
                 ),
                 A(
-                    f"{info['count']} rows",
+                    f"{schema['table']['count']} rows",
                     href=f"{database.url}/rows/{table}",
                     role="button",
                     cls="thin",
@@ -361,28 +337,29 @@ def get(session, request, database: items.Item, table: str):
 def post(session, database: items.Item, table: str, form: dict):
     "Actually add the row to the table."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(table)
+    schema = database.get_schema()
     columns = []
     values = []
     try:
-        for column in info["columns"]:
-            columns.append(column["name"])
+        for name, column in schema[table]["columns"].items():
+            columns.append(name)
+            value = form.get(name)
             if column["type"] == "INTEGER":
-                if value := form[column["name"]]:
+                if value:
                     value = int(value)
                 elif column["null"]:
                     value = None
                 else:
-                    raise ValueError(f"{column['name']} requries a value")
+                    raise ValueError(f"{name} requries a value")
             elif column["type"] == "REAL":
-                if value := form[column["name"]]:
+                if value:
                     value = float(value)
                 elif column["null"]:
                     value = None
                 else:
                     raise ValueError(f"{column['name']} requries a value")
             else:
-                if value := form[column["name"]]:
+                if value:
                     pass
                 elif column["null"]:
                     value = None
@@ -391,7 +368,7 @@ def post(session, database: items.Item, table: str, form: dict):
             values.append(value)
     except (TypeError, ValueError) as error:
         raise errors.Error(error)
-    with database as cnx:
+    with database.connect() as cnx:
         cnx.execute(
             f"INSERT INTO {table} ({','.join(columns)}) VALUES ({','.join('?' * len(values))})",
             values,
@@ -400,14 +377,14 @@ def post(session, database: items.Item, table: str, form: dict):
     return components.redirect(f"{database.url}/row/{table}")
 
 
-@rt("/{database:Item}/rows/{tableview}")
-def get(database: items.Item, tableview: str):
+@rt("/{database:Item}/rows/{relation}")
+def get(database: items.Item, relation: str):
     "Display row values from table or view."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(tableview)
-    title = f"{info['type'].capitalize()} {tableview}"
-    with database as cnx:
-        rows = cnx.execute(f"SELECT * FROM {tableview}").fetchall()
+    schema = database.get_schema()
+    title = f"{schema[relation]['type'].capitalize()} {relation}"
+    with database.connect(readonly=True) as cnx:
+        rows = cnx.execute(f"SELECT * FROM {relation}").fetchall()
     db_items = [
         Div(
             components.get_database_icon(),
@@ -415,13 +392,13 @@ def get(database: items.Item, tableview: str):
         ),
         Div(
             Button(
-                f"{info['count']} rows",
+                f"{schema[relation]['count']} rows",
                 cls="secondary outline thin",
                 style="margin-left: 1em;",
             ),
             A(
                 "Add row",
-                href=f"{database.url}/row/{tableview}",
+                href=f"{database.url}/row/{relation}",
                 role="button",
                 cls="thin",
                 style="margin-left: 1em;",
@@ -430,20 +407,20 @@ def get(database: items.Item, tableview: str):
         Div(
             A(
                 "Download CSV",
-                href=f"{database.url}/csv/{tableview}",
+                href=f"{database.url}/csv/{relation}",
                 role="button",
                 cls="secondary outline thin",
             ),
             A(
                 "Download JSON",
-                href=f"{database.url}/json/{tableview}",
+                href=f"{database.url}/json/{relation}",
                 role="button",
                 cls="secondary outline thin",
             ),
             cls="right",
         ),
     ]
-    table_items = Tr(*[Th(column["name"]) for column in info["columns"]])
+    table_items = Tr(*[Th(name) for name in schema[relation]["columns"]])
     return (
         Title(title),
         Header(
@@ -580,7 +557,7 @@ async def post(request, database: items.Item, table: str, upfile: UploadFile):
             f"{column['name']} {column['type']} {'' if column['null'] else 'NOT NULL'}"
         )
     try:
-        with database as cnx:
+        with database.connect() as cnx:
             sql = ", ".join([c["sql"] for c in columns])
             cnx.execute(f"CREATE TABLE {table} ({sql})")
             sql = f"({', '.join([c['name'] for c in columns])}) VALUES ({', '.join(['?'] * len(columns))})"
@@ -590,43 +567,43 @@ async def post(request, database: items.Item, table: str, upfile: UploadFile):
     return components.redirect(database.url)
 
 
-@rt("/{database:Item}/csv/{tableview:str}")
-def get(database: items.Item, tableview: str):
+@rt("/{database:Item}/csv/{relation:str}")
+def get(database: items.Item, relation: str):
     "Download the table or view in CSV format."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(tableview)
+    schema = database.get_schema()
     outfile = io.StringIO()
     writer = csv.writer(outfile, quoting=csv.QUOTE_MINIMAL)
-    column_names = [column["name"] for column in info["columns"]]
+    column_names = list(schema[relation]["columns"].keys())
     writer.writerow(column_names)
-    with database as cnx:
+    with database.connect(readonly=True) as cnx:
         writer.writerows(
-            cnx.execute(f"SELECT {','.join(column_names)} FROM {tableview}")
+            cnx.execute(f"SELECT {','.join(column_names)} FROM {relation}")
         )
     outfile.seek(0)
     content = outfile.read().encode("utf-8")
     return Response(
         headers={
             "Content-Type": f"{constants.CSV_MIMETYPE}; charset=utf-8",
-            "Content-Disposition": f'attachment; filename="{database.id}_{tableview}.csv"',
+            "Content-Disposition": f'attachment; filename="{database.id}_{relation}.csv"',
         },
         content=content,
         status_code=HTTP.OK,
     )
 
 
-@rt("/{database:Item}/json/{tableview:str}")
-def get(database: items.Item, tableview: str):
+@rt("/{database:Item}/json/{relation:str}")
+def get(database: items.Item, relation: str):
     "Get the table or view in JSON format."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(tableview)
-    column_names = [column["name"] for column in info["columns"]]
-    with database as cnx:
+    schema = database.get_schema()
+    column_names = list(schema[relation]["columns"].keys())
+    with database.connect(readonly=True) as cnx:
         rows = cnx.execute(
-            f"SELECT {','.join(column_names)} FROM {tableview}"
+            f"SELECT {','.join(column_names)} FROM {relation}"
         ).fetchall()
     return {
-        "$id": f"database {database.id}; {info['type']} {tableview}",
+        "$id": f"database {database.id}; {schema[relation]['type']} {relation}",
         "data": [dict(zip(column_names, row)) for row in rows],
     }
 
@@ -639,7 +616,7 @@ def post(database: items.Item, sql: str = None):
     result = []
     error_card = ""
     if sql:
-        with database as cnx:
+        with database.connect() as cnx:
             try:
                 cursor = cnx.execute(sql)
             except sqlite3.Error as error:
@@ -744,7 +721,7 @@ def post(database: items.Item, sql: str):
     "Execute a SQL command and download the result as CSV."
     assert isinstance(database, items.Database)
     assert sql
-    with database as cnx:
+    with database.connect() as cnx:
         try:
             cursor = cnx.execute(sql)
         except sqlite3.Error as error:
@@ -773,7 +750,7 @@ def post(database: items.Item, sql: str, filename: str = ""):
     "Execute a SQL command and return the result as JSON."
     assert isinstance(database, items.Database)
     assert sql
-    with database as cnx:
+    with database.connect() as cnx:
         try:
             cursor = cnx.execute(sql)
         except sqlite3.Error as error:
@@ -794,12 +771,12 @@ def get(request, database: items.Item):
     "Form for editing metadata for the database."
     assert isinstance(database, items.Database)
     return (
-        Title("Edit"),
+        Title(f"Edit {database.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{database.title}'"),
+                    Li("Edit ", Strong(database.title)),
                 ),
             ),
             cls="container",
@@ -1030,7 +1007,7 @@ def get(request, database: items.Item, sql: str = None):
 def post(request, database: items.Item, sql: str, view: str):
     "Actually create a view in the database."
     assert isinstance(database, items.Database)
-    with database as cnx:
+    with database.connect() as cnx:
         cnx.execute(f"CREATE VIEW {view} AS {sql}")
     return components.redirect(database.url)
 
@@ -1043,18 +1020,18 @@ def get(request, database: items.Item):
     if redirect == database.url:
         redirect = "/databases"
     return (
-        Title("Delete"),
+        Title(f"Delete {database.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{database.title}'"),
+                    Li("Delete database ", Strong(database.title)),
                 ),
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the database? All data will be lost."),
+            H3("Really delete the database? All data will be lost."),
             Form(
                 Input(
                     type="submit",
@@ -1090,11 +1067,11 @@ def post(database: items.Item, redirect: str):
     return components.redirect(redirect)
 
 
-@rt("/{database:Item}/plot/{tableview}")
-def get(session, request, database: items.Item, tableview: str):
-    "Add a plot for the given table or view in in the database."
+@rt("/{database:Item}/plot")
+def get(request, database: items.Item):
+    "Add a plot for a relation in the database."
     assert isinstance(database, items.Database)
-    info = database.get_tableview_info(tableview)
+    schema = database.get_schema()
     return (
         Title("Add a plot"),
         Header(
@@ -1108,57 +1085,42 @@ def get(session, request, database: items.Item, tableview: str):
         ),
         Main(
             Card(
-                Header(
-                    components.get_database_icon(),
-                    A(database.title, href=database.url),
-                ),
-                get_database_overview(database),
+                components.get_database_icon(),
+                A(database.title, href=database.url),
             ),
-            Card(
-                Header("X/Y plot"),
-                Form(
-                    Input(type="hidden", name="plot", value="xy"),
-                    Fieldset(
-                        Label(
-                            "Title",
-                            Input(
-                                type="text",
-                                name="title",
-                                required=True,
-                            ),
-                        )
-                    ),
-                    Fieldset(
-                        Label(
-                            "X axis",
-                            Select(
-                                Option("Select column", selected=True, disabled=True),
-                                *[Option(column["name"]) for column in info["columns"]],
-                                name="x",
-                            ),
-                        )
-                    ),
-                    Fieldset(
-                        Label(
-                            "Y axis",
-                            Select(
-                                Option("Select column", selected=True, disabled=True),
-                                *[Option(column["name"]) for column in info["columns"]],
-                                name="y",
-                            ),
-                        )
-                    ),
-                    Fieldset(
-                        Legend("Type"),
-                        Input(type="radio", id="scatter", name="type", value="scatter"),
-                        Label("Scatter", htmlFor="scatter"),
-                        Input(type="radio", id="line", name="type", value="line"),
-                        Label("Line", htmlFor="line"),
-                    ),
-                    Input(type="submit", value="Add X/Y plot"),
-                    action=f"{database.url}/plot/{tableview}",
-                    method="POST",
+            Form(
+                Fieldset(
+                    Label(
+                        "Title",
+                        Input(
+                            type="text",
+                            name="title",
+                            required=True,
+                        ),
+                    )
                 ),
+                Fieldset(
+                    Label(
+                        "Source relation",
+                        Select(
+                            Option("Select table of view", selected=True, disabled=True),
+                            *[Option(name) for name in schema],
+                            name="relation",
+                        ),
+                    ),
+                ),
+                Fieldset(
+                    Legend("Type of plot"),
+                    Input(type="radio", id="xy", name="type", value="xy"),
+                    Label("X/Y plot", htmlFor="xy"),
+                    Input(type="radio", id="barchart", name="type", value="barchart", disabled=True),
+                    Label("barchart", htmlFor="barchart"),
+                    Input(type="radio", id="piechart", name="type", value="piechart", disabled=True),
+                    Label("piechart", htmlFor="piechart"),
+                ),
+                Input(type="submit", value="Add plot"),
+                action=f"{database.url}/plot",
+                method="POST",
             ),
             Form(
                 Input(
@@ -1174,69 +1136,419 @@ def get(session, request, database: items.Item, tableview: str):
     )
 
 
-@rt("/{database:Item}/plot/{tableview}")
-def post(session, request, database: items.Item, tableview: str, form: dict):
-    "Actually add a plot for the given table or view in in the database."
+@rt("/{database:Item}/plot")
+def post(request, database: items.Item, form: dict):
+    "Actually add a plot for a relation in the database."
     assert isinstance(database, items.Database)
-    ic(form)
-    info = database.get_tableview_info(tableview)
+    if not form.get("relation"):
+        raise errors.Error("relation must be provided")
+    if not form.get("type"):
+        raise errors.Error("plot type must be provided")
+    assert form["type"] == "xy", "XXX only X/Y plot implemented currently"
+    relation = form["relation"]
     title = form["title"]
-    if database.frontmatter.get("plots", {}).get(title):
-        raise errors.Error(f"plot '{title}' already defined")
-    result = dict(tableview=tableview, name=items.normalize(title), plot=form["plot"])
-    database.frontmatter.setdefault("plots", {})[title] = result
-    match form["plot"]:
-        case "xy":
-            result["x"] = form["x"]
-            result["y"] = form["y"]
-            result["type"] = form["type"]
-        case "barchart":
-            pass
-        case "piechart":
-            pass
-        case _:
-            raise NotImplementedError
+    name = items.normalize(title)
+    if database.frontmatter.get("plots", {}).get(name):
+        raise errors.Error(f"a plot '{name}' is already defined")
+    result = dict(
+        type=form["type"],
+        relation=relation,
+        title=title,
+        description="",
+        markers=[],
+    )
+    database.frontmatter.setdefault("plots", {})[name] = result
+    database.write()
+    return components.redirect(f"{database.url}/plot/{name}/edit")
+
+
+@rt("/{database:Item}/plot/{plotname}")
+def get(request, database: items.Item, plotname: str):
+    "View the named plot in the database."
+    assert isinstance(database, items.Database)
+    try:
+        plot = database.plots[plotname]
+    except KeyError:
+        raise errors.Error("no such plot", HTTP.NOT_FOUND)
+    assert plot["type"] == "xy", "XXX only X/Y plot implemented currently"
+    schema = database.get_schema()
+    columns = dict(
+        [
+            (name, column["type"])
+            for name, column in schema[plot["relation"]]["columns"].items()
+        ]
+    )
+    with database.connect(readonly=True) as cnx:
+        kwargs = {}
+        markers = []
+        for marker in plot["markers"]:
+            rows = cnx.execute(
+                f"SELECT {marker['x']}, {marker['y']} FROM {plot['relation']}"
+            ).fetchall()
+            x = [r[0] for r in rows]
+            y = [r[1] for r in rows]
+            if columns[marker["x"]] == "TEXT":
+                try:
+                    datetime.date.fromisoformat(x[0])
+                except ValueError:
+                    pass
+                else:
+                    x = np.array(x, dtype=np.datetime64)
+                    kwargs["x_axis_type"] = "datetime"
+            if columns[marker["y"]] == "TEXT":
+                try:
+                    datetime.date.fromisoformat(y[0])
+                except ValueError:
+                    pass
+                else:
+                    y = np.array(y, dtype=np.datetime64)
+                    kwargs["y_axis_type"] = "datetime"
+            markers.append(dict(type=marker["type"], x=x, y=y, color=marker["color"]))
+        figure = bokeh.plotting.figure(title=plot["title"], **kwargs)
+        for marker in markers:
+            match marker["type"]:
+                case "line":
+                    figure.line(marker["x"], marker["y"], color=marker["color"])
+                case "scatter":
+                    figure.scatter(marker["x"], marker["y"], color=marker["color"])
+                case _:
+                    raise NotImplementedError
+        script, div = bokeh.embed.components(figure)
+    if descr := plot.get("description"):
+        decription = Card(NotStr(marko.convert(descr)))
+    else:
+        description = Card(I("No description."))
+    return (
+        Title(plot["title"]),
+        Script(src="/clipboard.min.js"),
+        NotStr(bokeh.resources.CDN.render()),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(Strong(plot["title"])),
+                    Li(
+                        A(
+                            components.get_icon("pencil.svg", title=f"Edit {plotname}"),
+                            href=f"{database.url}/plot/{plotname}/edit",
+                        ),
+                        " ",
+                        A(
+                            components.get_icon("copy.svg", title=f"Copy {plotname}"),
+                            href=f"{database.url}/plot/{plotname}/copy",
+                        ),
+                        " ",
+                        A(
+                            components.get_icon(
+                                "trash.svg", title=f"Delete {plotname}"
+                            ),
+                            href=f"{database.url}/plot/{plotname}/delete",
+                        ),
+                    ),
+                ),
+                Ul(Li(components.search_form())),
+            ),
+            cls="container",
+        ),
+        Main(
+            Card(
+                components.get_database_icon(),
+                A(database.title, href=database.url),
+            ),
+            Card(NotStr(div)),
+            description,
+            cls="container",
+        ),
+        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        NotStr(script),
+    )
+
+
+@rt("/{database:Item}/plot/{plotname}/edit")
+def get(request, database: items.Item, plotname: str):
+    "Edit the named plot in the database."
+    assert isinstance(database, items.Database)
+    schema = database.get_schema()
+    plot = database.plots[plotname]
+    return (
+        Title(f"Edit {plot['title']}"),
+        Script(src="/clipboard.min.js"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li("Edit ", Strong(plotname)),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            Form(
+                Fieldset(
+                    Label(
+                        "Title",
+                        Input(type="text", name="title", value=plot["title"], required=True),
+                    ),
+                    Label(
+                        "Description",
+                        Textarea(plot["description"] or "", name="description")
+                    ),
+                    Label(
+                        "Markers",
+                        Table(
+                            Thead(
+                                Tr(Th("Type"),
+                                   Th("X source"),
+                                   Th("Y source"),
+                                   Th("Color", colspan=2),
+                                   Th("Delete")),
+                            ),
+                            Tbody(
+                                *[Tr(
+                                    Td(marker["type"].capitalize()),
+                                    Td(marker["x"]),
+                                    Td(marker["y"]),
+                                    Td(
+                                        Input(
+                                            type="text",
+                                            name=f"color_text_{pos}",
+                                            value=to_name_color(marker.get("color") or ""),
+                                        ),
+                                    ),
+                                    Td(
+                                        Input(
+                                            type="color",
+                                            name=f"color_palette_{pos}",
+                                            value=to_hex_color(marker.get("color")),
+                                            style="width: 4em;",
+                                        ),
+                                    ),
+                                    Td(
+                                        Input(type="checkbox", name="delete", value=str(pos))
+                                    ),
+                                )
+                                  for pos, marker in enumerate(plot["markers"])]
+                            )
+                        )
+                    )
+                ),
+                Fieldset(
+                    Label(
+                        "Add marker",
+                        Div(
+                            Select(
+                                Option("Type of marker", selected=True, disabled=True),
+                                Option("Scatter", value="scatter"),
+                                Option("Line", value="line"),
+                                name="type",
+                            ),
+                            Select(
+                                Option("X source", selected=True, disabled=True),
+                                *[
+                                    Option(name)
+                                    for name in schema[plot["relation"]]["columns"]
+                                ],
+                                name="x",
+                            ),
+                            Select(
+                                Option("Y source", selected=True, disabled=True),
+                                *[
+                                    Option(name)
+                                    for name in schema[plot["relation"]]["columns"]
+                                ],
+                                name="y",
+                            ),
+                            Input(
+                                type="text",
+                                name="color_text",
+                                placeholder="Color name",
+                            ),
+                            Input(
+                                type="color",
+                                name="color_palette",
+                                style="width: 4em;",
+                            ),
+                            cls="grid",
+                        ),
+                    ),
+                ),
+                Input(type="submit", value="Save"),
+                action=f"{database.url}/plot/{plotname}/edit",
+                method="POST",
+            ),
+            Form(
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
+                ),
+                action=f"{database.url}/plot/{plotname}",
+                method="GET",
+            ),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/plot/{plotname}/edit")
+def post(request, database: items.Item, plotname: str, form: dict):
+    "Actually edit the named plot in the database."
+    assert isinstance(database, items.Database)
+    schema = database.get_schema()
+    plot = database.plots[plotname]
+    plot["title"] = form["title"]
+    plot["description"] = form.get("description") or ""
+
+    # Delete markers.
+    delete = form.get("delete") or []
+    if delete and isinstance(delete, str):
+        delete = [delete]
+    for pos in delete:
+        plot["markers"][int(pos)] = None
+
+    # Modify remaining markers.
+    for pos, marker in enumerate(plot["markers"]):
+        if marker is None:
+            continue
+        marker["color"] = form.get(f"color_text_{pos}") or form.get(f"color_palette_{pos}") or "black"
+
+    # Add new marker.
+    if type := form.get("type"):
+        color = form.get("color_text") or form.get("color_palette") or "black"
+        if not (x := form.get("x")):
+            raise errors.Error("no X source given")
+        if not (y := form.get("y")):
+            raise errors.Error("no Y source given")
+        plot["markers"].append(dict(type=type, x=x, y=y, color=color))
+
+    # Remove deleted markers.
+    plot["markers"] = [m for m in plot["markers"] if m]
+    database.write()
+    return components.redirect(f"{database.url}/plot/{plotname}")
+
+
+@rt("/{database:Item}/plot/{plotname}/copy")
+def get(request, database: items.Item, plotname: str):
+    "Copy the named plot in the database."
+    assert isinstance(database, items.Database)
+    return (
+        Title(f"Copy {plotname}"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(f"Copy plot ", Strong(plotname)),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            Form(
+                Fieldset(
+                    Label(
+                        "Plot title",
+                        Input(
+                            type="text",
+                            name="title",
+                            value=f"Copy of {database.plots[plotname]['title']}",
+                            required=True,
+                        ),
+                    ),
+                ),
+                Input(
+                    type="submit",
+                    value="Copy",
+                ),
+                action=f"{database.url}/plot/{plotname}/copy",
+                method="POST",
+            ),
+            Form(
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
+                ),
+                action=f"{database.url}/plot/{plotname}",
+                method="GET",
+            ),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/plot/{plotname}/copy")
+def post(request, database: items.Item, plotname: str, form: dict):
+    "Actually copy the named plot in the database."
+    assert isinstance(database, items.Database)
+    name = items.normalize(form["title"])
+    if name in database.frontmatter["plots"]:
+        raise errors.Error(f"a plot '{name}' is already defined")
+    plot = copy.deepcopy(database.frontmatter["plots"][plotname])
+    plot["title"] = form["title"]
+    database.frontmatter["plots"][name] = plot
+    database.write()
+    return components.redirect(f"{database.url}/plot/{name}")
+
+
+@rt("/{database:Item}/plot/{plotname}/delete")
+def get(request, database: items.Item, plotname: str):
+    "Ask for confirmation to delete the plot."
+    assert isinstance(database, items.Database)
+    return (
+        Title(f"Delete {plotname}"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(f"Delete ", Strong(plotname)),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            H3("Really delete the plot? All data will be lost."),
+            Form(
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
+                action=f"{database.url}/plot/{plotname}/delete",
+                method="POST",
+            ),
+            Form(
+                Input(
+                    type="submit",
+                    value="Cancel",
+                    cls="secondary",
+                ),
+                action=f"{database.url}/plot/{plotname}",
+                method="GET",
+            ),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/plot/{plotname}/delete")
+def post(database: items.Item, plotname: str):
+    "Actually delete the database."
+    assert isinstance(database, items.Database)
+    database.frontmatter.get("plots", {}).pop(plotname, None)
+    if not database.plots:
+        database.frontmatter.pop("plots", None)
     database.write()
     return components.redirect(database.url)
 
 
-@rt("/{database:Item}/plot/{tableview}/{plotname}")
-def get(session, request, database: items.Item, tableview: str, plotname: str):
-    "Edit the named plot for the given table or view in in the database."
-    assert isinstance(database, items.Database)
-    info = database.get_tableview_info(tableview)
-    raise NotImplementedError
-
-
-@rt("/{database:Item}/plot/{tableview}/{plotname}")
-def post(
-    session, request, database: items.Item, tableview: str, plotname: str, form: dict
-):
-    "Actually ddit the named plot for the given table or view in in the database."
-    assert isinstance(database, items.Database)
-    info = database.get_tableview_info(tableview)
-    raise NotImplementedError
-
-
-def get_database_overview(database, display=False, add_plot=False):
+def get_database_overview(database, display=False):
     "Get an overview of the basic structure of the database."
     rows = []
-    items = list(database.tables().items()) + list(database.views().items())
-    for name, item in items:
-        if add_plot:
-            add_plot_button = A(
-                "Add plot",
-                href=f"{database.url}/plot/{name}",
-                role="button",
-                cls="thin",
-            )
-        else:
-            add_plot_button = ""
+    for name, item in database.get_schema().items():
         spec = [
             Li(
-                f"{r['name']} {r['type']} {not r['null'] and 'NOT NULL' or ''} {r['primary'] and 'PRIMARY KEY' or ''}"
+                f"{column_name} {column['type']} {not column['null'] and 'NOT NULL' or ''} {column['primary'] and 'PRIMARY KEY' or ''}"
             )
-            for r in item["columns"]
+            for column_name, column in item["columns"].items()
         ]
         spec.append(Li(item["sql"]))
         if item["type"] == "table":
@@ -1271,7 +1583,6 @@ def get_database_overview(database, display=False, add_plot=False):
                         cls="thin",
                     ),
                     add_row_button,
-                    add_plot_button,
                     cls="top",
                 ),
                 Td(
@@ -1292,3 +1603,23 @@ def get_database_overview(database, display=False, add_plot=False):
             ),
         )
     return Table(Tbody(*rows))
+
+def to_hex_color(color):
+    "Convert to hex color, if not already."
+    if not color:
+        color = "black"
+    if not color.startswith("#"):
+        try:
+            color = webcolors.name_to_hex(color)
+        except ValueError:
+            color = "black"
+    return color
+
+def to_name_color(color):
+    "Convert to name color, or keep in hex."
+    if color.startswith("#"):
+        try:
+            color = webcolors.hex_to_name(color)
+        except ValueError:
+            pass
+    return color

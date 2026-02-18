@@ -167,12 +167,12 @@ def get(request, file: items.Item):
     "Form for editing metadata for the file."
     assert isinstance(file, items.File)
     return (
-        Title("Edit"),
+        Title(f"Edit {file.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{file.title}'"),
+                    Li("Edit ", Strong(file.title)),
                 ),
             ),
             cls="container",
@@ -348,18 +348,18 @@ def get(request, file: items.Item):
     if redirect == f"/file/{file.id}":
         redirect = "/files"
     return (
-        Title("Delete"),
+        Title(f"Delete {file.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{file.title}'"),
+                    Li("Delete ", Strong(file.title)),
                 ),
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the file? All data will be lost."),
+            H3("Really delete the file? All data will be lost."),
             Form(
                 Input(
                     type="submit",

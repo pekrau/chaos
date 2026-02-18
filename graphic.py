@@ -185,12 +185,12 @@ def get(request, graphic: items.Item):
     "Form for editing a graphic."
     assert isinstance(graphic, items.Graphic)
     return (
-        Title("Edit"),
+        Title(f"Edit {database.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{graphic.title}'"),
+                    Li("Edit ", Strong(graphic.title)),
                 ),
             ),
             cls="container",
@@ -359,18 +359,18 @@ def get(request, graphic: items.Item):
     if redirect == f"/graphic/{graphic.id}":
         redirect = "/graphics"
     return (
-        Title("Delete"),
+        Title(f"Delete {graphic.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{graphic.title}'"),
+                    Li("Delete ", Strong(graphic.title)),
                 ),
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the graphic? All data will be lost."),
+            H3("Really delete the graphic? All data will be lost."),
             Form(
                 Input(
                     type="submit",

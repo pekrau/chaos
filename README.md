@@ -14,6 +14,5 @@ Written in [Python](https://www.python.org/) using:
 - [FastHTML](https://fastht.ml/)
 - [pico CSS](https://picocss.com/)
 - [Marko](https://marko-py.readthedocs.io/)
-- [PyMuPDF](https://pymupdf.readthedocs.io/en/latest/)
 - [PyYAML](https://pypi.org/project/PyYAML/)
-- [EasyOCR](https://www.jaided.ai/easyocr/)
+- [Bokeh](https://bokeh.org/)

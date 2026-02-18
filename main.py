@@ -517,6 +517,7 @@ def get():
         for filename in filenames:
             fp = dp / filename
             disk_usage += os.path.getsize(fp)
+    disk_free = shutil.disk_usage(constants.DATA_DIR).free
     statistics = items.get_statistics()
     usage = Table(
         Thead(Tr(Th("Resource usage", Th("Bytes or #", cls="right")))),
@@ -529,17 +530,21 @@ def get():
                 ),
             ),
             Tr(
-                Td("Disk"),
-                Td(components.numerical(disk_usage), cls="right"),
-            ),
-            Tr(
                 Td("Data directory"),
                 Td(constants.DATA_DIR, cls="right"),
             ),
             Tr(
+                Td("Disk"),
+                Td(
+                    f"{100 * disk_usage / (disk_usage + disk_free):.1f}%",
+                    Span(components.numerical(disk_usage), style="margin-left: 2em;"),
+                    cls="right"),
+            ),
+            Tr(
                 Td("Disk free"),
                 Td(
-                    components.numerical(shutil.disk_usage(constants.DATA_DIR).free),
+                    f"{100 * (disk_free - disk_usage) / (disk_usage + disk_free):.1f}%",
+                    Span(components.numerical(disk_free), style="margin-left: 2em;"),
                     cls="right",
                 ),
             ),

@@ -161,12 +161,12 @@ def get(request, listset: items.Item):
     "Form for editing a listset."
     assert isinstance(listset, items.Listset)
     return (
-        Title("Edit"),
+        Title(f"Edit {listset.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{listset.title}'"),
+                    Li("Edit ", Strong(listset.title)),
                 ),
             ),
             cls="container",
@@ -341,18 +341,18 @@ def get(request, listset: items.Item):
     if redirect == f"/listset/{listset.id}":
         redirect = "/listsets"
     return (
-        Title("Delete"),
+        Title(f"Delete {listset.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{listset.title}'"),
+                    Li("Delete ", Strong(listset.title)),
                 ),
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the listset? All data will be lost."),
+            H3("Really delete the listset? All data will be lost."),
             Form(
                 Input(
                     type="submit",

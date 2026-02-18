@@ -144,12 +144,12 @@ def get(request, note: items.Item):
     "Form for editing a note."
     assert isinstance(note, items.Note)
     return (
-        Title("Edit"),
+        Title(f"Edit {note.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{note.title}'"),
+                    Li("Edit ", Strong(note.title)),
                 ),
             ),
             cls="container",
@@ -294,18 +294,18 @@ def get(request, note: items.Item):
     if redirect == f"/note/{note.id}":
         redirect = "/notes"
     return (
-        Title("Delete"),
+        Title(f"Delete {note.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{note.title}'"),
+                    Li("Delete ", Strong(note.title)),
                 ),
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the note? All data will be lost."),
+            H3("Really delete the note? All data will be lost."),
             Form(
                 Input(
                     type="submit",

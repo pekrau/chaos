@@ -160,12 +160,12 @@ def get(request, link: items.Item):
     "Form for editing a link."
     assert isinstance(link, items.Link)
     return (
-        Title("Edit"),
+        Title(f"Edit {link.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Edit '{link.title}'"),
+                    Li("Edit ", Strong(link.title)),
                 ),
             ),
             cls="container",
@@ -320,18 +320,18 @@ def get(request, link: items.Item):
     if redirect == f"/link/{link.id}":
         redirect = "/links"
     return (
-        Title("Delete"),
+        Title(f"Delete {link.title}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete '{link.title}'"),
+                    Li("Delete ", Strong(link.title)),
                 ),
             ),
             cls="container",
         ),
         Main(
-            P("Really delete the link? All data will be lost."),
+            H3("Really delete the link? All data will be lost."),
             Form(
                 Input(
                     type="submit",

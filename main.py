@@ -436,6 +436,7 @@ def get(term: str, keywords: list[str] = [], type: str = None):
     result.sort(key=lambda e: (e[0], e[1]), reverse=True)
     return (
         Title("Search"),
+        Script(src="/clipboard.min.js"),
         Header(
             Nav(
                 Ul(
@@ -456,6 +457,8 @@ def get(term: str, keywords: list[str] = [], type: str = None):
                         value=term or "",
                         autofocus=True,
                     ),
+                ),
+                Fieldset(
                     Details(
                         Summary("Filter by keywords..."),
                         Ul(
@@ -491,7 +494,7 @@ def get(term: str, keywords: list[str] = [], type: str = None):
                                         t,
                                     )
                                 )
-                                for t in ["Any", "Note", "Link", "Image", "File"]
+                                for t in ["Any", "Note", "Link", "Image", "File", "Database", "Graphic", "Listset"]
                             ]
                         ),
                         cls="dropdown",
@@ -505,6 +508,7 @@ def get(term: str, keywords: list[str] = [], type: str = None):
             components.get_items_table([e for s, m, e in result]),
             cls="container",
         ),
+        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
     )
 
 
@@ -567,6 +571,14 @@ def get():
             Tr(
                 Td("# files"),
                 Td(A(statistics["# files"], href="/files"), cls="right"),
+            ),
+            Tr(
+                Td("# databases"),
+                Td(A(statistics["# databases"], href="/databases"), cls="right"),
+            ),
+            Tr(
+                Td("# graphics"),
+                Td(A(statistics["# graphics"], href="/graphics"), cls="right"),
             ),
             Tr(
                 Td("# listsets"),

@@ -534,6 +534,8 @@ def get_statistics():
         "# links": 0,
         "# images": 0,
         "# files": 0,
+        "# databases": 0,
+        "# graphics": 0,
         "# listsets": 0,
     }
     for item in lookup.values():
@@ -546,6 +548,10 @@ def get_statistics():
                 result["# images"] += 1
             case "File":
                 result["# files"] += 1
+            case "Database":
+                result["# databases"] += 1
+            case "Graphic":
+                result["# graphics"] += 1
             case "Listset":
                 result["# listsets"] += 1
     result["# keywords"] = len(settings.keywords)

@@ -306,7 +306,7 @@ def get(request, database: items.Item, table: str):
                     A(database.title, href=database.url),
                 ),
                 A(
-                    f"{schema['table']['count']} rows",
+                    f"{schema[table]['count']} rows",
                     href=f"{database.url}/rows/{table}",
                     role="button",
                     cls="thin",

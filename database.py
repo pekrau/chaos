@@ -1180,6 +1180,14 @@ def get(request, database: items.Item, plotname: str):
     )
     with database.connect(readonly=True) as cnx:
         kwargs = {}
+        try:
+            kwargs["width"] = plot["width"]
+        except KeyError:
+            pass
+        try:
+            kwargs["height"] = plot["height"]
+        except KeyError:
+            pass
         markers = []
         for marker in plot["markers"]:
             rows = cnx.execute(
@@ -1293,6 +1301,19 @@ def get(request, database: items.Item, plotname: str):
                         "Description",
                         Textarea(plot["description"] or "", name="description")
                     ),
+                ),
+                Fieldset(
+                    Label(
+                        "Width",
+                        Input(type="number", name="width", min="1", step="1", value=f"{plot.get('width') or ''}"),
+                    ),
+                    Label(
+                        "Height",
+                        Input(type="number", name="height", min="1", step="1", value=f"{plot.get('height') or ''}"),
+                    ),
+                    cls="grid",
+                ),
+                Fieldset(
                     Label(
                         "Markers",
                         Table(
@@ -1398,6 +1419,14 @@ def post(request, database: items.Item, plotname: str, form: dict):
     plot = database.plots[plotname]
     plot["title"] = form["title"]
     plot["description"] = form.get("description") or ""
+    try:
+        plot["width"] = int(form.get("width"))
+    except (TypeError, ValueError):
+        plot.pop("width", None)
+    try:
+        plot["height"] = int(form.get("height"))
+    except (TypeError, ValueError):
+        plot.pop("height", None)
 
     # Delete markers.
     delete = form.get("delete") or []

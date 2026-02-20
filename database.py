@@ -146,12 +146,22 @@ def get(database: items.Item):
                     href=f"{database.url}/plot/{name}",
                 )
             ),
-            Td(
-                schema[plot["relation"]]["type"].capitalize(),
-                " ",
-                Strong(plot["relation"]),
-            ),
             Td(plot["type"]),
+            Td(
+                A(
+                    components.get_icon("pencil.svg", title=f"Edit {name}"),
+                    href=f"{database.url}/plot/{name}/edit",
+                ),
+                A(
+                    components.get_icon("copy.svg", title=f"Copy {name}"),
+                    href=f"{database.url}/plot/{name}/copy",
+                ),
+                A(
+                    components.get_icon("trash.svg", title=f"Delete {name}"),
+                    href=f"{database.url}/plot/{name}/delete",
+                ),
+                cls="right",
+            ),
         )
         for name, plot in database.plots.items()
     ]
@@ -160,8 +170,8 @@ def get(database: items.Item):
             Thead(
                 Tr(
                     Th("Plot"),
-                    Th("Relation"),
                     Th("Type"),
+                    Th(),
                 ),
             ),
             Tbody(*plot_rows),
@@ -1069,7 +1079,7 @@ def post(database: items.Item, redirect: str):
 
 @rt("/{database:Item}/plot")
 def get(request, database: items.Item):
-    "Add a plot for a relation in the database."
+    "Add a plot in the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     return (
@@ -1100,22 +1110,24 @@ def get(request, database: items.Item):
                     )
                 ),
                 Fieldset(
-                    Label(
-                        "Source relation",
-                        Select(
-                            Option("Select table of view", selected=True, disabled=True),
-                            *[Option(name) for name in schema],
-                            name="relation",
-                        ),
-                    ),
-                ),
-                Fieldset(
                     Legend("Type of plot"),
                     Input(type="radio", id="xy", name="type", value="xy"),
                     Label("X/Y plot", htmlFor="xy"),
-                    Input(type="radio", id="barchart", name="type", value="barchart", disabled=True),
+                    Input(
+                        type="radio",
+                        id="barchart",
+                        name="type",
+                        value="barchart",
+                        disabled=True,
+                    ),
                     Label("barchart", htmlFor="barchart"),
-                    Input(type="radio", id="piechart", name="type", value="piechart", disabled=True),
+                    Input(
+                        type="radio",
+                        id="piechart",
+                        name="type",
+                        value="piechart",
+                        disabled=True,
+                    ),
                     Label("piechart", htmlFor="piechart"),
                 ),
                 Input(type="submit", value="Add plot"),
@@ -1138,21 +1150,17 @@ def get(request, database: items.Item):
 
 @rt("/{database:Item}/plot")
 def post(request, database: items.Item, form: dict):
-    "Actually add a plot for a relation in the database."
+    "Actually add a plot in the database."
     assert isinstance(database, items.Database)
-    if not form.get("relation"):
-        raise errors.Error("relation must be provided")
     if not form.get("type"):
         raise errors.Error("plot type must be provided")
     assert form["type"] == "xy", "XXX only X/Y plot implemented currently"
-    relation = form["relation"]
     title = form["title"]
     name = items.normalize(title)
     if database.frontmatter.get("plots", {}).get(name):
         raise errors.Error(f"a plot '{name}' is already defined")
     result = dict(
         type=form["type"],
-        relation=relation,
         title=title,
         description="",
         markers=[],
@@ -1172,12 +1180,6 @@ def get(request, database: items.Item, plotname: str):
         raise errors.Error("no such plot", HTTP.NOT_FOUND)
     assert plot["type"] == "xy", "XXX only X/Y plot implemented currently"
     schema = database.get_schema()
-    columns = dict(
-        [
-            (name, column["type"])
-            for name, column in schema[plot["relation"]]["columns"].items()
-        ]
-    )
     with database.connect(readonly=True) as cnx:
         kwargs = {}
         try:
@@ -1190,12 +1192,10 @@ def get(request, database: items.Item, plotname: str):
             pass
         markers = []
         for marker in plot["markers"]:
-            rows = cnx.execute(
-                f"SELECT {marker['x']}, {marker['y']} FROM {plot['relation']}"
-            ).fetchall()
+            x_relation, x_column = marker["x"].split(" / ")
+            rows = cnx.execute(f"SELECT {x_column} FROM {x_relation}").fetchall()
             x = [r[0] for r in rows]
-            y = [r[1] for r in rows]
-            if columns[marker["x"]] == "TEXT":
+            if schema[x_relation]["columns"][x_column]["type"] == "TEXT":
                 try:
                     datetime.date.fromisoformat(x[0])
                 except ValueError:
@@ -1203,7 +1203,10 @@ def get(request, database: items.Item, plotname: str):
                 else:
                     x = np.array(x, dtype=np.datetime64)
                     kwargs["x_axis_type"] = "datetime"
-            if columns[marker["y"]] == "TEXT":
+            y_relation, y_column = marker["y"].split(" / ")
+            rows = cnx.execute(f"SELECT {y_column} FROM {y_relation}").fetchall()
+            y = [r[0] for r in rows]
+            if schema[y_relation]["columns"][y_column]["type"] == "TEXT":
                 try:
                     datetime.date.fromisoformat(y[0])
                 except ValueError:
@@ -1240,12 +1243,10 @@ def get(request, database: items.Item, plotname: str):
                             components.get_icon("pencil.svg", title=f"Edit {plotname}"),
                             href=f"{database.url}/plot/{plotname}/edit",
                         ),
-                        " ",
                         A(
                             components.get_icon("copy.svg", title=f"Copy {plotname}"),
                             href=f"{database.url}/plot/{plotname}/copy",
                         ),
-                        " ",
                         A(
                             components.get_icon(
                                 "trash.svg", title=f"Delete {plotname}"
@@ -1278,6 +1279,10 @@ def get(request, database: items.Item, plotname: str):
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     plot = database.plots[plotname]
+    sources = []
+    for name, relation in schema.items():
+        for column in relation["columns"]:
+            sources.append(f"{name} / {column}")
     return (
         Title(f"Edit {plot['title']}"),
         Script(src="/clipboard.min.js"),
@@ -1295,21 +1300,38 @@ def get(request, database: items.Item, plotname: str):
                 Fieldset(
                     Label(
                         "Title",
-                        Input(type="text", name="title", value=plot["title"], required=True),
+                        Input(
+                            type="text",
+                            name="title",
+                            value=plot["title"],
+                            required=True,
+                        ),
                     ),
                     Label(
                         "Description",
-                        Textarea(plot["description"] or "", name="description")
+                        Textarea(plot["description"] or "", name="description"),
                     ),
                 ),
                 Fieldset(
                     Label(
                         "Width",
-                        Input(type="number", name="width", min="1", step="1", value=f"{plot.get('width') or ''}"),
+                        Input(
+                            type="number",
+                            name="width",
+                            min="1",
+                            step="1",
+                            value=f"{plot.get('width') or ''}",
+                        ),
                     ),
                     Label(
                         "Height",
-                        Input(type="number", name="height", min="1", step="1", value=f"{plot.get('height') or ''}"),
+                        Input(
+                            type="number",
+                            name="height",
+                            min="1",
+                            step="1",
+                            value=f"{plot.get('height') or ''}",
+                        ),
                     ),
                     cls="grid",
                 ),
@@ -1318,39 +1340,49 @@ def get(request, database: items.Item, plotname: str):
                         "Markers",
                         Table(
                             Thead(
-                                Tr(Th("Type"),
-                                   Th("X source"),
-                                   Th("Y source"),
-                                   Th("Color", colspan=2),
-                                   Th("Delete")),
+                                Tr(
+                                    Th("Type"),
+                                    Th("X source"),
+                                    Th("Y source"),
+                                    Th("Color", colspan=2),
+                                    Th("Delete"),
+                                ),
                             ),
                             Tbody(
-                                *[Tr(
-                                    Td(marker["type"].capitalize()),
-                                    Td(marker["x"]),
-                                    Td(marker["y"]),
-                                    Td(
-                                        Input(
-                                            type="text",
-                                            name=f"color_text_{pos}",
-                                            value=to_name_color(marker.get("color") or ""),
+                                *[
+                                    Tr(
+                                        Td(marker["type"].capitalize()),
+                                        Td(marker["x"]),
+                                        Td(marker["y"]),
+                                        Td(
+                                            Input(
+                                                type="text",
+                                                name=f"color_text_{pos}",
+                                                value=to_name_color(
+                                                    marker.get("color") or ""
+                                                ),
+                                            ),
                                         ),
-                                    ),
-                                    Td(
-                                        Input(
-                                            type="color",
-                                            name=f"color_palette_{pos}",
-                                            value=to_hex_color(marker.get("color")),
-                                            style="width: 4em;",
+                                        Td(
+                                            Input(
+                                                type="color",
+                                                name=f"color_palette_{pos}",
+                                                value=to_hex_color(marker.get("color")),
+                                                style="width: 4em;",
+                                            ),
                                         ),
-                                    ),
-                                    Td(
-                                        Input(type="checkbox", name="delete", value=str(pos))
-                                    ),
-                                )
-                                  for pos, marker in enumerate(plot["markers"])]
-                            )
-                        )
+                                        Td(
+                                            Input(
+                                                type="checkbox",
+                                                name="delete",
+                                                value=str(pos),
+                                            )
+                                        ),
+                                    )
+                                    for pos, marker in enumerate(plot["markers"])
+                                ]
+                            ),
+                        ),
                     )
                 ),
                 Fieldset(
@@ -1365,18 +1397,12 @@ def get(request, database: items.Item, plotname: str):
                             ),
                             Select(
                                 Option("X source", selected=True, disabled=True),
-                                *[
-                                    Option(name)
-                                    for name in schema[plot["relation"]]["columns"]
-                                ],
+                                *[Option(s) for s in sources],
                                 name="x",
                             ),
                             Select(
                                 Option("Y source", selected=True, disabled=True),
-                                *[
-                                    Option(name)
-                                    for name in schema[plot["relation"]]["columns"]
-                                ],
+                                *[Option(s) for s in sources],
                                 name="y",
                             ),
                             Input(
@@ -1439,7 +1465,9 @@ def post(request, database: items.Item, plotname: str, form: dict):
     for pos, marker in enumerate(plot["markers"]):
         if marker is None:
             continue
-        marker["color"] = form.get(f"color_text_{pos}") or form.get(f"color_palette_{pos}") or "black"
+        marker["color"] = (
+            form.get(f"color_text_{pos}") or form.get(f"color_palette_{pos}") or "black"
+        )
 
     # Add new marker.
     if type := form.get("type"):
@@ -1633,6 +1661,7 @@ def get_database_overview(database, display=False):
         )
     return Table(Tbody(*rows))
 
+
 def to_hex_color(color):
     "Convert to hex color, if not already."
     if not color:
@@ -1643,6 +1672,7 @@ def to_hex_color(color):
         except ValueError:
             color = "black"
     return color
+
 
 def to_name_color(color):
     "Convert to name color, or keep in hex."

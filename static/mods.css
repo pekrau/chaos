@@ -21,14 +21,14 @@
     margin: 2px;
 }
 
+.icon {
+    background-color: white;
+    margin: 2px 8px 2px 4px;
+}
+
 img.white {
     background-color: white;
     padding: 1px;
-}
-
-img.icon {
-    background-color: white;
-    margin: 2px 8px 2px 0px;
 }
 
 img.display {

@@ -168,56 +168,37 @@ def search_form(term=None):
     )
 
 
-def get_item_edit_link(item):
-    return A(
-        get_icon("pencil.svg", title=f"Edit {item.name}"),
-        href=f"{item.url}/edit",
-    )
-
-
-def get_item_copy_link(item):
-    return A(
-        get_icon("copy.svg", title=f"Copy {item.name}"),
-        href=f"{item.url}/copy",
-    )
-
-
-def get_item_id_to_clipboard(item):
-    return get_icon(
-        "info-square.svg",
-        title="Copy identifier to clipboard",
-        cls="icon to_clipboard",
-        data_clipboard_text=item.id,
-    )
-
-
-def get_item_md_link_to_clipboard(item):
-    return get_icon(
-        "markdown.svg",
-        title="Copy Markdown link to clipboard",
-        cls="icon to_clipboard",
-        data_clipboard_text=f"[{item.title}]({item.url})",
-    )
-
-
-def get_item_delete_link(item):
-    return A(
-        get_icon("trash.svg", title=f"Delete {item.name}"),
-        href=f"{item.url}/delete",
-    )
-
-
 def get_item_links(item):
     return [
-        get_item_edit_link(item),
-        " ",
-        get_item_copy_link(item),
-        " ",
-        get_item_id_to_clipboard(item),
-        " ",
-        get_item_md_link_to_clipboard(item),
-        " ",
-        get_item_delete_link(item),
+        A(
+            get_icon("pencil.svg", title=f"Edit {item.name}"),
+            href=f"{item.url}/edit",
+        ),
+        A(
+            get_icon("copy.svg", title=f"Copy {item.name}"),
+            href=f"{item.url}/copy",
+        ),
+        A(
+            get_icon("trash.svg", title=f"Delete {item.name}"),
+            href=f"{item.url}/delete",
+        ),
+    ] + get_item_clipboards(item)
+
+
+def get_item_clipboards(item):
+    return [
+        get_icon(
+            "info-square.svg",
+            title="Copy identifier to clipboard",
+            cls="icon to_clipboard",
+            data_clipboard_text=item.id,
+        ),
+        get_icon(
+            "markdown.svg",
+            title="Copy Markdown link to clipboard",
+            cls="icon to_clipboard",
+            data_clipboard_text=f"[{item.title}]({item.url})",
+        ),
     ]
 
 
@@ -344,7 +325,7 @@ def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
                 Tr(
                     Td(icon, A(item.title, href=item.url)),
                     Td(get_keywords_links(item, limit=True)),
-                    Td(*get_item_links(item), cls="right"),
+                    Td(*get_item_clipboards(item), cls="right"),
                 )
             )
     if rows:

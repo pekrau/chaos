@@ -494,7 +494,16 @@ def get(term: str, keywords: list[str] = [], type: str = None):
                                         t,
                                     )
                                 )
-                                for t in ["Any", "Note", "Link", "Image", "File", "Database", "Graphic", "Listset"]
+                                for t in [
+                                    "Any",
+                                    "Note",
+                                    "Link",
+                                    "Image",
+                                    "File",
+                                    "Database",
+                                    "Graphic",
+                                    "Listset",
+                                ]
                             ]
                         ),
                         cls="dropdown",
@@ -542,7 +551,8 @@ def get():
                 Td(
                     f"{100 * disk_usage / (disk_usage + disk_free):.1f}%",
                     Span(components.numerical(disk_usage), style="margin-left: 2em;"),
-                    cls="right"),
+                    cls="right",
+                ),
             ),
             Tr(
                 Td("Disk free"),

@@ -27,26 +27,7 @@ def get(request):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        placeholder="Title...",
-                        required=True,
-                        autofocus=True,
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=list())),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(None)),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(None),
                 Input(
                     type="href",
                     name="href",
@@ -65,15 +46,7 @@ def get(request):
                 action="/link/",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -171,26 +144,7 @@ def get(request, link: items.Item):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        value=link.title,
-                        placeholder="Title...",
-                        required=True,
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(link.keywords)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(link)),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(link),
                 Input(
                     type="href",
                     name="href",
@@ -203,7 +157,6 @@ def get(request, link: items.Item):
                     name="text",
                     rows=10,
                     placeholder="Text...",
-                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -212,15 +165,7 @@ def get(request, link: items.Item):
                 action=f"{link.url}/edit",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -282,15 +227,7 @@ def get(request, link: items.Item):
                 action=f"{link.url}/copy",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -332,26 +269,18 @@ def get(request, link: items.Item):
             H3("Really delete the link? All data will be lost."),
             Form(
                 Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
-                Input(
                     type="hidden",
                     name="redirect",
                     value=redirect,
                 ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
                 action=f"{link.url}/delete",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )

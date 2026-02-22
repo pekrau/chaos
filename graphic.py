@@ -31,26 +31,7 @@ def get(request):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        placeholder="Title...",
-                        required=True,
-                        autofocus=True,
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(None)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=list())),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(None),
                 Textarea(
                     name="text",
                     rows=10,
@@ -76,15 +57,7 @@ def get(request):
                 action="/graphic/",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -196,32 +169,12 @@ def get(request, graphic: items.Item):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        value=graphic.title,
-                        placeholder="Title...",
-                        required=True,
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(graphic)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(graphic.keywords)),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(graphic),
                 Textarea(
                     graphic.text,
                     name="text",
                     rows=10,
                     placeholder="Text...",
-                    autofocus=True,
                 ),
                 Input(
                     type="text",
@@ -242,15 +195,7 @@ def get(request, graphic: items.Item):
                 action=f"{graphic.url}/edit",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -320,15 +265,7 @@ def get(request, graphic: items.Item):
                 action=f"{graphic.url}/copy",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -371,26 +308,18 @@ def get(request, graphic: items.Item):
             H3("Really delete the graphic? All data will be lost."),
             Form(
                 Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
-                Input(
                     type="hidden",
                     name="redirect",
                     value=redirect,
                 ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
                 action=f"{graphic.url}/delete",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )

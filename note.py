@@ -28,26 +28,7 @@ def get(request):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        placeholder="Title...",
-                        required=True,
-                        autofocus=True,
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(None)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=list())),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(None),
                 Textarea(
                     name="text",
                     rows=10,
@@ -60,15 +41,7 @@ def get(request):
                 action="/note/",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -155,32 +128,12 @@ def get(request, note: items.Item):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        value=note.title,
-                        placeholder="Title...",
-                        required=True,
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(note)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(note.keywords)),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(note),
                 Textarea(
                     note.text,
                     name="text",
                     rows=10,
                     placeholder="Text...",
-                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -189,15 +142,7 @@ def get(request, note: items.Item):
                 action=f"{note.url}/edit",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -257,15 +202,7 @@ def get(request, note: items.Item):
                 action=f"{note.url}/copy",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -306,26 +243,18 @@ def get(request, note: items.Item):
             H3("Really delete the note? All data will be lost."),
             Form(
                 Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
-                Input(
                     type="hidden",
                     name="redirect",
                     value=redirect,
                 ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
                 action=f"{note.url}/delete",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )

@@ -29,26 +29,7 @@ def get(request):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        placeholder="Title...",
-                        required=True,
-                        autofocus=True,
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(None)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=list())),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(None),
                 Input(
                     type="file",
                     name="upfile",
@@ -66,15 +47,7 @@ def get(request):
                 action="/file/",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -178,26 +151,7 @@ def get(request, file: items.Item):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        value=file.title,
-                        required=True,
-                        placeholder="Title...",
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(file)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(file.keywords)),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(file),
                 Div(
                     Label(
                         Span("Current file: ", A(file.filename, href=file.bin_url)),
@@ -212,7 +166,6 @@ def get(request, file: items.Item):
                     file.text,
                     name="text",
                     rows=10,
-                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -221,15 +174,7 @@ def get(request, file: items.Item):
                 action=f"{file.url}/edit",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -301,15 +246,7 @@ def get(request, file: items.Item):
                 action=f"{file.url}/copy",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -360,26 +297,18 @@ def get(request, file: items.Item):
             H3("Really delete the file? All data will be lost."),
             Form(
                 Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
-                Input(
                     type="hidden",
                     name="redirect",
                     value=redirect,
                 ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
                 action=f"{file.url}/delete",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )

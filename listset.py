@@ -27,26 +27,7 @@ def get(request):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        placeholder="Title...",
-                        required=True,
-                        autofocus=True,
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(None)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=list())),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(None),
                 Textarea(
                     name="text",
                     rows=10,
@@ -64,15 +45,7 @@ def get(request):
                 action="/listset/",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -172,32 +145,12 @@ def get(request, listset: items.Item):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        value=listset.title,
-                        placeholder="Title...",
-                        required=True,
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(listset)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(listset.keywords)),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(listset),
                 Textarea(
                     listset.text,
                     name="text",
                     rows=10,
                     placeholder="Text...",
-                    autofocus=True,
                 ),
                 components.get_items_table(listset.items, edit=True),
                 Input(
@@ -212,15 +165,7 @@ def get(request, listset: items.Item):
                 action=f"{listset.url}/edit",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -303,15 +248,7 @@ def get(request, listset: items.Item):
                 action=f"{listset.url}/copy",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -353,26 +290,18 @@ def get(request, listset: items.Item):
             H3("Really delete the listset? All data will be lost."),
             Form(
                 Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
-                Input(
                     type="hidden",
                     name="redirect",
                     value=redirect,
                 ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
                 action=f"{listset.url}/delete",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )

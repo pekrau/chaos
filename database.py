@@ -42,26 +42,7 @@ def get(request):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        placeholder="Title...",
-                        required=True,
-                        autofocus=True,
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(None)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(keywords=list())),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(None),
                 Input(
                     type="file",
                     name="upfile",
@@ -80,15 +61,7 @@ def get(request):
                 action="/database/",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -328,15 +301,7 @@ def get(request, database: items.Item, table: str):
                 action=f"{database.url}/row/{table}",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=database.url,
-                method="GET",
-            ),
+            components.get_cancel_form(database.url),
             cls="container",
         ),
     )
@@ -514,15 +479,7 @@ def get(request, database: items.Item):
                 action=f"{database.url}/csv",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -708,15 +665,7 @@ def post(database: items.Item, sql: str = None):
                     action=f"{database.url}/execute",
                     method="POST",
                 ),
-                Form(
-                    Input(
-                        type="submit",
-                        value="Cancel",
-                        cls="secondary",
-                    ),
-                    action=database.url,
-                    method="GET",
-                ),
+                components.get_cancel_form(database.url),
             ),
             error_card,
             result_card,
@@ -792,26 +741,7 @@ def get(request, database: items.Item):
         ),
         Main(
             Form(
-                Div(
-                    Input(
-                        type="text",
-                        name="title",
-                        value=database.title,
-                        required=True,
-                        placeholder="Title...",
-                    ),
-                    Details(
-                        Summary("Add to listsets..."),
-                        Ul(*components.get_listsets_dropdown(database)),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Keywords..."),
-                        Ul(*components.get_keywords_dropdown(database.keywords)),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
-                ),
+                components.get_title_listset_keyword_inputs(database),
                 Div(
                     Label(
                         Span(
@@ -829,7 +759,6 @@ def get(request, database: items.Item):
                     database.text,
                     name="text",
                     rows=10,
-                    autofocus=True,
                 ),
                 Input(
                     type="submit",
@@ -838,15 +767,7 @@ def get(request, database: items.Item):
                 action=f"{database.url}/edit",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -918,15 +839,7 @@ def get(request, database: items.Item):
                 action=f"{database.url}/copy",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -997,15 +910,7 @@ def get(request, database: items.Item, sql: str = None):
                 action=f"{database.url}/view",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=database.url,
-                method="GET",
-            ),
+            components.get_cancel_form(database.url),
             cls="container",
         ),
     )
@@ -1042,26 +947,18 @@ def get(request, database: items.Item):
             H3("Really delete the database? All data will be lost."),
             Form(
                 Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
-                Input(
                     type="hidden",
                     name="redirect",
                     value=redirect,
                 ),
+                Input(
+                    type="submit",
+                    value="Yes, delete",
+                ),
                 action=f"{database.url}/delete",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=request.headers["Referer"],
-                method="GET",
-            ),
+            components.get_cancel_form(request.headers["Referer"]),
             cls="container",
         ),
     )
@@ -1132,15 +1029,7 @@ def get(request, database: items.Item):
                 action=f"{database.url}/plot",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=database.url,
-                method="GET",
-            ),
+            components.get_cancel_form(database.url),
             cls="container",
         ),
     )
@@ -1421,15 +1310,7 @@ def get(request, database: items.Item, plotname: str):
                 action=f"{database.url}/plot/{plotname}/edit",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=f"{database.url}/plot/{plotname}",
-                method="GET",
-            ),
+            components.get_cancel_form(f"{database.url}/plot/{plotname}"),
             cls="container",
         ),
     )
@@ -1517,15 +1398,7 @@ def get(request, database: items.Item, plotname: str):
                 action=f"{database.url}/plot/{plotname}/copy",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=f"{database.url}/plot/{plotname}",
-                method="GET",
-            ),
+            components.get_cancel_form(f"{database.url}/plot/{plotname}"),
             cls="container",
         ),
     )
@@ -1570,15 +1443,7 @@ def get(request, database: items.Item, plotname: str):
                 action=f"{database.url}/plot/{plotname}/delete",
                 method="POST",
             ),
-            Form(
-                Input(
-                    type="submit",
-                    value="Cancel",
-                    cls="secondary",
-                ),
-                action=f"{database.url}/plot/{plotname}",
-                method="GET",
-            ),
+            components.get_cancel_form(f"{database.url}/plot/{plotname}"),
             cls="container",
         ),
     )

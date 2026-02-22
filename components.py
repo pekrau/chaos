@@ -414,6 +414,42 @@ def get_listsets_dropdown(item, max_listsets=constants.MAX_LISTSETS):
     ]
 
 
+def get_title_listset_keyword_inputs(item):
+    return Div(
+        Input(
+            type="text",
+            name="title",
+            value=item.title if item else "",
+            placeholder="Title...",
+            required=True,
+            autofocus=item is None,
+        ),
+        Details(
+            Summary("Add to listsets..."),
+            Ul(*get_listsets_dropdown(item)),
+            cls="dropdown",
+        ),
+        Details(
+            Summary("Keywords..."),
+            Ul(*get_keywords_dropdown(item.keywords if item else list())),
+            cls="dropdown",
+        ),
+        cls="grid",
+    )
+
+
+def get_cancel_form(href):
+    return Form(
+        Input(
+            type="submit",
+            value="Cancel",
+            cls="secondary",
+        ),
+        action=href,
+        method="GET",
+    )
+
+
 def get_keywords_links(item, limit=False):
     "Return the list of keywords for the item as links."
     result = [str(A(kw, href=f"/keywords/{kw}")) for kw in sorted(item.keywords)]

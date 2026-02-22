@@ -51,6 +51,7 @@ def set_auth_before(request, session):
         add_toast(session, "Login required.", "error")
         session["path"] = request.url.path
         return redirect("/")
+    ic(request.scope["auth"])
 
 
 def get_app_rt(routes=None):
@@ -133,7 +134,6 @@ def get_nav_menu():
         Ul(
             Li(A("Home", href="/")),
             Li(A("Add...", href="/add/")),
-            Li(A("Keywords", href="/keywords")),
             Li(A("Notes", href="/notes")),
             Li(A("Links", href="/links")),
             Li(A("Images", href="/images")),
@@ -141,7 +141,8 @@ def get_nav_menu():
             Li(A("Databases", href="/databases")),
             Li(A("Graphics", href="/graphics")),
             Li(A("Listsets", href="/listsets")),
-            Li(A("No keywords", href="/nokeywords")),
+            Li(A("Keywords", href="/keywords")),
+            Li(A("Without keywords", href="/withoutkeywords")),
             Li(A("No similar", href="/nosimilar")),
             Li(A("Random", href="/random")),
             Li(A("System", href="/system")),

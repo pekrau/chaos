@@ -80,7 +80,7 @@ def get(request):
 
 @rt("/")
 def post(
-    session,
+    request,
     title: str,
     text: str,
     listsets: list[str] = None,
@@ -89,8 +89,7 @@ def post(
 ):
     "Actually add the listset."
     listset = items.Listset()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    listset.owner = session["auth"]
+    listset.owner = request.scope["auth"]
     listset.title = title.strip() or "no title"
     listset.text = text.strip()
     for id in listsets or list():
@@ -319,12 +318,11 @@ def get(request, listset: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(session, source: items.File, title: str):
+def post(request, source: items.File, title: str):
     "Actually copy the listset."
     assert isinstance(source, items.Listset)
     listset = items.Listset()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    listset.owner = session["auth"]
+    listset.owner = request.scope["auth"]
     listset.title = title.strip()
     listset.text = source.text
     listset.frontmatter["items"] = list(source.frontmatter["items"])

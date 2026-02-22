@@ -81,7 +81,7 @@ def get(request):
 
 @rt("/")
 def post(
-    session,
+    request,
     title: str,
     href: str,
     text: str,
@@ -90,8 +90,7 @@ def post(
 ):
     "Actually add the link."
     link = items.Link()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    link.owner = session["auth"]
+    link.owner = request.scope["auth"]
     link.title = title.strip() or "no title"
     link.href = href.strip() or "/"
     link.text = text.strip()
@@ -298,12 +297,11 @@ def get(request, link: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(session, source: items.File, title: str):
+def post(request, source: items.File, title: str):
     "Actually copy the link."
     assert isinstance(source, items.Link)
     link = items.Link()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    link.owner = session["auth"]
+    link.owner = request.scope["auth"]
     link.title = title.strip()
     link.href = source.href
     link.text = source.text

@@ -22,6 +22,9 @@ import settings
 # Key: item id; value: item instance.
 lookup = {}
 
+# The item types.
+TYPES = ["Note", "Link", "Image", "File", "Database", "Graphic", "Listset"]
+
 
 class Item:
     "Abstract item class."
@@ -528,33 +531,11 @@ def timestamp_utc(timestamp):
 
 
 def get_statistics():
-    result = {
-        "# items": len(lookup),
-        "# notes": 0,
-        "# links": 0,
-        "# images": 0,
-        "# files": 0,
-        "# databases": 0,
-        "# graphics": 0,
-        "# listsets": 0,
-    }
+    result = dict(item=len(lookup))
+    result.update(dict([(type.lower(), 0) for type in TYPES]))
     for item in lookup.values():
-        match item.__class__.__name__:
-            case "Note":
-                result["# notes"] += 1
-            case "Link":
-                result["# links"] += 1
-            case "Image":
-                result["# images"] += 1
-            case "File":
-                result["# files"] += 1
-            case "Database":
-                result["# databases"] += 1
-            case "Graphic":
-                result["# graphics"] += 1
-            case "Listset":
-                result["# listsets"] += 1
-    result["# keywords"] = len(settings.keywords)
+        result[item.__class__.__name__.lower()] += 1
+    result["keyword"] = len(settings.keywords)
     return result
 
 

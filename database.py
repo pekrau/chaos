@@ -96,7 +96,7 @@ def get(request):
 
 @rt("/")
 async def post(
-    session,
+    request,
     title: str,
     text: str,
     upfile: UploadFile = None,
@@ -105,8 +105,7 @@ async def post(
 ):
     "Actually create the database."
     database = items.Database()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    database.owner = session["auth"]
+    database.owner = request.scope["auth"]
     database.title = title.strip()
     database.frontmatter["filename"] = database.id + ".sqlite"
     if upfile.filename:
@@ -934,13 +933,12 @@ def get(request, database: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(session, source: items.Database, title: str):
+def post(request, source: items.Database, title: str):
     "Actually copy the database."
     assert isinstance(source, items.Database)
     databasename = pathlib.Path(source.databasename)
     database = items.Database()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    database.owner = session["auth"]
+    database.owner = request.scope["auth"]
     database.title = title.strip() or databasename.stem
     database.text = source.text
     with open(source.filepath, "rb") as infile:

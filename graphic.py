@@ -92,7 +92,7 @@ def get(request):
 
 @rt("/")
 def post(
-    session,
+    request,
     title: str,
     text: str,
     graphic_type: str,
@@ -102,8 +102,7 @@ def post(
 ):
     "Actually add the graphic."
     graphic = items.Graphic()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    graphic.owner = session["auth"]
+    graphic.owner = request.scope["auth"]
     graphic.title = title.strip() or "no title"
     graphic.text = text.strip()
     if graphic_type == constants.VEGA_LITE:
@@ -336,12 +335,11 @@ def get(request, graphic: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(session, source: items.File, title: str):
+def post(request, source: items.File, title: str):
     "Actually copy the graphic."
     assert isinstance(source, items.Graphic)
     graphic = items.Graphic()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    graphic.owner = session["auth"]
+    graphic.owner = request.scope["auth"]
     graphic.title = title.strip()
     graphic.text = source.text
     graphic.frontmatter["graphic"] = source.graphic

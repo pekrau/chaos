@@ -76,7 +76,7 @@ def get(request):
 
 @rt("/")
 def post(
-    session,
+    request,
     title: str,
     text: str,
     listsets: list[str] = None,
@@ -84,8 +84,7 @@ def post(
 ):
     "Actually add the note."
     note = items.Note()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    note.owner = session["auth"]
+    note.owner = request.scope["auth"]
     note.title = title.strip() or "no title"
     note.text = text.strip()
     for id in listsets or list():
@@ -273,12 +272,11 @@ def get(request, note: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(session, source: items.File, title: str):
+def post(request, source: items.File, title: str):
     "Actually copy the note."
     assert isinstance(source, items.Note)
     note = items.Note()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    note.owner = session["auth"]
+    note.owner = request.scope["auth"]
     note.title = title.strip()
     note.text = source.text
     note.keywords = source.keywords

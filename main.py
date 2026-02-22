@@ -350,11 +350,11 @@ def get(page: int = 1):
     )
 
 
-@rt("/nokeywords")
+@rt("/withoutkeywords")
 def get(page: int = 1):
     "Display items without keywords."
     return components.get_items_table_page(
-        "No keywords",
+        "Without keywords",
         items.get_no_keyword_items(),
         page,
         "/nokeywords",
@@ -417,12 +417,12 @@ def get():
 
 
 @rt("/search")
-def get(term: str, keywords: list[str] = [], type: str = None):
+def get(term: str = None, keywords: list[str] = [], type: str = None):
     "Search the items."
     keywords = set(keywords)
     if type:
         type = type.capitalize()
-        if type not in ("Note", "Link", "Image", "File", "Listset"):
+        if type not in items.TYPES:
             type = None
     result = []
     for item in items.lookup.values():
@@ -430,9 +430,10 @@ def get(term: str, keywords: list[str] = [], type: str = None):
             continue
         if not keywords.issubset(item.keywords):
             continue
-        if score := item.score(term):
-            if score:
-                result.append((score, item.modified_local, item))
+        if term:
+            if score := item.score(term):
+                if score:
+                    result.append((score, item.modified_local, item))
     result.sort(key=lambda e: (e[0], e[1]), reverse=True)
     return (
         Title("Search"),
@@ -562,38 +563,13 @@ def get():
                     cls="right",
                 ),
             ),
-            Tr(
-                Td("# items"),
-                Td(A(statistics["# items"], href="/"), cls="right"),
-            ),
-            Tr(
-                Td("# notes"),
-                Td(A(statistics["# notes"], href="/notes"), cls="right"),
-            ),
-            Tr(
-                Td("# links"),
-                Td(A(statistics["# links"], href="/links"), cls="right"),
-            ),
-            Tr(
-                Td("# images"),
-                Td(A(statistics["# images"], href="/images"), cls="right"),
-            ),
-            Tr(
-                Td("# files"),
-                Td(A(statistics["# files"], href="/files"), cls="right"),
-            ),
-            Tr(
-                Td("# databases"),
-                Td(A(statistics["# databases"], href="/databases"), cls="right"),
-            ),
-            Tr(
-                Td("# graphics"),
-                Td(A(statistics["# graphics"], href="/graphics"), cls="right"),
-            ),
-            Tr(
-                Td("# listsets"),
-                Td(A(statistics["# listsets"], href="/listsets"), cls="right"),
-            ),
+            *[
+                Tr(
+                    Td(f"# {key}s"),
+                    Td(A(statistics[key], href=f"/{key}s"), cls="right"),
+                )
+                for key in statistics
+            ],
         ),
     )
     software = Table(

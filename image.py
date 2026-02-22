@@ -89,7 +89,7 @@ def get(request):
 
 @rt("/")
 async def post(
-    session,
+    request,
     title: str,
     upfile: UploadFile,
     text: str,
@@ -104,8 +104,7 @@ async def post(
     if ext == ".md":
         raise errors.Error("Upload of Markdown file is disallowed.")
     image = items.Image()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    image.owner = session["auth"]
+    image.owner = request.scope["auth"]
     image.title = title.strip() or filename.stem
     filecontent = await upfile.read()
     filename = image.id + ext
@@ -333,13 +332,12 @@ def get(request, image: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(session, source: items.File, title: str):
+def post(request, source: items.File, title: str):
     "Actually copy the image."
     assert isinstance(source, items.Image)
     filename = pathlib.Path(source.filename)
     image = items.Image()
-    # XXX For some reason, 'auth' is not set in 'request.scope'?
-    image.owner = session["auth"]
+    image.owner = request.scope["auth"]
     image.title = title.strip()
     image.text = source.text
     with open(source.filepath, "rb") as infile:

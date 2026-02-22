@@ -51,7 +51,6 @@ def set_auth_before(request, session):
         add_toast(session, "Login required.", "error")
         session["path"] = request.url.path
         return redirect("/")
-    ic(request.scope["auth"])
 
 
 def get_app_rt(routes=None):

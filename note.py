@@ -81,7 +81,7 @@ def get(note: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_note_icon(), Strong(note.title)),
+                    Li(components.get_note_icon(), note.title),
                     Li(*components.get_item_links(note)),
                 ),
                 Ul(Li(components.search_form())),
@@ -121,7 +121,7 @@ def get(request, note: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Edit ", Strong(note.title)),
+                    Li(Strong("Edit "), note.title),
                 ),
             ),
             cls="container",
@@ -234,7 +234,7 @@ def get(request, note: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Delete ", Strong(note.title)),
+                    Li(Strong("Delete "), note.title),
                 ),
             ),
             cls="container",

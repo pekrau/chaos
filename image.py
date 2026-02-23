@@ -109,7 +109,7 @@ def get(image: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_image_icon(), Strong(image.title)),
+                    Li(components.get_image_icon(), image.title),
                     Li(*components.get_item_links(image)),
                 ),
                 Ul(Li(components.search_form())),
@@ -155,7 +155,7 @@ def get(request, image: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Edit ", Strong(image.title)),
+                    Li(Strong("Edit "), image.title),
                 ),
             ),
             cls="container",
@@ -304,7 +304,7 @@ def get(request, image: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Delete ", Strong(image.title)),
+                    Li(Strong("Delete "), image.title),
                 ),
             ),
             cls="container",

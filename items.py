@@ -143,12 +143,16 @@ class Item:
     def delete(self):
         """Delete the item from the file system.
         Remove all similarities to it.
+        Remove from all listsets it is part of.
         Remove from the lookup.
         """
         global lookup
         id = self.id
         for item in lookup.values():
             item.similarities.pop(id, None)
+        for listset in self.listsets:
+            listset.remove(id)
+            listset.write()
         lookup.pop(id)
         self.path.unlink()
 

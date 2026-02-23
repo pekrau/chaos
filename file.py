@@ -102,7 +102,7 @@ def get(file: items.Item):
                     Li(components.get_nav_menu()),
                     Li(
                         components.get_file_icon(file.file_mimetype, title="File"),
-                        Strong(file.title),
+                        file.title,
                     ),
                     Li(*components.get_item_links(file)),
                 ),
@@ -111,7 +111,7 @@ def get(file: items.Item):
             cls="container",
         ),
         Main(
-            Card(Strong(A(file.filename, href=file.bin_url))),
+            Card(A(file.filename, href=file.bin_url)),
             components.get_text_card(file),
             Div(
                 components.get_listsets_card(file),
@@ -144,7 +144,7 @@ def get(request, file: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Edit ", Strong(file.title)),
+                    Li(Strong("Edit "), file.title),
                 ),
             ),
             cls="container",
@@ -288,7 +288,7 @@ def get(request, file: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Delete ", Strong(file.title)),
+                    Li(Strong("Delete "), file.title),
                 ),
             ),
             cls="container",

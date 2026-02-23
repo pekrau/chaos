@@ -88,7 +88,7 @@ def get(link: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_link_icon(), Strong(link.title)),
+                    Li(components.get_link_icon(), link.title),
                     Li(*components.get_item_links(link)),
                 ),
                 Ul(Li(components.search_form())),
@@ -97,12 +97,10 @@ def get(link: items.Item):
         ),
         Main(
             Card(
-                Strong(
-                    A(
-                        link.href,
-                        href=link.href,
-                        target="_blank",
-                    )
+                A(
+                    link.href,
+                    href=link.href,
+                    target="_blank",
                 )
             ),
             components.get_text_card(link),
@@ -137,7 +135,7 @@ def get(request, link: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Edit ", Strong(link.title)),
+                    Li(Strong("Edit "), link.title),
                 ),
             ),
             cls="container",
@@ -260,7 +258,7 @@ def get(request, link: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Delete ", Strong(link.title)),
+                    Li(Strong("Delete "), link.title),
                 ),
             ),
             cls="container",

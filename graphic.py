@@ -112,7 +112,7 @@ def get(graphic: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_graphic_icon(), Strong(graphic.title)),
+                    Li(components.get_graphic_icon(), graphic.title),
                     Li(*components.get_item_links(graphic)),
                 ),
                 Ul(Li(components.search_form())),
@@ -162,7 +162,7 @@ def get(request, graphic: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Edit ", Strong(graphic.title)),
+                    Li(Strong("Edit "), graphic.title),
                 ),
             ),
             cls="container",
@@ -299,7 +299,7 @@ def get(request, graphic: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Delete ", Strong(graphic.title)),
+                    Li(Strong("Delete "), graphic.title),
                 ),
             ),
             cls="container",

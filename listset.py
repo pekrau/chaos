@@ -97,7 +97,7 @@ def get(listset: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_listset_icon(), Strong(listset.title)),
+                    Li(components.get_listset_icon(), listset.title),
                     Li(*components.get_item_links(listset)),
                 ),
                 Ul(Li(components.search_form())),
@@ -138,7 +138,7 @@ def get(request, listset: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Edit ", Strong(listset.title)),
+                    Li(Strong("Edit "), listset.title),
                 ),
             ),
             cls="container",
@@ -281,7 +281,7 @@ def get(request, listset: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Delete ", Strong(listset.title)),
+                    Li(Strong("Delete "), listset.title),
                 ),
             ),
             cls="container",

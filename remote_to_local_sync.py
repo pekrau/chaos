@@ -92,7 +92,10 @@ def update(url, apikey, target_dir):
 if __name__ == "__main__":
     url = os.environ["CHAOS_REMOTE_URL"]
     target_dir = os.environ["CHAOS_DIR"]
-    result = update(url, os.environ["CHAOS_APIKEY"], target_dir)
-    if result:
-        print(f"{timer.now}, instance {url}, target {target_dir}")
-        print(", ".join([f"{k}={v}" for k, v in result.items()]))
+    try:
+        result = update(url, os.environ["CHAOS_APIKEY"], target_dir)
+        if result:
+            print(f"{timer.now}, instance {url}, target {target_dir}")
+            print(", ".join([f"{k}={v}" for k, v in result.items()]))
+    except IOError as error:
+        print(str(error))

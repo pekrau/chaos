@@ -158,7 +158,7 @@ def get(database: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_database_icon(), Strong(database.title)),
+                    Li(components.get_database_icon(), database.title),
                     Li(*components.get_item_links(database)),
                 ),
                 Ul(Li(components.search_form())),
@@ -256,11 +256,11 @@ def get(request, database: items.Item, table: str):
     schema = database.get_schema()
     inputs = []
     for name, column in schema[table]["columns"].items():
-        label = [Strong(name), ", ", column["type"]]
+        label = [Strong(name), " ", column["type"]]
         if not column["null"]:
-            label.append(", NOT NULL")
+            label.append(" NOT NULL")
         if column["primary"]:
-            label.append(", PRIMARY KEY")
+            label.append(" PRIMARY KEY")
         kwargs = dict(
             name=name, required=not column["null"], autofocus=not bool(inputs)
         )
@@ -276,7 +276,7 @@ def get(request, database: items.Item, table: str):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add row to table ", Strong(table)),
+                    Li("Add row to table ", table),
                 ),
             ),
             cls="container",
@@ -401,7 +401,7 @@ def get(database: items.Item, relation: str):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(Strong(title)),
+                    Li(title),
                 ),
                 Ul(Li(components.search_form())),
             ),
@@ -594,7 +594,7 @@ def post(database: items.Item, sql: str = None):
     if column_names or result:
         result_card = Card(
             Header(
-                Strong(f"{len(result)} rows", cls="center"),
+                Span(f"{len(result)} rows", cls="center"),
                 Form(
                     Input(type="hidden", name="sql", value=sql),
                     Input(
@@ -641,7 +641,7 @@ def post(database: items.Item, sql: str = None):
                     Li(components.get_nav_menu()),
                     Li(
                         "SQL command in database ",
-                        Strong(database.title),
+                        database.title,
                     ),
                 ),
             ),
@@ -734,7 +734,7 @@ def get(request, database: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Edit ", Strong(database.title)),
+                    Li(Strong("Edit "), database.title),
                 ),
             ),
             cls="container",
@@ -938,7 +938,7 @@ def get(request, database: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Delete database ", Strong(database.title)),
+                    Li(Strong("Delete "), database.title),
                 ),
             ),
             cls="container",
@@ -1177,7 +1177,7 @@ def get(request, database: items.Item, plotname: str):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Edit ", Strong(plotname)),
+                    Li(Strong("Edit "), plotname),
                 ),
             ),
             cls="container",
@@ -1373,7 +1373,7 @@ def get(request, database: items.Item, plotname: str):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Copy plot ", Strong(plotname)),
+                    Li(Strong("Copy "), plotname),
                 ),
             ),
             cls="container",
@@ -1428,7 +1428,7 @@ def get(request, database: items.Item, plotname: str):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(f"Delete ", Strong(plotname)),
+                    Li(Strong("Delete "), plotname),
                 ),
             ),
             cls="container",

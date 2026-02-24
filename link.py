@@ -27,22 +27,11 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(None),
-                Input(
-                    type="href",
-                    name="href",
-                    placeholder="Href...",
-                    required=True,
-                ),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
-                Input(
-                    type="submit",
-                    value="Add link",
-                ),
+                components.get_title_input(None),
+                Input(type="href", name="href", placeholder="Href...", required=True),
+                components.get_text_input(None),
+                components.get_listset_keyword_inputs(None),
+                Input(type="submit", value="Add link"),
                 action="/link/",
                 method="POST",
             ),
@@ -142,7 +131,7 @@ def get(request, link: items.Item):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(link),
+                components.get_title_input(link),
                 Input(
                     type="href",
                     name="href",
@@ -150,16 +139,9 @@ def get(request, link: items.Item):
                     placeholder="Href...",
                     required=True,
                 ),
-                Textarea(
-                    link.text,
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
-                Input(
-                    type="submit",
-                    value="Save",
-                ),
+                components.get_text_input(link),
+                components.get_listset_keyword_inputs(link),
+                Input(type="submit", value="Save"),
                 action=f"{link.url}/edit",
                 method="POST",
             ),

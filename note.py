@@ -28,16 +28,10 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(None),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
-                Input(
-                    type="submit",
-                    value="Add note",
-                ),
+                components.get_title_input(None),
+                components.get_text_input(None),
+                components.get_listset_keyword_inputs(None),
+                Input(type="submit", value="Add note"),
                 action="/note/",
                 method="POST",
             ),
@@ -128,17 +122,10 @@ def get(request, note: items.Item):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(note),
-                Textarea(
-                    note.text,
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
-                Input(
-                    type="submit",
-                    value="Save",
-                ),
+                components.get_title_input(note),
+                components.get_text_input(note),
+                components.get_listset_keyword_inputs(note),
+                Input(type="submit", value="Save"),
                 action=f"{note.url}/edit",
                 method="POST",
             ),

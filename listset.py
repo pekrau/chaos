@@ -27,21 +27,15 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(None),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
+                components.get_title_input(None),
                 Input(
                     type="text",
                     name="add",
                     placeholder="Identifiers for items to add...",
                 ),
-                Input(
-                    type="submit",
-                    value="Add listset",
-                ),
+                components.get_text_input(None),
+                components.get_listset_keyword_inputs(None),
+                Input(type="submit", value="Add listset"),
                 action="/listset/",
                 method="POST",
             ),
@@ -145,23 +139,16 @@ def get(request, listset: items.Item):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(listset),
-                Textarea(
-                    listset.text,
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
+                components.get_title_input(listset),
                 components.get_items_table(listset.items, edit=True),
                 Input(
                     type="text",
                     name="add",
                     placeholder="Identifiers for items to add...",
                 ),
-                Input(
-                    type="submit",
-                    value="Save",
-                ),
+                components.get_text_input(listset),
+                components.get_listset_keyword_inputs(listset),
+                Input(type="submit", value="Save"),
                 action=f"{listset.url}/edit",
                 method="POST",
             ),

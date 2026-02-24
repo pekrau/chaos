@@ -528,6 +528,20 @@ def get_all():
     return result
 
 
+def get_possible_listsets(item):
+    "Get the listsets this item could be included in."
+    result = []
+    for listset in get_items(Listset):
+        if item in listset:
+            continue
+        if item is listset:
+            continue
+        if isinstance(item, Listset) and item in listset.flattened():
+            continue
+        result.append(listset)
+    return result
+
+
 def timestamp_utc(timestamp):
     return datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC).strftime(
         constants.DATETIME_ISO_FORMAT

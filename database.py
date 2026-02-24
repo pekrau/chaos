@@ -42,22 +42,16 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(None),
+                components.get_title_input(None),
                 Input(
                     type="file",
                     name="upfile",
                     aria_describedby="file-helper",
                 ),
                 Small("Binary Sqlite3 database file (optional).", id="file-helper"),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
-                Input(
-                    type="submit",
-                    value="Add database",
-                ),
+                components.get_text_input(None),
+                components.get_listset_keyword_inputs(None),
+                Input(type="submit", value="Add database"),
                 action="/database/",
                 method="POST",
             ),
@@ -741,29 +735,29 @@ def get(request, database: items.Item):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(database),
+                components.get_title_input(database),
                 Div(
                     Label(
                         Span(
                             "Current database: ",
                             A(database.filename, href=database.bin_url),
                         ),
-                        Input(
-                            type="file",
-                            name="upfile",
+                        Div(
+                            Input(
+                                type="file",
+                                name="upfile",
+                                aria_describedby="file-helper",
+                            ),
+                            Small(
+                                "Binary Sqlite3 database file (optional).",
+                                id="file-helper",
+                            ),
                         ),
                     ),
                     cls="grid",
                 ),
-                Textarea(
-                    database.text,
-                    name="text",
-                    rows=10,
-                ),
-                Input(
-                    type="submit",
-                    value="Save",
-                ),
+                components.get_text_input(database),
+                Input(type="submit", value="Save"),
                 action=f"{database.url}/edit",
                 method="POST",
             ),

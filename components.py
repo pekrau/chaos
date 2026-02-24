@@ -390,51 +390,62 @@ def get_keywords_dropdown(keywords):
     ]
 
 
-def get_listsets_dropdown(item, max_listsets=constants.MAX_LISTSETS):
-    "Return a dropdown of candidate listsets for the item."
-    listsets = []
-    for listset in items.get_items(items.Listset):
-        if item in listset:
-            continue
-        if item is listset:
-            continue
-        if isinstance(item, items.Listset) and item in listset.flattened():
-            continue
-        listsets.append(listset)
-        if max_listsets and len(listsets) >= max_listsets:
-            break
-    return [
-        Li(
-            Label(
-                Input(type="checkbox", name="listsets", value=listset.id),
-                listset.title,
-            )
-        )
-        for listset in listsets
-    ]
+def get_title_input(item):
+    return Input(
+        type="text",
+        name="title",
+        value=item.title if item else "",
+        placeholder="Title...",
+        required=True,
+        autofocus=item is None,
+    )
 
 
-def get_title_listset_keyword_inputs(item):
+def get_text_input(item):
+    return (
+        Textarea(
+            item.text if item else "",
+            name="text",
+            rows=10,
+            placeholder="Text...",
+        ),
+    )
+
+
+def get_listset_keyword_inputs(item):
     return Div(
-        Input(
-            type="text",
-            name="title",
-            value=item.title if item else "",
-            placeholder="Title...",
-            required=True,
-            autofocus=item is None,
-        ),
-        Details(
-            Summary("Add to listsets..."),
-            Ul(*get_listsets_dropdown(item)),
-            cls="dropdown",
-        ),
-        Details(
-            Summary("Keywords..."),
-            Ul(*get_keywords_dropdown(item.keywords if item else list())),
-            cls="dropdown",
-        ),
+        get_listset_input(item),
+        get_keyword_input(item),
         cls="grid",
+    )
+
+
+def get_listset_input(item, max_listsets=constants.MAX_LISTSETS):
+    listsets = items.get_possible_listsets(item)
+    listsets.sort(key=lambda i: i.modified, reverse=True)
+    listsets = listsets[:max_listsets]
+    return Details(
+        Summary("Add to listsets..."),
+        Ul(
+            *[
+                Li(
+                    Label(
+                        Input(type="checkbox", name="listsets", value=listset.id),
+                        listset.title,
+                    )
+                )
+                for listset in listsets
+            ]
+        ),
+        cls="dropdown",
+    )
+
+
+def get_keyword_input(item):
+    return Details(
+        Summary("Keywords..."),
+        Ul(*get_keywords_dropdown(item.keywords if item else list())),
+        cls="dropdown",
     )
 
 

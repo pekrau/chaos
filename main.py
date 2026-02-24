@@ -8,9 +8,11 @@ import os
 import shutil
 import sys
 
+import bokeh
 import fasthtml
 from fasthtml.common import *
 import marko
+import numpy
 import psutil
 import yaml
 
@@ -594,6 +596,14 @@ def get():
             Tr(
                 Td(A("PyYAML", href="https://pypi.org/project/PyYAML/")),
                 Td(yaml.__version__, cls="right"),
+            ),
+            Tr(
+                Td(A("bokeh", href="https://bokeh.org/")),
+                Td(bokeh.__version__, cls="right"),
+            ),
+            Tr(
+                Td(A("NumPy", href="https://numpy.org/")),
+                Td(numpy.__version__, cls="right"),
             ),
         ),
     )

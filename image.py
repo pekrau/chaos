@@ -33,7 +33,7 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(None),
+                components.get_title_input(None),
                 Input(
                     type="file",
                     name="upfile",
@@ -42,15 +42,9 @@ def get(request):
                     aria_describedby="file-helper",
                 ),
                 Small("Image file: PNG, JPEG, WEBP or GIF.", id="file-helper"),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
-                Input(
-                    type="submit",
-                    value="Add image",
-                ),
+                components.get_text_input(None),
+                components.get_listset_keyword_inputs(None),
+                Input(type="submit", value="Add image"),
                 action="/image/",
                 method="POST",
             ),
@@ -162,13 +156,15 @@ def get(request, image: items.Item):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(image),
+                components.get_title_input(image),
                 Div(
                     Div(
                         Input(
                             type="file",
                             name="upfile",
+                            aria_describedby="file-helper",
                         ),
+                        Small("Image file: PNG, JPEG, WEBP or GIF.", id="file-helper"),
                         Img(
                             src=image.bin_url,
                             title=image.filename,
@@ -177,16 +173,9 @@ def get(request, image: items.Item):
                     ),
                     cls="grid",
                 ),
-                Textarea(
-                    image.text,
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
-                Input(
-                    type="submit",
-                    value="Save",
-                ),
+                components.get_text_input(image),
+                components.get_listset_keyword_inputs(image),
+                Input(type="submit", value="Save"),
                 action=f"{image.url}/edit",
                 method="POST",
             ),

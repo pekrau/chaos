@@ -29,21 +29,11 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(None),
-                Input(
-                    type="file",
-                    name="upfile",
-                    required=True,
-                ),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
-                Input(
-                    type="submit",
-                    value="Add file",
-                ),
+                components.get_title_input(None),
+                Input(type="file", name="upfile", required=True),
+                components.get_text_input(None),
+                components.get_listset_keyword_inputs(None),
+                Input(type="submit", value="Add file"),
                 action="/file/",
                 method="POST",
             ),
@@ -151,7 +141,7 @@ def get(request, file: items.Item):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(file),
+                components.get_title_input(file),
                 Div(
                     Label(
                         Span("Current file: ", A(file.filename, href=file.bin_url)),
@@ -162,15 +152,9 @@ def get(request, file: items.Item):
                     ),
                     cls="grid",
                 ),
-                Textarea(
-                    file.text,
-                    name="text",
-                    rows=10,
-                ),
-                Input(
-                    type="submit",
-                    value="Save",
-                ),
+                components.get_text_input(file),
+                components.get_listset_keyword_inputs(file),
+                Input(type="submit", value="Save"),
                 action=f"{file.url}/edit",
                 method="POST",
             ),

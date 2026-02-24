@@ -31,12 +31,7 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(None),
-                Textarea(
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
+                components.get_title_input(None),
                 Select(
                     Option(
                         "Select graphic type", selected=True, disabled=True, value=""
@@ -50,10 +45,9 @@ def get(request):
                     placeholder="Specification...",
                     cls="specification",
                 ),
-                Input(
-                    type="submit",
-                    value="Add graphic",
-                ),
+                components.get_text_input(None),
+                components.get_listset_keyword_inputs(None),
+                Input(type="submit", value="Add graphic"),
                 action="/graphic/",
                 method="POST",
             ),
@@ -169,13 +163,7 @@ def get(request, graphic: items.Item):
         ),
         Main(
             Form(
-                components.get_title_listset_keyword_inputs(graphic),
-                Textarea(
-                    graphic.text,
-                    name="text",
-                    rows=10,
-                    placeholder="Text...",
-                ),
+                components.get_title_input(graphic),
                 Input(
                     type="text",
                     name="graphic",
@@ -188,10 +176,9 @@ def get(request, graphic: items.Item):
                     rows=10,
                     cls="specification",
                 ),
-                Input(
-                    type="submit",
-                    value="Save",
-                ),
+                components.get_text_input(graphic),
+                components.get_listset_keyword_inputs(graphic),
+                Input(type="submit", value="Save"),
                 action=f"{graphic.url}/edit",
                 method="POST",
             ),

@@ -145,14 +145,7 @@ def post(
 ):
     "Actually edit the note."
     assert isinstance(note, items.Note)
-    note.title = title or "no title"
-    note.text = text.strip()
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(note)
-        listset.write()
-    note.keywords = keywords or list()
+    note.edit(title, text, listsets, keywords)
     note.write()
     return components.redirect(note.url)
 
@@ -182,10 +175,7 @@ def get(request, note: items.Item):
                     required=True,
                     autofocus=True,
                 ),
-                Input(
-                    type="submit",
-                    value="Copy note",
-                ),
+                Input(type="submit", value="Copy note"),
                 action=f"{note.url}/copy",
                 method="POST",
             ),
@@ -234,10 +224,7 @@ def get(request, note: items.Item):
                     name="redirect",
                     value=redirect,
                 ),
-                Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
+                Input(type="submit", value="Yes, delete"),
                 action=f"{note.url}/delete",
                 method="POST",
             ),

@@ -453,14 +453,12 @@ def get(term: str = None, keywords: list[str] = [], type: str = None):
         ),
         Main(
             Form(
-                Fieldset(
-                    Input(
-                        type="text",
-                        name="term",
-                        placeholder="Term...",
-                        value=term or "",
-                        autofocus=True,
-                    ),
+                Input(
+                    type="text",
+                    name="term",
+                    placeholder="Term...",
+                    value=term or "",
+                    autofocus=True,
                 ),
                 Fieldset(
                     Details(

@@ -43,12 +43,14 @@ def get(request):
         Main(
             Form(
                 components.get_title_input(None),
-                Input(
-                    type="file",
-                    name="upfile",
-                    aria_describedby="file-helper",
+                Label(
+                    "Optional Sqlite3 database binary file.",
+                    Input(
+                        type="file",
+                        name="upfile",
+                        aria_describedby="file-helper",
+                    ),
                 ),
-                Small("Binary Sqlite3 database file (optional).", id="file-helper"),
                 components.get_text_input(None),
                 components.get_listset_keyword_inputs(None),
                 Input(type="submit", value="Add database"),
@@ -101,7 +103,7 @@ async def post(
 
 @rt("/{database:Item}")
 def get(database: items.Item):
-    "View the metadata and plots for the database."
+    "View the data and the list of plots for the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     plot_rows = [
@@ -161,7 +163,7 @@ def get(database: items.Item):
         ),
         Main(
             components.get_text_card(database),
-            Card(get_database_overview(database)),
+            Card(get_overview(database)),
             Card(
                 Form(
                     Input(type="submit", value="SQL command"),
@@ -169,7 +171,7 @@ def get(database: items.Item):
                     method="POST",
                 ),
                 Form(
-                    Input(type="submit", value="Upload CSV file"),
+                    Input(type="submit", value="Create table from CSV file"),
                     action=f"{database.url}/csv",
                     method="GET",
                 ),
@@ -243,13 +245,13 @@ def get(database: items.Item):
     )
 
 
-@rt("/{database:Item}/row/{table}")
-def get(request, database: items.Item, table: str):
+@rt("/{database:Item}/row/{tablename:str}")
+def get(request, database: items.Item, tablename: str):
     "Add a row to the table."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     inputs = []
-    for name, column in schema[table]["columns"].items():
+    for name, column in schema[tablename]["columns"].items():
         label = [Strong(name), " ", column["type"]]
         if not column["null"]:
             label.append(" NOT NULL")
@@ -265,12 +267,12 @@ def get(request, database: items.Item, table: str):
         else:
             inputs.append((Div(*label), Input(type="text", **kwargs)))
     return (
-        Title(f"Add row to table {table}"),
+        Title(f"Add row to table {tablename}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add row to table ", table),
+                    Li("Add row to table ", tablename),
                 ),
             ),
             cls="container",
@@ -282,17 +284,17 @@ def get(request, database: items.Item, table: str):
                     A(database.title, href=database.url),
                 ),
                 A(
-                    f"{schema[table]['count']} rows",
-                    href=f"{database.url}/rows/{table}",
+                    f"{schema[tablename]['count']} rows",
+                    href=f"{database.url}/rows/{tablename}",
                     role="button",
                     cls="thin",
                 ),
                 cls="grid",
             ),
             Form(
-                Fieldset(*[Label(i[0], i[1]) for i in inputs]),
+                *[Label(i[0], i[1]) for i in inputs],
                 Input(type="submit", value="Add row"),
-                action=f"{database.url}/row/{table}",
+                action=f"{database.url}/row/{tablename}",
                 method="POST",
             ),
             components.get_cancel_form(database.url),
@@ -301,15 +303,15 @@ def get(request, database: items.Item, table: str):
     )
 
 
-@rt("/{database:Item}/row/{table}")
-def post(session, database: items.Item, table: str, form: dict):
+@rt("/{database:Item}/row/{tablename:str}")
+def post(session, database: items.Item, tablename: str, form: dict):
     "Actually add the row to the table."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     columns = []
     values = []
     try:
-        for name, column in schema[table]["columns"].items():
+        for name, column in schema[tablename]["columns"].items():
             columns.append(name)
             value = form.get(name)
             if column["type"] == "INTEGER":
@@ -338,57 +340,22 @@ def post(session, database: items.Item, table: str, form: dict):
         raise errors.Error(error)
     with database.connect() as cnx:
         cnx.execute(
-            f"INSERT INTO {table} ({','.join(columns)}) VALUES ({','.join('?' * len(values))})",
+            f"INSERT INTO {tablename} ({','.join(columns)}) VALUES ({','.join('?' * len(values))})",
             values,
         )
     add_toast(session, "Row added.", "success")
-    return components.redirect(f"{database.url}/row/{table}")
+    return components.redirect(f"{database.url}/row/{tablename}")
 
 
-@rt("/{database:Item}/rows/{relation}")
-def get(database: items.Item, relation: str):
+@rt("/{database:Item}/rows/{relname:str}")
+def get(database: items.Item, relname: str):
     "Display row values from table or view."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
-    title = f"{schema[relation]['type'].capitalize()} {relation}"
+    title = f"{schema[relname]['type'].capitalize()} {relname}"
     with database.connect(readonly=True) as cnx:
-        rows = cnx.execute(f"SELECT * FROM {relation}").fetchall()
-    db_items = [
-        Div(
-            components.get_database_icon(),
-            A(database.title, href=database.url),
-        ),
-        Div(
-            Button(
-                f"{schema[relation]['count']} rows",
-                cls="secondary outline thin",
-                style="margin-left: 1em;",
-            ),
-            A(
-                "Add row",
-                href=f"{database.url}/row/{relation}",
-                role="button",
-                cls="thin",
-                style="margin-left: 1em;",
-            ),
-        ),
-        Div(
-            A(
-                "Download CSV",
-                href=f"{database.url}/csv/{relation}",
-                role="button",
-                cls="secondary outline thin",
-            ),
-            A(
-                "Download JSON",
-                href=f"{database.url}/json/{relation}",
-                role="button",
-                cls="secondary outline thin",
-            ),
-            cls="right",
-        ),
-    ]
-    table_items = Tr(*[Th(name) for name in schema[relation]["columns"]])
+        rows = cnx.execute(f"SELECT * FROM {relname}").fetchall()
+    column_headers = Tr(*[Th(name) for name in schema[relname]["columns"]])
     return (
         Title(title),
         Header(
@@ -403,17 +370,23 @@ def get(database: items.Item, relation: str):
         ),
         Main(
             Card(
-                Header(*db_items, cls="grid"),
+                Header(
+                    Div(
+                        components.get_database_icon(),
+                        A(database.title, href=database.url),
+                    ),
+                    Strong(f"{schema[relname]['count']} rows"),
+                    cls="grid",
+                ),
                 Table(
-                    Thead(table_items),
+                    Thead(column_headers),
                     Tbody(*[Tr(*[Td(i) for i in row]) for row in rows]),
-                    Tfoot(table_items),
+                    Tfoot(column_headers),
                     cls="compressed",
                     id="rows",
                 ),
-                Footer(*db_items, cls="grid"),
-                cls="container",
             ),
+            cls="container",
         ),
         Footer(
             Hr(),
@@ -428,8 +401,102 @@ def get(database: items.Item, relation: str):
     )
 
 
+@rt("/{database:Item}/rows/{tablename:str}/csv")
+def get(request, database: items.Item, tablename: str):
+    "Add data to the table from a CSV file."
+    assert isinstance(database, items.Database)
+    schema = database.get_schema()
+    title = f"Add CSV file to table {tablename}"
+    return (
+        Title(title),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(title),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            Card(
+                Div(
+                    components.get_database_icon(),
+                    A(database.title, href=database.url),
+                ),
+                A(
+                    f"{schema[tablename]['count']} rows",
+                    href=f"{database.url}/rows/{tablename}",
+                    role="button",
+                    cls="thin",
+                ),
+                cls="grid",
+            ),
+            Form(
+                Label(
+                    "CSV file to upload.",
+                    Input(
+                        type="file",
+                        name="upfile",
+                        aria_describedby="file-helper",
+                    ),
+                    Small(
+                        "Header and content must match the table definition.",
+                        id="file-helper",
+                    ),
+                ),
+                Input(type="submit", value="Add CSV file"),
+                action=f"{database.url}/rows/{tablename}/csv",
+                method="POST",
+            ),
+            components.get_cancel_form(database.url),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/rows/{tablename:str}/csv")
+async def post(request, database: items.Item, tablename: str, upfile: UploadFile):
+    "Actually add data to the table from a CSV file."
+    assert isinstance(database, items.Database)
+    table_columns = database.get_schema()[tablename]["columns"]
+    required_table_columns = dict(
+        [(n, c) for n, c in table_columns.items() if not c["null"]]
+    )
+    csv_columns, rows = parse_csv_content(await upfile.read())
+    csv_column_names = [c["name"] for c in csv_columns]
+    csv_data = [dict(zip(csv_column_names, row)) for row in rows]
+    csv_columns = dict([(c["name"], c) for c in csv_columns])
+    used_columns = list(set(table_columns.keys()).intersection(csv_column_names))
+    try:
+        for name, column in required_table_columns.items():
+            if name not in csv_columns:
+                raise KeyError(f"missing column {name} in CSV file")
+            if csv_columns[name]["null"]:
+                raise ValueError(
+                    f"column {name} in CSV file contains disallowed NULL value"
+                )
+            if column["type"] == "TEXT":
+                for data in csv_data:
+                    if not data[name]:
+                        raise ValueError(
+                            f"column {name} in CSV file contains disallowed empty string value"
+                        )
+        for name in used_columns:
+            if table_columns[name]["type"] != csv_columns[name]["type"]:
+                raise ValueError(f"wrong type for column {name}")
+        rows = [[data[n] for n in used_columns] for data in csv_data]
+        with database.connect() as cnx:
+            sql = f"({', '.join(used_columns)}) VALUES ({', '.join(['?'] * len(used_columns))})"
+            cnx.executemany(f"INSERT INTO {tablename} {sql}", rows)
+    except (KeyError, ValueError) as error:
+        raise errors.Error(error)
+    return components.redirect(database.url)
+
+
 @rt("/{database:Item}/csv")
 def get(request, database: items.Item):
+    "Create table from CSV file upload."
     assert isinstance(database, items.Database)
     title = "Upload CSV file"
     return (
@@ -449,27 +516,27 @@ def get(request, database: items.Item):
                 A(database.title, href=database.url),
             ),
             Form(
-                Fieldset(
-                    Label(
-                        "Table name",
-                        Input(
-                            type="text",
-                            name="table",
-                            required=True,
-                        ),
-                    ),
-                    Label(
-                        "CSV file (must contain header)",
-                        Input(
-                            type="file",
-                            name="upfile",
-                        ),
+                Label(
+                    "Table name",
+                    Input(
+                        type="text",
+                        name="tablename",
+                        required=True,
                     ),
                 ),
-                Input(
-                    type="submit",
-                    value="Upload",
+                Label(
+                    "CSV file to upload.",
+                    Input(
+                        type="file",
+                        name="upfile",
+                        aria_describedby="file-helper",
+                    ),
+                    Small(
+                        "Must contain a header. The table definition is inferred from the content.",
+                        id="file-helper",
+                    ),
                 ),
+                Input(type="submit", value="Upload"),
                 action=f"{database.url}/csv",
                 method="POST",
             ),
@@ -480,57 +547,56 @@ def get(request, database: items.Item):
 
 
 @rt("/{database:Item}/csv")
-async def post(request, database: items.Item, table: str, upfile: UploadFile):
+async def post(request, database: items.Item, tablename: str, upfile: UploadFile):
+    """Actually create table from CSV file upload.
+    Determine columns from header and data.
+    """
     assert isinstance(database, items.Database)
     columns, rows = parse_csv_content(await upfile.read())
     try:
         with database.connect() as cnx:
             sql = ", ".join([c["sql"] for c in columns])
-            cnx.execute(f"CREATE TABLE {table} ({sql})")
+            cnx.execute(f"CREATE TABLE {tablename} ({sql})")
             sql = f"({', '.join([c['name'] for c in columns])}) VALUES ({', '.join(['?'] * len(columns))})"
-            cnx.executemany(f"INSERT INTO {table} {sql}", rows)
+            cnx.executemany(f"INSERT INTO {tablename} {sql}", rows)
     except sqlite3.Error as error:
         raise errors.Error(error)
     return components.redirect(database.url)
 
 
-@rt("/{database:Item}/csv/{relation:str}")
-def get(database: items.Item, relation: str):
+@rt("/{database:Item}/csv/{relname:str}")
+def get(database: items.Item, relname: str):
     "Download the table or view in CSV format."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     outfile = io.StringIO()
     writer = csv.writer(outfile, quoting=csv.QUOTE_MINIMAL)
-    column_names = list(schema[relation]["columns"].keys())
+    column_names = list(schema[relname]["columns"].keys())
     writer.writerow(column_names)
     with database.connect(readonly=True) as cnx:
-        writer.writerows(
-            cnx.execute(f"SELECT {','.join(column_names)} FROM {relation}")
-        )
+        writer.writerows(cnx.execute(f"SELECT {','.join(column_names)} FROM {relname}"))
     outfile.seek(0)
     content = outfile.read().encode("utf-8")
     return Response(
         headers={
             "Content-Type": f"{constants.CSV_MIMETYPE}; charset=utf-8",
-            "Content-Disposition": f'attachment; filename="{database.id}_{relation}.csv"',
+            "Content-Disposition": f'attachment; filename="{database.id}_{relname}.csv"',
         },
         content=content,
         status_code=HTTP.OK,
     )
 
 
-@rt("/{database:Item}/json/{relation:str}")
-def get(database: items.Item, relation: str):
+@rt("/{database:Item}/json/{relname:str}")
+def get(database: items.Item, relname: str):
     "Get the table or view in JSON format."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
-    column_names = list(schema[relation]["columns"].keys())
+    column_names = list(schema[relname]["columns"].keys())
     with database.connect(readonly=True) as cnx:
-        rows = cnx.execute(
-            f"SELECT {','.join(column_names)} FROM {relation}"
-        ).fetchall()
+        rows = cnx.execute(f"SELECT {','.join(column_names)} FROM {relname}").fetchall()
     return {
-        "$id": f"database {database.id}; {schema[relation]['type']} {relation}",
+        "$id": f"database {database.id}; {schema[relname]['type']} {relname}",
         "data": [dict(zip(column_names, row)) for row in rows],
     }
 
@@ -558,29 +624,20 @@ def post(database: items.Item, sql: str = None):
                 Span(f"{len(result)} rows", cls="center"),
                 Form(
                     Input(type="hidden", name="sql", value=sql),
-                    Input(
-                        type="submit",
-                        value="Create view",
-                    ),
+                    Input(type="submit", value="Create view"),
                     method="GET",
                     action=f"{database.url}/view",
                 ),
                 Form(
                     Input(type="hidden", name="sql", value=sql),
-                    Input(
-                        type="submit",
-                        value="Download CSV",
-                        cls="secondary outline",
-                    ),
+                    Input(type="submit", value="Download CSV", cls="secondary outline"),
                     method="POST",
                     action=f"{database.url}/execute/csv",
                 ),
                 Form(
                     Input(type="hidden", name="sql", value=sql),
                     Input(
-                        type="submit",
-                        value="Download JSON",
-                        cls="secondary outline",
+                        type="submit", value="Download JSON", cls="secondary outline"
                     ),
                     method="POST",
                     action=f"{database.url}/execute/json",
@@ -614,14 +671,12 @@ def post(database: items.Item, sql: str = None):
                     components.get_database_icon(),
                     A(database.title, href=database.url),
                 ),
-                get_database_overview(database, display=True),
+                get_overview(database, display=True),
             ),
             Card(
                 Form(
-                    Fieldset(
-                        Label("SQL command"),
-                        Input(type="text", name="sql", value=sql or "", autofocus=True),
-                    ),
+                    Label("SQL command"),
+                    Input(type="text", name="sql", value=sql or "", autofocus=True),
                     Input(type="submit", value="Execute"),
                     action=f"{database.url}/execute",
                     method="POST",
@@ -687,7 +742,7 @@ def post(database: items.Item, sql: str, filename: str = ""):
 
 @rt("/{database:Item}/edit")
 def get(request, database: items.Item):
-    "Form for editing metadata for the database."
+    "Form for editing the data for the database."
     assert isinstance(database, items.Database)
     return (
         Title(f"Edit {database.title}"),
@@ -703,27 +758,8 @@ def get(request, database: items.Item):
         Main(
             Form(
                 components.get_title_input(database),
-                Div(
-                    Label(
-                        Span(
-                            "Current database: ",
-                            A(database.filename, href=database.bin_url),
-                        ),
-                        Div(
-                            Input(
-                                type="file",
-                                name="upfile",
-                                aria_describedby="file-helper",
-                            ),
-                            Small(
-                                "Binary Sqlite3 database file (optional).",
-                                id="file-helper",
-                            ),
-                        ),
-                    ),
-                    cls="grid",
-                ),
                 components.get_text_input(database),
+                components.get_listset_keyword_inputs(database),
                 Input(type="submit", value="Save"),
                 action=f"{database.url}/edit",
                 method="POST",
@@ -738,32 +774,13 @@ def get(request, database: items.Item):
 async def post(
     database: items.Item,
     title: str,
-    upfile: UploadFile,
     text: str,
     listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually edit the database."
     assert isinstance(database, items.Database)
-    database.title = title.strip() or database.filename.stem
-    if upfile.filename:
-        ext = pathlib.Path(upfile.filename).suffix
-        if ext == ".md":
-            raise errors.Error("Upload of Markdown file is disallowed.")
-        filecontent = await upfile.read()
-        filename = database.id + ext  # The mimetype may change on file contents update.
-        try:
-            with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
-                outfile.write(filecontent)
-        except OSError as error:
-            raise errors.Error(error)
-    database.text = text.strip()
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(database)
-        listset.write()
-    database.keywords = keywords or list()
+    database.edit(title, text, listsets, keywords)
     database.write()
     return components.redirect(database.url)
 
@@ -793,10 +810,7 @@ def get(request, database: items.Item):
                     required=True,
                     autofocus=True,
                 ),
-                Input(
-                    type="submit",
-                    value="Copy database",
-                ),
+                Input(type="submit", value="Copy database"),
                 action=f"{database.url}/copy",
                 method="POST",
             ),
@@ -847,27 +861,22 @@ def get(request, database: items.Item, sql: str = None):
         ),
         Main(
             Form(
-                Fieldset(
-                    Label(
-                        "SQL select statement",
-                        Input(
-                            type="text",
-                            name="sql",
-                            value=sql or "",
-                        ),
-                    ),
-                    Label(
-                        "View name",
-                        Input(
-                            type="text",
-                            name="view",
-                        ),
+                Label(
+                    "SQL select statement",
+                    Input(
+                        type="text",
+                        name="sql",
+                        value=sql or "",
                     ),
                 ),
-                Input(
-                    type="submit",
-                    value="Create view",
+                Label(
+                    "View name",
+                    Input(
+                        type="text",
+                        name="view",
+                    ),
                 ),
+                Input(type="submit", value="Create view"),
                 action=f"{database.url}/view",
                 method="POST",
             ),
@@ -912,10 +921,7 @@ def get(request, database: items.Item):
                     name="redirect",
                     value=redirect,
                 ),
-                Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
+                Input(type="submit", value="Yes, delete"),
                 action=f"{database.url}/delete",
                 method="POST",
             ),
@@ -955,15 +961,13 @@ def get(request, database: items.Item):
                 A(database.title, href=database.url),
             ),
             Form(
-                Fieldset(
-                    Label(
-                        "Title",
-                        Input(
-                            type="text",
-                            name="title",
-                            required=True,
-                        ),
-                    )
+                Label(
+                    "Title",
+                    Input(
+                        type="text",
+                        name="title",
+                        required=True,
+                    ),
                 ),
                 Fieldset(
                     Legend("Type of plot"),
@@ -1018,7 +1022,7 @@ def post(request, database: items.Item, form: dict):
     return components.redirect(f"{database.url}/plot/{name}/edit")
 
 
-@rt("/{database:Item}/plot/{plotname}")
+@rt("/{database:Item}/plot/{plotname:str}")
 def get(request, database: items.Item, plotname: str):
     "View the named plot in the database."
     assert isinstance(database, items.Database)
@@ -1040,10 +1044,10 @@ def get(request, database: items.Item, plotname: str):
             pass
         markers = []
         for marker in plot["markers"]:
-            x_relation, x_column = marker["x"].split(" / ")
-            rows = cnx.execute(f"SELECT {x_column} FROM {x_relation}").fetchall()
+            x_relname, x_colname = marker["x"].split(" / ")
+            rows = cnx.execute(f"SELECT {x_colname} FROM {x_relname}").fetchall()
             x = [r[0] for r in rows]
-            if schema[x_relation]["columns"][x_column]["type"] == "TEXT":
+            if schema[x_relname]["columns"][x_colname]["type"] == "TEXT":
                 try:
                     datetime.date.fromisoformat(x[0])
                 except ValueError:
@@ -1051,10 +1055,10 @@ def get(request, database: items.Item, plotname: str):
                 else:
                     x = np.array(x, dtype=np.datetime64)
                     kwargs["x_axis_type"] = "datetime"
-            y_relation, y_column = marker["y"].split(" / ")
-            rows = cnx.execute(f"SELECT {y_column} FROM {y_relation}").fetchall()
+            y_relname, y_colname = marker["y"].split(" / ")
+            rows = cnx.execute(f"SELECT {y_colname} FROM {y_relname}").fetchall()
             y = [r[0] for r in rows]
-            if schema[y_relation]["columns"][y_column]["type"] == "TEXT":
+            if schema[y_relname]["columns"][y_colname]["type"] == "TEXT":
                 try:
                     datetime.date.fromisoformat(y[0])
                 except ValueError:
@@ -1121,16 +1125,16 @@ def get(request, database: items.Item, plotname: str):
     )
 
 
-@rt("/{database:Item}/plot/{plotname}/edit")
+@rt("/{database:Item}/plot/{plotname:str}/edit")
 def get(request, database: items.Item, plotname: str):
     "Edit the named plot in the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     plot = database.plots[plotname]
     sources = []
-    for name, relation in schema.items():
+    for relname, relation in schema.items():
         for column in relation["columns"]:
-            sources.append(f"{name} / {column}")
+            sources.append(f"{relname} / {column}")
     return (
         Title(f"Edit {plot['title']}"),
         Script(src="/clipboard.min.js"),
@@ -1145,20 +1149,18 @@ def get(request, database: items.Item, plotname: str):
         ),
         Main(
             Form(
-                Fieldset(
-                    Label(
-                        "Title",
-                        Input(
-                            type="text",
-                            name="title",
-                            value=plot["title"],
-                            required=True,
-                        ),
+                Label(
+                    "Title",
+                    Input(
+                        type="text",
+                        name="title",
+                        value=plot["title"],
+                        required=True,
                     ),
-                    Label(
-                        "Description",
-                        Textarea(plot["description"] or "", name="description"),
-                    ),
+                ),
+                Label(
+                    "Description",
+                    Textarea(plot["description"] or "", name="description"),
                 ),
                 Fieldset(
                     Label(
@@ -1215,7 +1217,9 @@ def get(request, database: items.Item, plotname: str):
                                             Input(
                                                 type="color",
                                                 name=f"color_palette_{pos}",
-                                                value=utils.to_hex_color(marker.get("color")),
+                                                value=utils.to_hex_color(
+                                                    marker.get("color")
+                                                ),
                                                 style="width: 4em;",
                                             ),
                                         ),
@@ -1277,7 +1281,7 @@ def get(request, database: items.Item, plotname: str):
     )
 
 
-@rt("/{database:Item}/plot/{plotname}/edit")
+@rt("/{database:Item}/plot/{plotname:str}/edit")
 def post(request, database: items.Item, plotname: str, form: dict):
     "Actually edit the named plot in the database."
     assert isinstance(database, items.Database)
@@ -1324,7 +1328,7 @@ def post(request, database: items.Item, plotname: str, form: dict):
     return components.redirect(f"{database.url}/plot/{plotname}")
 
 
-@rt("/{database:Item}/plot/{plotname}/copy")
+@rt("/{database:Item}/plot/{plotname:str}/copy")
 def get(request, database: items.Item, plotname: str):
     "Copy the named plot in the database."
     assert isinstance(database, items.Database)
@@ -1341,21 +1345,16 @@ def get(request, database: items.Item, plotname: str):
         ),
         Main(
             Form(
-                Fieldset(
-                    Label(
-                        "Plot title",
-                        Input(
-                            type="text",
-                            name="title",
-                            value=f"Copy of {database.plots[plotname]['title']}",
-                            required=True,
-                        ),
+                Label(
+                    "Plot title",
+                    Input(
+                        type="text",
+                        name="title",
+                        value=f"Copy of {database.plots[plotname]['title']}",
+                        required=True,
                     ),
                 ),
-                Input(
-                    type="submit",
-                    value="Copy",
-                ),
+                Input(type="submit", value="Copy"),
                 action=f"{database.url}/plot/{plotname}/copy",
                 method="POST",
             ),
@@ -1365,7 +1364,7 @@ def get(request, database: items.Item, plotname: str):
     )
 
 
-@rt("/{database:Item}/plot/{plotname}/copy")
+@rt("/{database:Item}/plot/{plotname:str}/copy")
 def post(request, database: items.Item, plotname: str, form: dict):
     "Actually copy the named plot in the database."
     assert isinstance(database, items.Database)
@@ -1379,7 +1378,7 @@ def post(request, database: items.Item, plotname: str, form: dict):
     return components.redirect(f"{database.url}/plot/{name}")
 
 
-@rt("/{database:Item}/plot/{plotname}/delete")
+@rt("/{database:Item}/plot/{plotname:str}/delete")
 def get(request, database: items.Item, plotname: str):
     "Ask for confirmation to delete the plot."
     assert isinstance(database, items.Database)
@@ -1397,10 +1396,7 @@ def get(request, database: items.Item, plotname: str):
         Main(
             H3("Really delete the plot? All data will be lost."),
             Form(
-                Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
+                Input(type="submit", value="Yes, delete"),
                 action=f"{database.url}/plot/{plotname}/delete",
                 method="POST",
             ),
@@ -1410,7 +1406,7 @@ def get(request, database: items.Item, plotname: str):
     )
 
 
-@rt("/{database:Item}/plot/{plotname}/delete")
+@rt("/{database:Item}/plot/{plotname:str}/delete")
 def post(database: items.Item, plotname: str):
     "Actually delete the database."
     assert isinstance(database, items.Database)
@@ -1421,67 +1417,88 @@ def post(database: items.Item, plotname: str):
     return components.redirect(database.url)
 
 
-def get_database_overview(database, display=False):
+def get_overview(database, display=False):
     "Get an overview of the basic structure of the database."
     rows = []
-    for name, item in database.get_schema().items():
+    for relname, relation in database.get_schema().items():
         spec = [
             Li(
                 f"{column_name} {column['type']} {not column['null'] and 'NOT NULL' or ''} {column['primary'] and 'PRIMARY KEY' or ''}"
             )
-            for column_name, column in item["columns"].items()
+            for column_name, column in relation["columns"].items()
         ]
-        spec.append(Li(item["sql"]))
-        if item["type"] == "table":
-            add_row_button = A(
-                "Add row",
-                href=f"{database.url}/row/{name}",
-                role="button",
-                cls="thin",
-            )
+        spec.append(Li(relation["sql"]))
+        if relation["type"] == "table":
+            buttons = [
+                Td(
+                    A(
+                        "Add row",
+                        href=f"{database.url}/row/{relname}",
+                        role="button",
+                        cls="thin",
+                    ),
+                    cls="top right",
+                ),
+                Td(
+                    A(
+                        "Add CSV file",
+                        href=f"{database.url}/rows/{relname}/csv",
+                        role="button",
+                        cls="thin",
+                    ),
+                    cls="top right",
+                ),
+            ]
         else:
-            add_row_button = ""
+            buttons = [Td(), Td()]
 
         rows.append(
             Tr(
-                Th(
-                    f"{item['type'].capitalize()} ",
-                    Strong(name),
+                Td(
+                    f"{relation['type'].capitalize()} ",
+                    Strong(relname),
                     cls="top",
+                    rowspan=2,
                 ),
                 Td(
+                    A(
+                        f"{relation['count']} rows",
+                        href=f"{database.url}/rows/{relname}",
+                        role="button",
+                        cls="thin",
+                    ),
+                ),
+                *buttons,
+            ),
+        )
+        rows.append(
+            Tr(
+                Td(
                     Details(
-                        Summary("Schema", role="button", cls="thin outline"),
+                        Summary("Specification", role="button", cls="thin outline"),
                         Ul(*spec),
                         open=display,
                     ),
                 ),
                 Td(
                     A(
-                        f"{item['count']} rows",
-                        href=f"{database.url}/rows/{name}",
+                        "Download CSV",
+                        href=f"{database.url}/csv/{relname}",
                         role="button",
-                        cls="thin",
+                        cls="secondary outline thin",
                     ),
-                    add_row_button,
-                    cls="top",
+                    cls="top right",
                 ),
                 Td(
                     A(
-                        "Download CSV",
-                        href=f"{database.url}/csv/{name}",
-                        role="button",
-                        cls="secondary outline thin",
-                    ),
-                    A(
                         "Download JSON",
-                        href=f"{database.url}/json/{name}",
+                        href=f"{database.url}/json/{relname}",
                         role="button",
                         cls="secondary outline thin",
                     ),
-                    cls="right top",
+                    cls="top right",
                 ),
-            ),
+            )
         )
     return Table(Tbody(*rows))
 

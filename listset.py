@@ -228,10 +228,7 @@ def get(request, listset: items.Item):
                     required=True,
                     autofocus=True,
                 ),
-                Input(
-                    type="submit",
-                    value="Copy listset",
-                ),
+                Input(type="submit", value="Copy listset"),
                 action=f"{listset.url}/copy",
                 method="POST",
             ),
@@ -276,15 +273,8 @@ def get(request, listset: items.Item):
         Main(
             H3("Really delete the listset? All data will be lost."),
             Form(
-                Input(
-                    type="hidden",
-                    name="redirect",
-                    value=redirect,
-                ),
-                Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
+                Input(type="hidden", name="redirect", value=redirect),
+                Input(type="submit", value="Yes, delete"),
                 action=f"{listset.url}/delete",
                 method="POST",
             ),

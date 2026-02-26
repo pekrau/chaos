@@ -126,6 +126,20 @@ class Item:
         "Modified timestamp in local ISO format."
         return utils.timestamp_local(self.path.stat().st_mtime)
 
+    def edit(self, title, text, listsets, keywords):
+        """Edit the data of the item.
+        Does *not* write out the item.
+        *Does* write out the affected listsets.
+        """
+        self.title = title.strip() or "no title"
+        self.text = text.strip()
+        for id in listsets or list():
+            listset = get(id)
+            assert isinstance(listset, Listset)
+            listset.add(self)
+            listset.write()
+        self.keywords = keywords or list()
+
     def write(self):
         "Write the item to file."
         with self.path.open(mode="w") as outfile:

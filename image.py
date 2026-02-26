@@ -94,7 +94,7 @@ async def post(
 
 @rt("/{image:Item}")
 def get(image: items.Item):
-    "View the metadata for the image."
+    "View the data for the image."
     assert isinstance(image, items.Image)
     return (
         Title(image.title),
@@ -141,7 +141,7 @@ def get(image: items.Item):
 
 @rt("/{image:Item}/edit")
 def get(request, image: items.Item):
-    "Form for editing metadata for the image."
+    "Form for editing the data for the image."
     assert isinstance(image, items.Image)
     return (
         Title(f"Edit {image.title}"),
@@ -196,7 +196,6 @@ async def post(
 ):
     "Actually edit the image."
     assert isinstance(image, items.Image)
-    image.title = title.strip() or image.filename.stem
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
@@ -208,13 +207,7 @@ async def post(
                 outfile.write(filecontent)
         except OSError as error:
             raise errors.Error(error)
-    image.text = text.strip()
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(image)
-        listset.write()
-    image.keywords = keywords or list()
+    image.edit(title, text, listsets, keywords)
     image.write()
     return components.redirect(image.url)
 
@@ -244,10 +237,7 @@ def get(request, image: items.Item):
                     required=True,
                     autofocus=True,
                 ),
-                Input(
-                    type="submit",
-                    value="Copy image",
-                ),
+                Input(type="submit", value="Copy image"),
                 action=f"{image.url}/copy",
                 method="POST",
             ),
@@ -306,10 +296,7 @@ def get(request, image: items.Item):
                     name="redirect",
                     value=redirect,
                 ),
-                Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
+                Input(type="submit", value="Yes, delete"),
                 action=f"{image.url}/delete",
                 method="POST",
             ),

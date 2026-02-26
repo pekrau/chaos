@@ -199,8 +199,6 @@ def post(
 ):
     "Actually edit the graphic."
     assert isinstance(graphic, items.Graphic)
-    graphic.title = title or "no title"
-    graphic.text = text.strip()
     if graphic.graphic == constants.VEGA_LITE:
         try:
             graphic.frontmatter["specification"] = json.dumps(
@@ -210,12 +208,7 @@ def post(
             errors.Error(str(error))
     else:
         errors.Error("unknown graphic type.")
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(graphic)
-        listset.write()
-    graphic.keywords = keywords or list()
+    graphic.edit(title, text, listsets, keywords)
     graphic.write()
     return components.redirect(graphic.url)
 
@@ -245,10 +238,7 @@ def get(request, graphic: items.Item):
                     required=True,
                     autofocus=True,
                 ),
-                Input(
-                    type="submit",
-                    value="Copy graphic",
-                ),
+                Input(type="submit", value="Copy graphic"),
                 action=f"{graphic.url}/copy",
                 method="POST",
             ),
@@ -299,10 +289,7 @@ def get(request, graphic: items.Item):
                     name="redirect",
                     value=redirect,
                 ),
-                Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
+                Input(type="submit", value="Yes, delete"),
                 action=f"{graphic.url}/delete",
                 method="POST",
             ),

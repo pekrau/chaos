@@ -68,7 +68,7 @@ def post(
 
 @rt("/{link:Item}")
 def get(link: items.Item):
-    "View the metadata for the link."
+    "View the data for the link."
     assert isinstance(link, items.Link)
     return (
         Title(link.title),
@@ -157,20 +157,13 @@ def post(
     title: str,
     href: str,
     text: str,
-    keywords: list[str] = None,
     listsets: list[str] = None,
+    keywords: list[str] = None,
 ):
     "Actually edit the link."
     assert isinstance(link, items.Link)
-    link.title = (title or "no title").strip()
+    link.edit(title, text, listsets, keywords)
     link.href = href.strip() or "/"
-    link.text = text.strip()
-    link.keywords = keywords or list()
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(link)
-        listset.write()
     link.write()
     return components.redirect(link.url)
 
@@ -200,10 +193,7 @@ def get(request, link: items.Item):
                     required=True,
                     autofocus=True,
                 ),
-                Input(
-                    type="submit",
-                    value="Copy link",
-                ),
+                Input(type="submit", value="Copy link"),
                 action=f"{link.url}/copy",
                 method="POST",
             ),
@@ -253,10 +243,7 @@ def get(request, link: items.Item):
                     name="redirect",
                     value=redirect,
                 ),
-                Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
+                Input(type="submit", value="Yes, delete"),
                 action=f"{link.url}/delete",
                 method="POST",
             ),

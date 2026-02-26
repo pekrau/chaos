@@ -81,7 +81,7 @@ async def post(
 
 @rt("/{file:Item}")
 def get(file: items.Item):
-    "View the metadata for the file."
+    "View the data for the file."
     assert isinstance(file, items.File)
     return (
         Title(file.title),
@@ -126,7 +126,7 @@ def get(file: items.Item):
 
 @rt("/{file:Item}/edit")
 def get(request, file: items.Item):
-    "Form for editing metadata for the file."
+    "Form for editing the data for the file."
     assert isinstance(file, items.File)
     return (
         Title(f"Edit {file.title}"),
@@ -175,7 +175,6 @@ async def post(
 ):
     "Actually edit the file."
     assert isinstance(file, items.File)
-    file.title = title.strip() or file.filename.stem
     if upfile.filename:
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
@@ -187,13 +186,7 @@ async def post(
                 outfile.write(filecontent)
         except OSError as error:
             raise errors.Error(error)
-    file.text = text.strip()
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(file)
-        listset.write()
-    file.keywords = keywords or list()
+    file.edit(title, text, listsets, keywords)
     file.write()
     return components.redirect(file.url)
 
@@ -223,10 +216,7 @@ def get(request, file: items.Item):
                     required=True,
                     autofocus=True,
                 ),
-                Input(
-                    type="submit",
-                    value="Copy file",
-                ),
+                Input(type="submit", value="Copy file"),
                 action=f"{file.url}/copy",
                 method="POST",
             ),
@@ -285,10 +275,7 @@ def get(request, file: items.Item):
                     name="redirect",
                     value=redirect,
                 ),
-                Input(
-                    type="submit",
-                    value="Yes, delete",
-                ),
+                Input(type="submit", value="Yes, delete"),
                 action=f"{file.url}/delete",
                 method="POST",
             ),

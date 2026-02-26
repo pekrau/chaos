@@ -3,7 +3,6 @@
 from http import HTTPStatus as HTTP
 import os
 
-import babel.numbers
 from fasthtml.common import *
 import marko
 
@@ -248,19 +247,20 @@ def get_listsets_card(item):
 def get_keywords_card(item):
     if keywords_links := get_keywords_links(item):
         return Card(
-            Div("Keywords: ", keywords_links),
-            Div(
+            Header(
+                Span("Keywords"),
                 A(
                     "Similar items",
                     href=f"/similar/{item.id}",
                     role="button",
                     cls="thin",
                 ),
-                cls="right",
+                cls="grid",
             ),
+            keywords_links,
         )
     else:
-        return Card(I("No keywords."))
+        return Card("No keywords.")
 
 
 def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
@@ -475,8 +475,3 @@ def get_total_pages(total_items=None):
     if total_items is None:
         total_items = total()
     return (total_items - 1) // constants.MAX_PAGE_ITEMS + 1
-
-
-def numerical(n):
-    "Return numerical value as string formatted according to locale."
-    return babel.numbers.format_decimal(n, locale=constants.DEFAULT_LOCALE)

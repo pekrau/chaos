@@ -15,13 +15,13 @@ import bokeh.plotting
 import bokeh.resources
 from fasthtml.common import *
 import numpy as np
-import webcolors
 
 import components
 import constants
 import errors
 import items
 from timer import Timer
+import utils
 
 app, rt = components.get_app_rt()
 
@@ -482,40 +482,7 @@ def get(request, database: items.Item):
 @rt("/{database:Item}/csv")
 async def post(request, database: items.Item, table: str, upfile: UploadFile):
     assert isinstance(database, items.Database)
-    content = await upfile.read()
-    reader = csv.reader(io.StringIO(content.decode("utf-8")))
-    header = next(reader)
-    rows = list(reader)
-    columns = []
-    for pos, name in enumerate(header):
-        column = dict(name=name, type="INTEGER", null=False)
-        columns.append(column)
-        try:
-            for row in rows:
-                if value := row[pos]:
-                    row[pos] = int(value)
-                else:
-                    row[pos] = None
-                    column["null"] = True
-        except ValueError:
-            try:
-                for row in rows:
-                    if value := row[pos]:
-                        row[pos] = float(value)
-                    else:
-                        row[pos] = None
-                        column["null"] = True
-                column["type"] = "REAL"
-            except ValueError:
-                for row in rows:
-                    if not value:
-                        row[pos] = None
-                        column["null"] = True
-                column["type"] = "TEXT"
-    for column in columns:
-        column["sql"] = (
-            f"{column['name']} {column['type']} {'' if column['null'] else 'NOT NULL'}"
-        )
+    columns, rows = parse_csv_content(await upfile.read())
     try:
         with database.connect() as cnx:
             sql = ", ".join([c["sql"] for c in columns])
@@ -1037,7 +1004,7 @@ def post(request, database: items.Item, form: dict):
         raise errors.Error("plot type must be provided")
     assert form["type"] == "xy", "XXX only X/Y plot implemented currently"
     title = form["title"]
-    name = items.normalize(title)
+    name = utils.normalize(title)
     if database.frontmatter.get("plots", {}).get(name):
         raise errors.Error(f"a plot '{name}' is already defined")
     result = dict(
@@ -1239,7 +1206,7 @@ def get(request, database: items.Item, plotname: str):
                                             Input(
                                                 type="text",
                                                 name=f"color_text_{pos}",
-                                                value=to_name_color(
+                                                value=utils.to_name_color(
                                                     marker.get("color") or ""
                                                 ),
                                             ),
@@ -1248,7 +1215,7 @@ def get(request, database: items.Item, plotname: str):
                                             Input(
                                                 type="color",
                                                 name=f"color_palette_{pos}",
-                                                value=to_hex_color(marker.get("color")),
+                                                value=utils.to_hex_color(marker.get("color")),
                                                 style="width: 4em;",
                                             ),
                                         ),
@@ -1402,7 +1369,7 @@ def get(request, database: items.Item, plotname: str):
 def post(request, database: items.Item, plotname: str, form: dict):
     "Actually copy the named plot in the database."
     assert isinstance(database, items.Database)
-    name = items.normalize(form["title"])
+    name = utils.normalize(form["title"])
     if name in database.frontmatter["plots"]:
         raise errors.Error(f"a plot '{name}' is already defined")
     plot = copy.deepcopy(database.frontmatter["plots"][plotname])
@@ -1519,23 +1486,41 @@ def get_database_overview(database, display=False):
     return Table(Tbody(*rows))
 
 
-def to_hex_color(color):
-    "Convert to hex color, if not already."
-    if not color:
-        color = "black"
-    if not color.startswith("#"):
+def parse_csv_content(content):
+    """Read the CSV content and figure out the SQL for the corresponding table.
+    Return tuple (columns, rows) where 'columns' is the definition and 'rows' the data.
+    """
+    reader = csv.reader(io.StringIO(content.decode("utf-8")))
+    header = next(reader)
+    rows = list(reader)
+    columns = []
+    for pos, name in enumerate(header):
+        column = dict(name=name, type="INTEGER", null=False)
+        columns.append(column)
         try:
-            color = webcolors.name_to_hex(color)
+            for row in rows:
+                if value := row[pos]:
+                    row[pos] = int(value)
+                else:
+                    row[pos] = None
+                    column["null"] = True
         except ValueError:
-            color = "black"
-    return color
-
-
-def to_name_color(color):
-    "Convert to name color, or keep in hex."
-    if color.startswith("#"):
-        try:
-            color = webcolors.hex_to_name(color)
-        except ValueError:
-            pass
-    return color
+            try:
+                for row in rows:
+                    if value := row[pos]:
+                        row[pos] = float(value)
+                    else:
+                        row[pos] = None
+                        column["null"] = True
+                column["type"] = "REAL"
+            except ValueError:
+                for row in rows:
+                    if not value:
+                        row[pos] = None
+                        column["null"] = True
+                column["type"] = "TEXT"
+    for column in columns:
+        column["sql"] = (
+            f"{column['name']} {column['type']} {'' if column['null'] else 'NOT NULL'}"
+        )
+    return columns, rows

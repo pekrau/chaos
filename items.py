@@ -8,9 +8,7 @@ import pathlib
 import random
 import re
 import sqlite3
-import unicodedata
 
-import babel.dates
 import filetype
 import marko
 import yaml
@@ -18,12 +16,20 @@ import yaml
 import constants
 import errors
 import settings
-
-# Key: item id; value: item instance.
-lookup = {}
+import utils
 
 # The item types.
 TYPES = ["Note", "Link", "Image", "File", "Database", "Graphic", "Listset"]
+
+
+# Global item lookup. Key: item id; value: item instance.
+lookup = {}
+
+
+def get(itemid):
+    "Get the item from the global lookup given its identifier."
+    global lookup
+    return lookup[itemid]
 
 
 class Item:
@@ -74,7 +80,7 @@ class Item:
         assert title
         self.frontmatter["title"] = title
         if self.path is None:
-            filename = normalize(title)
+            filename = utils.normalize(title)
             self._path = constants.DATA_DIR / f"{filename}.md"
             if self.id in lookup:
                 n = 2
@@ -113,19 +119,12 @@ class Item:
     @property
     def modified(self):
         "Modified timestamp in UTC ISO format."
-        return timestamp_utc(self.path.stat().st_mtime)
+        return utils.timestamp_utc(self.path.stat().st_mtime)
 
     @property
     def modified_local(self):
         "Modified timestamp in local ISO format."
-        timestamp = self.path.stat().st_mtime
-        dt = datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC)
-        return babel.dates.format_datetime(
-            dt,
-            tzinfo=constants.DEFAULT_TIMEZONE,
-            locale=constants.DEFAULT_LOCALE,
-            format=constants.DATETIME_BABEL_FORMAT,
-        )
+        return utils.timestamp_local(self.path.stat().st_mtime)
 
     def write(self):
         "Write the item to file."
@@ -292,7 +291,7 @@ class GenericFile(Item):
     @property
     def file_modified(self):
         "Modified timestamp in UTC ISO format."
-        return timestamp_utc(self.filepath.stat().st_mtime)
+        return utils.timestamp_utc(self.filepath.stat().st_mtime)
 
     @property
     def bin_url(self):
@@ -391,11 +390,6 @@ class Graphic(Item):
     @property
     def specification(self):
         return self.frontmatter["specification"]
-
-
-def get(itemid):
-    global lookup
-    return lookup[itemid]
 
 
 def read_items(dirpath=None):
@@ -517,7 +511,7 @@ def get_all():
     "Get a map of item paths and filepaths with their modified timestamps."
     global lookup
     result = {
-        ".chaos.yaml": timestamp_utc(
+        ".chaos.yaml": utils.timestamp_utc(
             (constants.DATA_DIR / ".chaos.yaml").stat().st_mtime
         )
     }
@@ -542,12 +536,6 @@ def get_possible_listsets(item):
     return result
 
 
-def timestamp_utc(timestamp):
-    return datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC).strftime(
-        constants.DATETIME_ISO_FORMAT
-    )
-
-
 def get_statistics():
     result = dict(item=len(lookup))
     result.update(dict([(type.lower(), 0) for type in TYPES]))
@@ -555,15 +543,3 @@ def get_statistics():
         result[item.__class__.__name__.lower()] += 1
     result["keyword"] = len(settings.keywords)
     return result
-
-
-def normalize(s):
-    "Normalize string to ASCII, lower case, replacing non-file characters with '-'."
-    result = unicodedata.normalize("NFKD", s).encode("ASCII", "ignore")
-    result = "".join(
-        [
-            c if c in constants.FILENAME_CHARACTERS else "-"
-            for c in result.decode("utf-8")
-        ]
-    )
-    return result.casefold()

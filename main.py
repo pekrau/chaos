@@ -36,6 +36,7 @@ import graphic
 import listset
 import keywords
 import api
+import utils
 
 app, rt = components.get_app_rt(
     routes=[
@@ -541,7 +542,7 @@ def get():
             Tr(
                 Td("RAM"),
                 Td(
-                    components.numerical(psutil.Process().memory_info().rss),
+                    utils.numerical(psutil.Process().memory_info().rss),
                     cls="right",
                 ),
             ),
@@ -553,7 +554,7 @@ def get():
                 Td("Disk"),
                 Td(
                     f"{100 * disk_usage / (disk_usage + disk_free):.1f}%",
-                    Span(components.numerical(disk_usage), style="margin-left: 2em;"),
+                    Span(utils.numerical(disk_usage), style="margin-left: 2em;"),
                     cls="right",
                 ),
             ),
@@ -561,7 +562,7 @@ def get():
                 Td("Disk free"),
                 Td(
                     f"{100 * (disk_free - disk_usage) / (disk_usage + disk_free):.1f}%",
-                    Span(components.numerical(disk_free), style="margin-left: 2em;"),
+                    Span(utils.numerical(disk_free), style="margin-left: 2em;"),
                     cls="right",
                 ),
             ),

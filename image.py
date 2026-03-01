@@ -1,7 +1,6 @@
 "Image item pages."
 
 from http import HTTPStatus as HTTP
-import mimetypes
 import pathlib
 import urllib.parse
 
@@ -41,7 +40,7 @@ def get(request):
                     accept=",".join(constants.IMAGE_MIMETYPES),
                     aria_describedby="file-helper",
                 ),
-                Small("Image file: PNG, JPEG, WEBP or GIF.", id="file-helper"),
+                Small("Image file: PNG, JPEG, SVG, WEBP or GIF.", id="file-helper"),
                 components.get_text_input(None),
                 components.get_listset_keyword_inputs(None),
                 Input(type="submit", value="Add image"),
@@ -98,7 +97,7 @@ def get(image: items.Item):
     assert isinstance(image, items.Image)
     return (
         Title(image.title),
-        Script(src="/clipboard.min.js"),
+        components.clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -113,8 +112,8 @@ def get(image: items.Item):
         Main(
             Card(
                 A(
-                    Img(src=image.bin_url, title=image.filename, cls="display"),
-                    href=image.bin_url,
+                    Img(src=image.url_file, title=image.filename, cls="display"),
+                    href=image.url_file,
                 )
             ),
             components.get_text_card(image),
@@ -135,8 +134,18 @@ def get(image: items.Item):
             ),
             cls="container",
         ),
-        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        components.clipboard_activate(),
     )
+
+
+@rt("/{image:Item}{ext:Ext}")
+def get(image: items.Item, ext: str):
+    "Download the content of the image."
+    assert isinstance(image, items.Image)
+    if image.filepath.suffix == ext:
+        return FileResponse(image.filepath)
+    else:
+        raise errors.Error("invalid format", HTTP.NOT_FOUND)
 
 
 @rt("/{image:Item}/edit")
@@ -164,9 +173,9 @@ def get(request, image: items.Item):
                             name="upfile",
                             aria_describedby="file-helper",
                         ),
-                        Small("Image file: PNG, JPEG, WEBP or GIF.", id="file-helper"),
+                        Small("Image file: PNG, JPEG, SVG, WEBP or GIF.", id="file-helper"),
                         Img(
-                            src=image.bin_url,
+                            src=image.url_file,
                             title=image.filename,
                             cls="display",
                         ),

@@ -85,7 +85,7 @@ def get(file: items.Item):
     assert isinstance(file, items.File)
     return (
         Title(file.title),
-        Script(src="/clipboard.min.js"),
+        components.clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -101,7 +101,7 @@ def get(file: items.Item):
             cls="container",
         ),
         Main(
-            Card(A(file.filename, href=file.bin_url)),
+            Card(A(file.filename, href=file.url_file)),
             components.get_text_card(file),
             Div(
                 components.get_listsets_card(file),
@@ -120,8 +120,18 @@ def get(file: items.Item):
             ),
             cls="container",
         ),
-        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        components.clipboard_activate(),
     )
+
+
+@rt("/{file:Item}{ext:Ext}")
+def get(file: items.Item, ext: str):
+    "Download the content of the file."
+    assert isinstance(file, items.File)
+    if file.filepath.suffix == ext:
+        return FileResponse(file.filepath)
+    else:
+        raise errors.Error("invalid format", HTTP.NOT_FOUND)
 
 
 @rt("/{file:Item}/edit")
@@ -144,7 +154,7 @@ def get(request, file: items.Item):
                 components.get_title_input(file),
                 Div(
                     Label(
-                        Span("Current file: ", A(file.filename, href=file.bin_url)),
+                        Span("Current file: ", A(file.filename, href=file.url_file)),
                         Input(
                             type="file",
                             name="upfile",

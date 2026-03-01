@@ -72,7 +72,7 @@ def get(link: items.Item):
     assert isinstance(link, items.Link)
     return (
         Title(link.title),
-        Script(src="/clipboard.min.js"),
+        components.clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -110,7 +110,7 @@ def get(link: items.Item):
             ),
             cls="container",
         ),
-        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        components.clipboard_activate(),
     )
 
 

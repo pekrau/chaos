@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (0, 17, 19)
+VERSION = (0, 17, 20)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -30,6 +30,7 @@ BINARY_MIMETYPE = "application/octet-stream"
 GZIP_MIMETYPE = "application/gzip"
 PNG_MIMETYPE = "image/png"
 JPEG_MIMETYPE = "image/jpeg"
+SVG_MIMETYPE = "image/svg+xml"
 WEBP_MIMETYPE = "image/webp"
 GIF_MIMETYPE = "image/gif"
 PDF_MIMETYPE = "application/pdf"
@@ -44,6 +45,7 @@ JSON_MIMETYPE = "application/json"
 IMAGE_MIMETYPES = {
     PNG_MIMETYPE,
     JPEG_MIMETYPE,
+    SVG_MIMETYPE,
     WEBP_MIMETYPE,
     GIF_MIMETYPE,
 }

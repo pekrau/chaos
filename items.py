@@ -41,6 +41,9 @@ class Item:
         self.text = ""
         self.similarities = {}  # Key: item id; value: similarity number.
 
+    def __str__(self):
+        return self.url
+
     @property
     def name(self):
         return self.__class__.__name__.lower()
@@ -308,8 +311,9 @@ class GenericFile(Item):
         return utils.timestamp_utc(self.filepath.stat().st_mtime)
 
     @property
-    def bin_url(self):
-        return f"/bin/{self.id}"
+    def url_file(self):
+        "Return the URL for the file content."
+        return self.url + self.filename.suffix
 
     def delete(self):
         "Delete the item and file from the file system and remove from the lookup."
@@ -365,6 +369,11 @@ class Database(GenericFile):
                 ).fetchone()[0]
                 result[name] = relation
         return result
+
+    @property
+    def url_sql(self):
+        "Return the URL to download the database as SQL."
+        return f"{self.url}.sql"
 
     @property
     def plots(self):

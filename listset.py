@@ -86,7 +86,7 @@ def get(listset: items.Item):
     assert isinstance(listset, items.Listset)
     return (
         Title(listset.title),
-        Script(src="/clipboard.min.js"),
+        components.clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -118,7 +118,7 @@ def get(listset: items.Item):
             ),
             cls="container",
         ),
-        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        components.clipboard_activate(),
     )
 
 

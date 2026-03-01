@@ -27,14 +27,51 @@ class ItemConvertor(Convertor):
 register_url_convertor("Item", ItemConvertor())
 
 
-class CsvConvertor(StringConvertor):
-    "Accept name with CSV extension."
+class NameConvertor(StringConvertor):
 
-    # regex = "[^./]+\\.csv"
-    regex = r"[^/.]+\.csv"
+    regex = "[^./]+"
 
 
-register_url_convertor("Csv", CsvConvertor())
+register_url_convertor("Name", NameConvertor())
+
+
+class ExtConvertor(StringConvertor):
+
+    regex = "\\.[^./]+"
+
+
+register_url_convertor("Ext", ExtConvertor())
+
+
+class StaticNoMatchConvertor(StringConvertor):
+    """To bypass the standard 'static' convertor.
+    Required since the 'static' convertor has been made useless, which
+    in turn was needed to enable using file extensions for determining
+    format of the data content for '/data' resources. The
+    predefined 'static' convertor somehow prevented this.
+    """
+
+    regex = "static_do_not_match_anything_at_all"
+
+
+register_url_convertor("static", StaticNoMatchConvertor())
+
+
+def get_app_rt(routes=None):
+    app, rt = fast_app(
+        before=Beforeware(
+            set_auth_before,
+            skip=[r"/static/.*"],
+        ),
+        hdrs=(
+            Link(rel="stylesheet", href="/static/style_modifications.css", type="text/css"),
+            Link(rel="icon", href="/static/favicon.ico", type="image/x-icon"),
+        ),
+        exception_handlers={errors.Error: errors.error_handler},
+        routes=routes,
+    )
+    setup_toasts(app)
+    return app, rt
 
 
 def set_auth_before(request, session):
@@ -52,23 +89,6 @@ def set_auth_before(request, session):
         return redirect("/")
 
 
-def get_app_rt(routes=None):
-    app, rt = fast_app(
-        static_path="static",
-        before=Beforeware(
-            set_auth_before,
-            skip=[r"/favicon\.ico", r"/chaos\.png", r"/mods\.css", r"/ping"],
-        ),
-        hdrs=(Link(rel="stylesheet", href="/mods.css", type="text/css"),),
-        exception_handlers={
-            errors.Error: errors.error_handler,
-        },
-        routes=routes,
-    )
-    setup_toasts(app)
-    return app, rt
-
-
 def redirect(href):
     "Redirect with the 303 status code, which is usually more appropriate."
     return RedirectResponse(href, status_code=HTTP.SEE_OTHER)
@@ -77,7 +97,7 @@ def redirect(href):
 def get_icon(filename, title="", **kwargs):
     defaults = dict(cls="icon")
     defaults.update(kwargs)
-    return Img(src=f"/{filename}", title=title, width="24", height="24", **defaults)
+    return Img(src=f"/static/{filename}", title=title, width="24", height="24", **defaults)
 
 
 def get_note_icon(title="Note"):
@@ -123,7 +143,7 @@ def get_nav_menu():
     return Details(
         Summary(
             Img(
-                src="/chaos.png",
+                src="/static/chaos.png",
                 width=24,
                 height=24,
                 cls="white",
@@ -201,6 +221,14 @@ def get_item_clipboards(item):
     ]
 
 
+def clipboard_script():
+    return Script(src="/static/clipboard.min.js")
+
+
+def clipboard_activate():
+    return Script("new ClipboardJS('.to_clipboard');", type="text/javascript")
+
+
 def get_items_table_page(title, items, page, href, after=""):
     "Get the page displaying a table of the given items."
     total_items = len(items)
@@ -211,7 +239,7 @@ def get_items_table_page(title, items, page, href, after=""):
     pager = get_table_pager(page, total_items, href)
     return (
         Title(title),
-        Script(src="/clipboard.min.js"),
+        clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -223,7 +251,7 @@ def get_items_table_page(title, items, page, href, after=""):
             cls="container",
         ),
         Main(table, pager, after, cls="container"),
-        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        clipboard_activate(),
     )
 
 
@@ -289,11 +317,11 @@ def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
             case "Graphic":
                 icon = A(get_graphic_icon(), href=item.url)
             case "Image":
-                icon = A(get_image_icon(title="View image"), href=item.bin_url)
+                icon = A(get_image_icon(title="View image"), href=item.url_file)
             case "File":
                 icon = A(
                     get_file_icon(item.file_mimetype, title="View or download file"),
-                    href=item.bin_url,
+                    href=item.url_file,
                 )
             case "Listset":
                 icon = A(get_listset_icon(), href=item.url)

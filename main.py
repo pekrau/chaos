@@ -11,6 +11,7 @@ import sys
 import bokeh
 import fasthtml
 from fasthtml.common import *
+import starlette.routing
 import marko
 import numpy
 import psutil
@@ -25,6 +26,7 @@ if os.environ.get("CHAOS_DEVELOPMENT"):
 
 import components
 import constants
+import errors
 import settings
 import items
 import note
@@ -49,8 +51,9 @@ app, rt = components.get_app_rt(
         Mount("/listset", listset.app),
         Mount("/keywords", keywords.app),
         Mount("/api", api.app),
-    ],
+    ]
 )
+setup_toasts(app)
 
 settings.read()
 items.read_items()
@@ -137,6 +140,22 @@ def post(session, username: str, password: str):
         return components.redirect("/")
     session["auth"] = username
     return components.redirect(session.pop("path", None) or "/")
+
+
+@rt("/data/{item:Item}.{ext:Ext}")
+def get(item: items.Item, ext: str):
+    return f"{item} {ext}"
+
+
+@rt("/static/{filename:path}")
+async def get(filename: str):
+    """Replacement of the default static response handler.
+    Required since the 'static' convertor has been made useless, which
+    in turn was needed to enable using file extensions for determining
+    format of the data content for '/data' resources. The
+    predefined 'static' convertor somehow prevented this.
+    """
+    return FileResponse(f"static/{filename}")
 
 
 @rt("/add")
@@ -277,7 +296,7 @@ def get(page: int = 1):
         row = [
             Div(
                 A(
-                    Img(src=image.bin_url, cls="autoscale display"),
+                    Img(src=image.url_file, cls="autoscale display"),
                     title=image.title,
                     href=str(image.url),
                 ),
@@ -376,7 +395,7 @@ def get(item: items.Item, page: int = 1):
     pager = components.get_table_pager(page, total_items, f"/similar/{item.id}")
     return (
         Title("Similar items"),
-        Script(src="/clipboard.min.js"),
+        components.clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -393,7 +412,7 @@ def get(item: items.Item, page: int = 1):
             Card(Header("Similar items"), table, Footer(pager)),
             cls="container",
         ),
-        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        components.clipboard_activate(),
     )
 
 
@@ -440,7 +459,7 @@ def get(term: str = None, keywords: list[str] = [], type: str = None):
     result.sort(key=lambda e: (e[0], e[1]), reverse=True)
     return (
         Title("Search"),
-        Script(src="/clipboard.min.js"),
+        components.clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -519,7 +538,7 @@ def get(term: str = None, keywords: list[str] = [], type: str = None):
             components.get_items_table([e for s, m, e in result]),
             cls="container",
         ),
-        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        components.clipboard_activate(),
     )
 
 

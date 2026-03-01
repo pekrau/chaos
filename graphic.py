@@ -98,7 +98,7 @@ def get(graphic: items.Item):
     assert isinstance(graphic, items.Graphic)
     return (
         Title(graphic.title),
-        Script(src="/clipboard.min.js"),
+        components.clipboard_script(),
         Script(src="https://cdn.jsdelivr.net/npm/vega@6"),
         Script(src="https://cdn.jsdelivr.net/npm/vega-lite@6"),
         Script(src="https://cdn.jsdelivr.net/npm/vega-embed@7"),
@@ -133,7 +133,7 @@ def get(graphic: items.Item):
             ),
             cls="container",
         ),
-        Script("new ClipboardJS('.to_clipboard');", type="text/javascript"),
+        components.clipboard_activate(),
         Script(
             f"""
 const specification = {graphic.specification};
@@ -151,7 +151,7 @@ def get(request, graphic: items.Item):
     "Form for editing a graphic."
     assert isinstance(graphic, items.Graphic)
     return (
-        Title(f"Edit {database.title}"),
+        Title(f"Edit {graphic.title}"),
         Header(
             Nav(
                 Ul(

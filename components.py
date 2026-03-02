@@ -64,7 +64,11 @@ def get_app_rt(routes=None):
             skip=[r"/static/.*"],
         ),
         hdrs=(
-            Link(rel="stylesheet", href="/static/style_modifications.css", type="text/css"),
+            Link(
+                rel="stylesheet",
+                href="/static/style_modifications.css",
+                type="text/css",
+            ),
             Link(rel="icon", href="/static/favicon.ico", type="image/x-icon"),
         ),
         exception_handlers={errors.Error: errors.error_handler},
@@ -97,7 +101,9 @@ def redirect(href):
 def get_icon(filename, title="", **kwargs):
     defaults = dict(cls="icon")
     defaults.update(kwargs)
-    return Img(src=f"/static/{filename}", title=title, width="24", height="24", **defaults)
+    return Img(
+        src=f"/static/{filename}", title=title, width="24", height="24", **defaults
+    )
 
 
 def get_note_icon(title="Note"):

@@ -173,7 +173,9 @@ def get(request, image: items.Item):
                             name="upfile",
                             aria_describedby="file-helper",
                         ),
-                        Small("Image file: PNG, JPEG, SVG, WEBP or GIF.", id="file-helper"),
+                        Small(
+                            "Image file: PNG, JPEG, SVG, WEBP or GIF.", id="file-helper"
+                        ),
                         Img(
                             src=image.url_file,
                             title=image.filename,

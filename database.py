@@ -1,11 +1,13 @@
 "Database item page."
 
+import contextlib
 import copy
 import csv
 import datetime
 from http import HTTPStatus as HTTP
 import io
 import json
+import os
 import sqlite3
 import urllib.parse
 
@@ -229,25 +231,26 @@ def get(database: items.Item):
 def get(database: items.Item, ext: str):
     "Download the content of the database in Sqlite or SQL format."
     assert isinstance(database, items.Database)
-    if ext == ".sqlite":
-        return FileResponse(database.filepath)
-    elif ext == ".sql":
-        outfile = io.StringIO()
-        outfile.write(f"/* Database {database.id} */\n\n")
-        with database.connect(readonly=True) as cnx:
-            for line in cnx.iterdump():
-                outfile.write(line)
-                outfile.write("\n")
-        return Response(
-            content=outfile.getvalue(),
-            status_code=HTTP.OK,
-            headers={
-                "Content-Type": constants.TEXT_MIMETYPE,
-                "Content-Disposition": f'attachment; filename="{database.id}.sql"',
-            },
-        )
-    else:
-        raise errors.Error("no such database", HTTP.NOT_FOUND)
+    match ext:
+        case ".sqlite":
+            return FileResponse(database.filepath)
+        case ".sql":
+            outfile = io.StringIO()
+            outfile.write(f"/* Database {database.id} */\n\n")
+            with database.connect(readonly=True) as cnx:
+                for line in cnx.iterdump():
+                    outfile.write(line)
+                    outfile.write("\n")
+            return Response(
+                content=outfile.getvalue(),
+                status_code=HTTP.OK,
+                headers={
+                    "Content-Type": constants.TEXT_MIMETYPE,
+                    "Content-Disposition": f'attachment; filename="{database.id}.sql"',
+                },
+            )
+        case _:
+            raise errors.Error("no such database", HTTP.NOT_FOUND)
 
 
 @rt("/{database:Item}/row/{tablename:str}")
@@ -314,7 +317,7 @@ def post(session, database: items.Item, tablename: str, form: dict):
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     columns = []
-    values = []
+    row = []
     try:
         for name, column in schema[tablename]["columns"].items():
             columns.append(name)
@@ -340,21 +343,22 @@ def post(session, database: items.Item, tablename: str, form: dict):
                     value = None
                 else:
                     value = ""
-            values.append(value)
+            row.append(value)
     except (TypeError, ValueError) as error:
         raise errors.Error(error)
-    with database.connect() as cnx:
-        cnx.execute(
-            f"INSERT INTO {tablename} ({','.join(columns)}) VALUES ({','.join('?' * len(values))})",
-            values,
-        )
+    with set_modified_when_changed(database):
+        with database.connect() as cnx:
+            columns = ",".join(columns)
+            values = ",".join("?" * len(row))
+            sql = f"INSERT INTO {tablename} ({columns}) VALUES ({values})"
+            cnx.execute(sql, row)
     add_toast(session, "Row added.", "success")
     return components.redirect(f"{database.url}/row/{tablename}")
 
 
 @rt("/{database:Item}/rows/{relname:Name}")
 def get(database: items.Item, relname: str):
-    "Display table or view row values."
+    "Display table or view rows."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     title = f"{schema[relname]['type'].capitalize()} {relname}"
@@ -411,33 +415,36 @@ def get(database: items.Item, relname: str, ext: str):
     "Download the table or view rows in CSV or JSON format."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
-    column_names = list(schema[relname]["columns"].keys())
-    if ext == ".csv":
-        outfile = io.StringIO()
-        writer = csv.writer(outfile, quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(column_names)
-        with database.connect(readonly=True) as cnx:
-            writer.writerows(cnx.execute(f"SELECT {','.join(column_names)} FROM {relname}"))
-        outfile.seek(0)
-        content = outfile.read().encode("utf-8")
-        return Response(
-            headers={
-                "Content-Type": f"{constants.CSV_MIMETYPE}; charset=utf-8",
-                "Content-Disposition": f'attachment; filename="{database.id}_{relname}.csv"',
-            },
-            content=content,
-            status_code=HTTP.OK,
-        )
-    elif ext == ".json":
-        with database.connect(readonly=True) as cnx:
-            rows = cnx.execute(f"SELECT {','.join(column_names)} FROM {relname}").fetchall()
-        return {
-            "$id": f"database {database.id}; {schema[relname]['type']} {relname}",
-            "data": [dict(zip(column_names, row)) for row in rows],
-        }
-    else:
-        raise errors.Error("invalid format", HTTP.NOT_FOUND)
-        
+    columns = list(schema[relname]["columns"].keys())
+    match ext:
+        case ".csv":
+            outfile = io.StringIO()
+            writer = csv.writer(outfile, quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(columns)
+            with database.connect(readonly=True) as cnx:
+                sql = f"SELECT {','.join(columns)} FROM {relname}"
+                writer.writerows(cnx.execute(sql))
+            outfile.seek(0)
+            content = outfile.read().encode("utf-8")
+            return Response(
+                headers={
+                    "Content-Type": f"{constants.CSV_MIMETYPE}; charset=utf-8",
+                    "Content-Disposition": f'attachment; filename="{database.id}_{relname}.csv"',
+                },
+                content=content,
+                status_code=HTTP.OK,
+            )
+        case ".json":
+            with database.connect(readonly=True) as cnx:
+                sql = f"SELECT {','.join(columns)} FROM {relname}"
+                rows = cnx.execute(sql).fetchall()
+            return {
+                "$id": f"database {database.id}; {schema[relname]['type']} {relname}",
+                "data": [dict(zip(columns, row)) for row in rows],
+            }
+        case _:
+            raise errors.Error("invalid format", HTTP.NOT_FOUND)
+
 
 @rt("/{database:Item}/rows/{tablename:str}/csv")
 def get(request, database: items.Item, tablename: str):
@@ -524,9 +531,12 @@ async def post(request, database: items.Item, tablename: str, upfile: UploadFile
             if table_columns[name]["type"] != csv_columns[name]["type"]:
                 raise ValueError(f"wrong type for column {name}")
         rows = [[data[n] for n in used_columns] for data in csv_data]
-        with database.connect() as cnx:
-            sql = f"({', '.join(used_columns)}) VALUES ({', '.join(['?'] * len(used_columns))})"
-            cnx.executemany(f"INSERT INTO {tablename} {sql}", rows)
+        with set_modified_when_changed(database):
+            with database.connect() as cnx:
+                columns = ",".join(used_columns)
+                values = ",".join(["?"] * len(used_columns))
+                sql = f"INSERT INTO {tablename} ({columns}) VALUES ({values})"
+                cnx.executemany(sql, rows)
     except (KeyError, ValueError) as error:
         raise errors.Error(error)
     return components.redirect(database.url)
@@ -592,11 +602,14 @@ async def post(request, database: items.Item, tablename: str, upfile: UploadFile
     assert isinstance(database, items.Database)
     columns, rows = parse_csv_content(await upfile.read())
     try:
-        with database.connect() as cnx:
-            sql = ", ".join([c["sql"] for c in columns])
-            cnx.execute(f"CREATE TABLE {tablename} ({sql})")
-            sql = f"({', '.join([c['name'] for c in columns])}) VALUES ({', '.join(['?'] * len(columns))})"
-            cnx.executemany(f"INSERT INTO {tablename} {sql}", rows)
+        with set_modified_when_changed(database):
+            with database.connect() as cnx:
+                sql = ", ".join([c["sql"] for c in columns])
+                cnx.execute(f"CREATE TABLE {tablename} ({sql})")
+                columns = ",".join([c["name"] for c in columns])
+                values = ",".join(["?"] * len(columns))
+                sql = f"INSERT INTO {tablename} ({columns}) VALUES ({values})"
+                cnx.executemany(sql, rows)
     except sqlite3.Error as error:
         raise errors.Error(error)
     return components.redirect(database.url)
@@ -610,15 +623,18 @@ def post(database: items.Item, sql: str = None):
     result = []
     error_card = ""
     if sql:
-        with database.connect() as cnx:
-            try:
-                cursor = cnx.execute(sql)
-            except sqlite3.Error as error:
-                error_card = Card(Header("Error", style="color: red;"), Pre(str(error)))
-            else:
-                result = cursor.fetchall()
-                if cursor.description:
-                    column_names = [t[0] for t in cursor.description]
+        with set_modified_when_changed(database):
+            with database.connect() as cnx:
+                try:
+                    cursor = cnx.execute(sql)
+                except sqlite3.Error as error:
+                    error_card = Card(
+                        Header("Error", style="color: red;"), Pre(str(error))
+                    )
+                else:
+                    result = cursor.fetchall()
+                    if cursor.description:
+                        column_names = [t[0] for t in cursor.description]
     if column_names or result:
         result_card = Card(
             Header(
@@ -696,37 +712,39 @@ def post(database: items.Item, sql: str, ext: str):
     "Execute a SQL command and download the result as CSV or JSON."
     assert isinstance(database, items.Database)
     assert sql
-    with database.connect() as cnx:
-        try:
-            cursor = cnx.execute(sql)
-        except sqlite3.Error as error:
-            errors.Error(str(error))
-        else:
-            header = [t[0] for t in cursor.description]
-            rows = cursor.fetchall()
-    if ext == ".csv":
-        outfile = io.StringIO()
-        writer = csv.writer(outfile, quoting=csv.QUOTE_MINIMAL)
-        writer.writerow(header)
-        writer.writerows(rows)
-        outfile.seek(0)
-        content = outfile.read().encode("utf-8")
-        return Response(
-            content=content,
-            status_code=HTTP.OK,
-            headers={
-                "Content-Type": constants.CSV_MIMETYPE,
-                "Content-Disposition": f'attachment; filename="query.csv"',
-            },
-        )
-    elif ext == ".json":
-        return {
-            "$id": f"database {database.id}",
-            "query": sql,
-            "data": [dict(zip(header, row)) for row in rows],
-        }
-    else:
-        raise errors.Error("invalid format", HTTP.NOT_FOUND)
+    with set_modified_when_changed(database):
+        with database.connect() as cnx:
+            try:
+                cursor = cnx.execute(sql)
+            except sqlite3.Error as error:
+                errors.Error(str(error))
+            else:
+                header = [t[0] for t in cursor.description]
+                rows = cursor.fetchall()
+    match ext:
+        case ".csv":
+            outfile = io.StringIO()
+            writer = csv.writer(outfile, quoting=csv.QUOTE_MINIMAL)
+            writer.writerow(header)
+            writer.writerows(rows)
+            outfile.seek(0)
+            content = outfile.read().encode("utf-8")
+            return Response(
+                content=content,
+                status_code=HTTP.OK,
+                headers={
+                    "Content-Type": constants.CSV_MIMETYPE,
+                    "Content-Disposition": f'attachment; filename="query.csv"',
+                },
+            )
+        case ".json":
+            return {
+                "$id": f"database {database.id}",
+                "query": sql,
+                "data": [dict(zip(header, row)) for row in rows],
+            }
+        case _:
+            raise errors.Error("invalid format", HTTP.NOT_FOUND)
 
 
 @rt("/{database:Item}/edit")
@@ -879,8 +897,9 @@ def get(request, database: items.Item, sql: str = None):
 def post(request, database: items.Item, sql: str, view: str):
     "Actually create a view in the database."
     assert isinstance(database, items.Database)
-    with database.connect() as cnx:
-        cnx.execute(f"CREATE VIEW {view} AS {sql}")
+    with set_modified_when_changed(database):
+        with database.connect() as cnx:
+            cnx.execute(f"CREATE VIEW {view} AS {sql}")
     return components.redirect(database.url)
 
 
@@ -1527,3 +1546,15 @@ def parse_csv_content(content):
             f"{column['name']} {column['type']} {'' if column['null'] else 'NOT NULL'}"
         )
     return columns, rows
+
+
+@contextlib.contextmanager
+def set_modified_when_changed(database):
+    "Set the modified timestamp of the item if the database file changes."
+    before = database.filepath.stat().st_mtime
+    try:
+        yield database
+    finally:
+        after = database.filepath.stat().st_mtime
+        if after != before:
+            os.utime(database.path, (database.path.stat().st_atime, after))

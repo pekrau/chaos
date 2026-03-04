@@ -10,7 +10,6 @@ import constants
 import errors
 import items
 import markdown
-import settings
 
 
 class ItemConvertor(Convertor):
@@ -161,8 +160,6 @@ def get_nav_menu():
             Li(A("Files", href="/files")),
             Li(A("Databases", href="/databases")),
             Li(A("Graphics", href="/graphics")),
-            Li(A("Keywords", href="/keywords")),
-            Li(A("Without keywords", href="/withoutkeywords")),
             Li(A("Random", href="/random")),
             Li(A("System", href="/system")),
             Li(A("Logout", href="/logout")),
@@ -263,30 +260,10 @@ def get_text_card(item):
         return Card(I("No text."))
 
 
-def get_keywords_card(item):
-    if keywords_links := get_keywords_links(item):
-        return Card(
-            Header(
-                Span("Keywords"),
-            ),
-            keywords_links,
-        )
-    else:
-        return Card("No keywords.")
-
-
 def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
     rows = []
     items = items[0:max_items]
     for item in items:
-        keywords = sorted(item.keywords)
-        keywords = [str(A(kw, href=f"/keywords/{kw}")) for kw in keywords]
-        if len(keywords) > constants.MAX_ROW_KEYWORDS:
-            keywords = NotStr(
-                ", ".join(keywords[0 : constants.MAX_ROW_KEYWORDS]) + "..."
-            )
-        else:
-            keywords = NotStr(", ".join(keywords))
         match item.__class__.__name__:
             case "Note":
                 icon = A(get_note_icon(), href=item.url)
@@ -334,7 +311,6 @@ def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
             rows.append(
                 Tr(
                     Td(icon, A(item.title, href=item.url)),
-                    Td(get_keywords_links(item, limit=True)),
                     Td(*get_item_clipboards(item), cls="right"),
                 )
             )
@@ -385,21 +361,6 @@ def get_table_pager(current_page, total_items, href):
     return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=href)
 
 
-def get_keywords_dropdown(keywords):
-    "Return a dropdown menu for keywords, with provides ones checked."
-    return [
-        Li(
-            Label(
-                Input(
-                    type="checkbox", name="keywords", value=kw, checked=kw in keywords
-                ),
-                kw,
-            )
-        )
-        for kw in settings.get_all_keywords()
-    ]
-
-
 def get_title_input(item):
     return Input(
         type="text",
@@ -422,14 +383,6 @@ def get_text_input(item):
     )
 
 
-def get_keyword_input(item):
-    return Details(
-        Summary("Keywords..."),
-        Ul(*get_keywords_dropdown(item.keywords if item else list())),
-        cls="dropdown",
-    )
-
-
 def get_cancel_form(href):
     return Form(
         Input(
@@ -440,15 +393,6 @@ def get_cancel_form(href):
         action=href,
         method="GET",
     )
-
-
-def get_keywords_links(item, limit=False):
-    "Return the list of keywords for the item as links."
-    result = [str(A(kw, href=f"/keywords/{kw}")) for kw in sorted(item.keywords)]
-    if limit and len(result) > constants.MAX_ROW_KEYWORDS:
-        return NotStr(", ".join(result[0 : constants.MAX_ROW_KEYWORDS]) + "...")
-    else:
-        return NotStr(", ".join(result))
 
 
 def get_total_pages(total_items=None):

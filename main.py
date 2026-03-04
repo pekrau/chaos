@@ -26,7 +26,6 @@ if os.environ.get("CHAOS_DEVELOPMENT"):
 import components
 import constants
 import errors
-import settings
 import items
 import note
 import link
@@ -34,7 +33,6 @@ import file
 import image
 import database
 import graphic
-import keywords
 import api
 import utils
 
@@ -46,14 +44,15 @@ app, rt = components.get_app_rt(
         Mount("/image", image.app),
         Mount("/database", database.app),
         Mount("/graphic", graphic.app),
-        Mount("/keywords", keywords.app),
         Mount("/api", api.app),
     ]
 )
 setup_toasts(app)
 
-# settings.read()
-items.fixup()
+path = constants.DATA_DIR / ".chaos.yaml"
+if path.exists():
+    path.unlink()
+
 items.read_items()
 
 
@@ -288,7 +287,6 @@ def get(page: int = 1):
                     title=image.title,
                     href=str(image.url),
                 ),
-                components.get_keywords_links(image),
             )
             for image in chunk
         ]
@@ -349,17 +347,6 @@ def get(page: int = 1):
     )
 
 
-@rt("/withoutkeywords")
-def get(page: int = 1):
-    "Display items without keywords."
-    return components.get_items_table_page(
-        "Without keywords",
-        items.get_no_keyword_items(),
-        page,
-        "/nokeywords",
-    )
-
-
 @rt("/random")
 def get():
     "Display a page of random items."
@@ -372,9 +359,8 @@ def get():
 
 
 @rt("/search")
-def get(term: str = None, keywords: list[str] = [], type: str = None):
+def get(term: str = None, type: str = None):
     "Search the items."
-    keywords = set(keywords)
     if type:
         type = type.capitalize()
         if type not in items.TYPES:
@@ -382,8 +368,6 @@ def get(term: str = None, keywords: list[str] = [], type: str = None):
     result = []
     for item in items.lookup.values():
         if type and item.__class__.__name__ != type:
-            continue
-        if not keywords.issubset(item.keywords):
             continue
         if term:
             if score := item.score(term):
@@ -413,26 +397,6 @@ def get(term: str = None, keywords: list[str] = [], type: str = None):
                     autofocus=True,
                 ),
                 Fieldset(
-                    Details(
-                        Summary("Filter by keywords..."),
-                        Ul(
-                            *[
-                                Li(
-                                    Label(
-                                        Input(
-                                            type="checkbox",
-                                            name="keywords",
-                                            checked=kw in keywords,
-                                            value=kw,
-                                        ),
-                                        kw,
-                                    )
-                                )
-                                for kw in settings.get_all_keywords()
-                            ]
-                        ),
-                        cls="dropdown",
-                    ),
                     Details(
                         Summary("Filter by type..."),
                         Ul(
@@ -585,7 +549,6 @@ def get():
 @rt("/system/reread")
 def post():
     "Reread all items from disk."
-    settings.read()
     items.read_items()
     return components.redirect("/system")
 

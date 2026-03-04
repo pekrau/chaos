@@ -54,7 +54,6 @@ def get(request):
                     ),
                 ),
                 components.get_text_input(None),
-                components.get_keyword_inputs(None),
                 Input(type="submit", value="Add database"),
                 action="/database/",
                 method="POST",
@@ -71,12 +70,12 @@ async def post(
     title: str,
     text: str,
     upfile: UploadFile = None,
-    keywords: list[str] = None,
 ):
     "Actually create the database."
     database = items.Database()
     database.owner = request.scope["auth"]
     database.title = title.strip()
+    database.text = text.strip()
     database.frontmatter["filename"] = database.id + ".sqlite"
     if upfile.filename:
         try:
@@ -91,8 +90,6 @@ async def post(
         database.filepath.unlink()
         raise errors.Error(error)
     cnx.close()
-    database.text = text.strip()
-    database.keywords = keywords or list()
     database.write()
     return components.redirect(database.url)
 
@@ -193,10 +190,6 @@ def get(database: items.Item):
                         method="GET",
                     ),
                 ),
-            ),
-            Div(
-                components.get_keywords_card(database),
-                cls="grid",
             ),
             cls="container",
         ),
@@ -753,7 +746,6 @@ def get(request, database: items.Item):
             Form(
                 components.get_title_input(database),
                 components.get_text_input(database),
-                components.get_keyword_inputs(database),
                 Input(type="submit", value="Save"),
                 action=f"{database.url}/edit",
                 method="POST",
@@ -769,11 +761,11 @@ async def post(
     database: items.Item,
     title: str,
     text: str,
-    keywords: list[str] = None,
 ):
     "Actually edit the database."
     assert isinstance(database, items.Database)
-    database.edit(title, text, keywords)
+    database.title = title.strip()
+    database.text = text.strip()
     database.write()
     return components.redirect(database.url)
 
@@ -831,7 +823,6 @@ def post(request, source: items.Database, title: str):
     except OSError as error:
         raise errors.Error(error)
     database.frontmatter["filename"] = filename
-    database.keywords = source.keywords
     database.write()
     return components.redirect(database.url)
 

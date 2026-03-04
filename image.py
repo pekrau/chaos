@@ -11,7 +11,6 @@ import components
 import constants
 import errors
 import items
-import settings
 
 app, rt = components.get_app_rt()
 
@@ -42,7 +41,6 @@ def get(request):
                 ),
                 Small("Image file: PNG, JPEG, SVG, WEBP or GIF.", id="file-helper"),
                 components.get_text_input(None),
-                components.get_keyword_inputs(None),
                 Input(type="submit", value="Add image"),
                 action="/image/",
                 method="POST",
@@ -59,7 +57,6 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    keywords: list[str] = None,
 ):
     "Actually add the image."
     filename = pathlib.Path(upfile.filename)
@@ -71,6 +68,7 @@ async def post(
     image = items.Image()
     image.owner = request.scope["auth"]
     image.title = title.strip() or filename.stem
+    image.text = text.strip()
     filecontent = await upfile.read()
     filename = image.id + ext
     image.frontmatter["filename"] = filename
@@ -79,8 +77,6 @@ async def post(
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
-    image.text = text.strip()
-    image.keywords = keywords or list()
     image.write()
     return components.redirect(image.url)
 
@@ -111,10 +107,6 @@ def get(image: items.Item):
                 )
             ),
             components.get_text_card(image),
-            Div(
-                components.get_keywords_card(image),
-                cls="grid",
-            ),
             cls="container",
         ),
         Footer(
@@ -178,7 +170,6 @@ def get(request, image: items.Item):
                     cls="grid",
                 ),
                 components.get_text_input(image),
-                components.get_keyword_inputs(image),
                 Input(type="submit", value="Save"),
                 action=f"{image.url}/edit",
                 method="POST",
@@ -195,7 +186,6 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    keywords: list[str] = None,
 ):
     "Actually edit the image."
     assert isinstance(image, items.Image)
@@ -210,7 +200,8 @@ async def post(
                 outfile.write(filecontent)
         except OSError as error:
             raise errors.Error(error)
-    image.edit(title, text, keywords)
+    image.title = title.strip()
+    image.text = text.strip()
     image.write()
     return components.redirect(image.url)
 
@@ -268,7 +259,6 @@ def post(request, source: items.File, title: str):
     except OSError as error:
         raise errors.Error(error)
     image.frontmatter["filename"] = filename
-    image.keywords = source.keywords
     image.write()
     return components.redirect(image.url)
 

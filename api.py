@@ -9,7 +9,6 @@ from fasthtml.common import *
 import components
 import constants
 import items
-import settings
 
 app, rt = components.get_app_rt()
 
@@ -30,34 +29,6 @@ def get(request):
     except KeyError as error:
         return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
     return items.get_all()
-
-
-@rt("/keywords")
-def get(request):
-    "Return a JSON dictionary containing the keywords."
-    try:
-        check_apikey(request)
-    except KeyError as error:
-        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
-    return {"keywords": list(settings.keywords)}
-
-
-@rt("/keyword/{keyword}")
-def get(request, keyword: str):
-    """Return a JSON dictionary of items {name: filename}, where 'filename'
-    may be None, for all items with the given keyword.
-    """
-    try:
-        check_apikey(request)
-    except KeyError as error:
-        return Response(content=str(error), status_code=HTTP.UNAUTHORIZED)
-    result = {}
-    for item in items.get_keyword_items(keyword):
-        try:
-            result[item.id] = item.filename
-        except AttributeError:
-            result[item.id] = None
-    return result
 
 
 @rt("/item/{item:Item}")

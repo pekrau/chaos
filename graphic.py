@@ -10,7 +10,6 @@ import components
 import constants
 import errors
 import items
-import settings
 
 app, rt = components.get_app_rt()
 
@@ -46,7 +45,6 @@ def get(request):
                     cls="specification",
                 ),
                 components.get_text_input(None),
-                components.get_keyword_inputs(None),
                 Input(type="submit", value="Add graphic"),
                 action="/graphic/",
                 method="POST",
@@ -64,7 +62,6 @@ def post(
     text: str,
     graphic_type: str,
     specification: str,
-    keywords: list[str] = None,
 ):
     "Actually add the graphic."
     graphic = items.Graphic()
@@ -81,7 +78,6 @@ def post(
             errors.Error(str(error))
     else:
         errors.Error("unknown graphic type.")
-    graphic.keywords = keywords or list()
     graphic.write()
     return components.redirect(graphic.url)
 
@@ -110,10 +106,6 @@ def get(graphic: items.Item):
         Main(
             Div(id="graphic"),
             components.get_text_card(graphic),
-            Div(
-                components.get_keywords_card(graphic),
-                cls="grid",
-            ),
             cls="container",
         ),
         Footer(
@@ -170,7 +162,6 @@ def get(request, graphic: items.Item):
                     cls="specification",
                 ),
                 components.get_text_input(graphic),
-                components.get_keyword_inputs(graphic),
                 Input(type="submit", value="Save"),
                 action=f"{graphic.url}/edit",
                 method="POST",
@@ -187,7 +178,6 @@ def post(
     title: str,
     text: str,
     specification: str,
-    keywords: list[str] = None,
 ):
     "Actually edit the graphic."
     assert isinstance(graphic, items.Graphic)
@@ -200,7 +190,8 @@ def post(
             errors.Error(str(error))
     else:
         errors.Error("unknown graphic type.")
-    graphic.edit(title, text, keywords)
+    graphic.title = title.strip()
+    graphic.text = text.strip()
     graphic.write()
     return components.redirect(graphic.url)
 
@@ -250,7 +241,6 @@ def post(request, source: items.File, title: str):
     graphic.text = source.text
     graphic.frontmatter["graphic"] = source.graphic
     graphic.frontmatter["specification"] = source.specification
-    graphic.keywords = source.keywords
     graphic.write()
     return components.redirect(graphic.url)
 

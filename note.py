@@ -7,7 +7,6 @@ from fasthtml.common import *
 import components
 import constants
 import items
-import settings
 
 app, rt = components.get_app_rt()
 
@@ -45,14 +44,12 @@ def post(
     request,
     title: str,
     text: str,
-    keywords: list[str] = None,
 ):
     "Actually add the note."
     note = items.Note()
     note.owner = request.scope["auth"]
     note.title = title.strip() or "no title"
     note.text = text.strip()
-    note.keywords = keywords or list()
     note.write()
     return components.redirect(note.url)
 
@@ -77,7 +74,6 @@ def get(note: items.Item):
         ),
         Main(
             components.get_text_card(note),
-            components.get_keywords_card(note),
             cls="container",
         ),
         Footer(
@@ -113,7 +109,6 @@ def get(request, note: items.Item):
             Form(
                 components.get_title_input(note),
                 components.get_text_input(note),
-                components.get_keyword_inputs(note),
                 Input(type="submit", value="Save"),
                 action=f"{note.url}/edit",
                 method="POST",
@@ -129,11 +124,11 @@ def post(
     note: items.Item,
     title: str,
     text: str,
-    keywords: list[str] = None,
 ):
     "Actually edit the note."
     assert isinstance(note, items.Note)
-    note.edit(title, text, keywords)
+    note.title = title.strip()
+    note.text = text.strip()
     note.write()
     return components.redirect(note.url)
 
@@ -181,7 +176,6 @@ def post(request, source: items.File, title: str):
     note.owner = request.scope["auth"]
     note.title = title.strip()
     note.text = source.text
-    note.keywords = source.keywords
     note.write()
     return components.redirect(note.url)
 

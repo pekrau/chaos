@@ -15,7 +15,6 @@ import yaml
 
 import constants
 import errors
-import settings
 import utils
 
 # The item types.
@@ -79,8 +78,7 @@ class Item:
     def title(self, title):
         "Set the title. If the path has not been set, set it to unique variant."
         global lookup
-        assert title
-        self.frontmatter["title"] = title
+        self.frontmatter["title"] = title or "no title"
         if self.path is None:
             filename = utils.normalize(title)
             self._path = constants.DATA_DIR / f"{filename}.md"
@@ -92,15 +90,6 @@ class Item:
                         break
                     n += 1
             lookup[self.id] = self
-
-    @property
-    def keywords(self):
-        # This is a set, not a list.
-        return self.frontmatter.get("keywords") or set()
-
-    @keywords.setter
-    def keywords(self, keywords):
-        self.frontmatter["keywords"] = set(keywords).intersection(settings.keywords)
 
     @property
     def size(self):
@@ -117,21 +106,11 @@ class Item:
         "Modified timestamp in local ISO format."
         return utils.timestamp_local(self.path.stat().st_mtime)
 
-    def edit(self, title, text, keywords):
-        """Edit the data of the item.
-        Does *not* write out the item.
-        """
-        self.title = title.strip() or "no title"
-        self.text = text.strip()
-        self.keywords = keywords or list()
-
     def write(self):
         "Write the item to file."
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = copy.deepcopy(self.frontmatter)
-                # if keywords := frontmatter.pop("keywords", None):
-                #     frontmatter["keywords"] = list(keywords)
                 outfile.write("---\n")
                 outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
                 outfile.write("---\n")
@@ -145,15 +124,6 @@ class Item:
         global lookup
         lookup.pop(self.id)
         self.path.unlink()
-
-    def remove_keyword(self, keyword):
-        "Remove the keyword from this item, and write it if any change."
-        try:
-            self.keywords.remove(keyword)
-        except KeyError:
-            pass
-        else:
-            self.write()
 
     def score(self, term):
         """Calculate the score for the term in the title or text of the item.
@@ -321,33 +291,33 @@ class Graphic(Item):
         return self.frontmatter["specification"]
 
 
-def fixup(dirpath=constants.DATA_DIR):
-    for path in dirpath.iterdir():
-        if path.is_dir():
-            fixup(dirpath=path)
-        elif path.is_file() and path.suffix == ".md":
-            atime = path.stat().st_atime
-            mtime = path.stat().st_mtime
-            content = path.read_text()
-            m = constants.FRONTMATTER.match(content)
-            if not m:
-                continue
-            frontmatter = yaml.safe_load(m.group(1))
-            # Dates must be represented as strings, not datetime.date.
-            for key, value in frontmatter.items():
-                if isinstance(value, datetime.date):
-                    frontmatter[key] = str(value)
-            text = content[m.start(2) :]
-            if keywords := frontmatter.pop("keywords", None):
-                text += f"\n\nKeywords: {', '.join(keywords)}"
-            with path.open(mode="w") as outfile:
-                if frontmatter:
-                    outfile.write("---\n")
-                    outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
-                    outfile.write("---\n")
-                if text:
-                    outfile.write(text)
-            os.utime(path, (atime, mtime))
+# def fixup(dirpath=constants.DATA_DIR):
+#     for path in dirpath.iterdir():
+#         if path.is_dir():
+#             fixup(dirpath=path)
+#         elif path.is_file() and path.suffix == ".md":
+#             atime = path.stat().st_atime
+#             mtime = path.stat().st_mtime
+#             content = path.read_text()
+#             m = constants.FRONTMATTER.match(content)
+#             if not m:
+#                 continue
+#             frontmatter = yaml.safe_load(m.group(1))
+#             # Dates must be represented as strings, not datetime.date.
+#             for key, value in frontmatter.items():
+#                 if isinstance(value, datetime.date):
+#                     frontmatter[key] = str(value)
+#             text = content[m.start(2) :]
+#             if keywords := frontmatter.pop("keywords", None):
+#                 text += f"\n\nKeywords: {', '.join(keywords)}"
+#             with path.open(mode="w") as outfile:
+#                 if frontmatter:
+#                     outfile.write("---\n")
+#                     outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
+#                     outfile.write("---\n")
+#                 if text:
+#                     outfile.write(text)
+#             os.utime(path, (atime, mtime))
 
 
 def read_items(dirpath=None):
@@ -389,7 +359,6 @@ def read_items(dirpath=None):
             else:
                 item = Note(path)
             lookup[item.id] = item
-            # frontmatter["keywords"] = set(frontmatter.pop("keywords", []))
             item.frontmatter = frontmatter
             item.text = text
 
@@ -401,28 +370,6 @@ def get_items(cls=None):
         result = list(lookup.values())
     else:
         result = [e for e in lookup.values() if isinstance(e, cls)]
-    result.sort(key=lambda e: e.modified, reverse=True)
-    return result
-
-
-def get_keyword_items(keyword):
-    "Get the items with the given keyword sorted by modified time."
-    global lookup
-    result = [e for e in lookup.values() if keyword in e.keywords]
-    result.sort(key=lambda e: e.modified, reverse=True)
-    return result
-
-
-def get_total_keyword_items(keyword):
-    "Return the number of items having the keyword."
-    global lookup
-    return len([e for e in lookup.values() if keyword in e.keywords])
-
-
-def get_no_keyword_items():
-    "Get the items without keywords sorted by modified time."
-    global lookup
-    result = [e for e in lookup.values() if not e.keywords]
     result.sort(key=lambda e: e.modified, reverse=True)
     return result
 
@@ -458,5 +405,4 @@ def get_statistics():
     result.update(dict([(type.lower(), 0) for type in TYPES]))
     for item in lookup.values():
         result[item.__class__.__name__.lower()] += 1
-    result["keyword"] = len(settings.keywords)
     return result

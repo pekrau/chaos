@@ -32,7 +32,6 @@ def get(request):
                 components.get_title_input(None),
                 Input(type="file", name="upfile", required=True),
                 components.get_text_input(None),
-                components.get_keyword_inputs(None),
                 Input(type="submit", value="Add file"),
                 action="/file/",
                 method="POST",
@@ -49,7 +48,6 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    keywords: list[str] = None,
 ):
     "Actually add the file."
     filename = pathlib.Path(upfile.filename)
@@ -59,6 +57,7 @@ async def post(
     file = items.File()
     file.owner = request.scope["auth"]
     file.title = title.strip() or filename.stem
+    file.text = text.strip()
     filecontent = await upfile.read()
     filename = file.id + ext
     file.frontmatter["filename"] = filename
@@ -67,8 +66,6 @@ async def post(
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
-    file.text = text.strip()
-    file.keywords = keywords or list()
     file.write()
     return components.redirect(file.url)
 
@@ -97,10 +94,6 @@ def get(file: items.Item):
         Main(
             Card(A(file.filename, href=file.url_file)),
             components.get_text_card(file),
-            Div(
-                components.get_keywords_card(file),
-                cls="grid",
-            ),
             cls="container",
         ),
         Footer(
@@ -156,7 +149,6 @@ def get(request, file: items.Item):
                     cls="grid",
                 ),
                 components.get_text_input(file),
-                components.get_keyword_inputs(file),
                 Input(type="submit", value="Save"),
                 action=f"{file.url}/edit",
                 method="POST",
@@ -173,7 +165,6 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    keywords: list[str] = None,
 ):
     "Actually edit the file."
     assert isinstance(file, items.File)
@@ -188,7 +179,8 @@ async def post(
                 outfile.write(filecontent)
         except OSError as error:
             raise errors.Error(error)
-    file.edit(title, text, keywords)
+    file.title = title.strip()
+    file.text = text.strip()
     file.write()
     return components.redirect(file.url)
 
@@ -246,7 +238,6 @@ def post(request, source: items.File, title: str):
     except OSError as error:
         raise errors.Error(error)
     file.frontmatter["filename"] = filename
-    file.keywords = source.keywords
     file.write()
     return components.redirect(file.url)
 

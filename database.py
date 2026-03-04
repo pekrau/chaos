@@ -177,21 +177,15 @@ def get(database: items.Item):
                     action=f"{database.url}.csv",
                     method="GET",
                 ),
-                Div(
-                    A(
-                        "Download Sqlite",
-                        href=database.url_file,
-                        role="button",
-                        cls="secondary outline",
-                    ),
+                Form(
+                    Input(type="submit", value="Download Sqlite", cls="outline"),
+                    action=database.url_file,
+                    method="GET",
                 ),
-                Div(
-                    A(
-                        "Download SQL",
-                        href=f"{database.url_sql}",
-                        role="button",
-                        cls="secondary outline",
-                    ),
+                Form(
+                    Input(type="submit", value="Download SQL", cls="outline"),
+                    action=database.url_sql,
+                    method="GET",
                 ),
                 cls="grid",
             ),
@@ -1434,78 +1428,44 @@ def get_overview(database, display=False):
         ]
         spec.append(Li(relation["sql"]))
         if relation["type"] == "table":
-            buttons = [
-                Td(
-                    A(
-                        "Add row",
-                        href=f"{database.url}/row/{relname}",
-                        role="button",
-                        cls="thin",
-                    ),
-                    cls="top right",
-                ),
-                Td(
-                    A(
-                        "Add CSV file",
-                        href=f"{database.url}/rows/{relname}/csv",
-                        role="button",
-                        cls="thin",
-                    ),
-                    cls="top right",
-                ),
+            actions = [
+                Li(A("Add row", href=f"{database.url}/row/{relname}")),
+                Li(A("Add CSV file", href=f"{database.url}/rows/{relname}/csv")),
             ]
         else:
-            buttons = [Td(), Td()]
+            actions = []
 
-        rows.append(
-            Tr(
-                Td(
-                    f"{relation['type'].capitalize()} ",
-                    Strong(relname),
-                    cls="top",
-                    rowspan=2,
-                ),
-                Td(
-                    A(
-                        f"{relation['count']} rows",
-                        href=f"{database.url}/rows/{relname}",
-                        role="button",
-                        cls="thin",
-                    ),
-                ),
-                *buttons,
-            ),
+        actions.append(
+            Li(A("Download CSV", href=f"{database.url}/rows/{relname}.csv"))
+        )
+        actions.append(
+            Li(A("Download JSON", href=f"{database.url}/rows/{relname}.json"))
         )
         rows.append(
-            Tr(
-                Td(
-                    Details(
-                        Summary("Specification", role="button", cls="thin outline"),
-                        Ul(*spec),
-                        open=display,
-                    ),
-                ),
-                Td(
-                    A(
-                        "Download CSV",
-                        href=f"{database.url}/rows/{relname}.csv",
+            Div(
+                Details(
+                    Summary(
+                        f"{relation['type'].capitalize()} ",
+                        Strong(relname),
                         role="button",
-                        cls="secondary outline thin",
-                    ),
-                    cls="top right",
+                        cls="outline"),
+                    Ul(*spec),
+                    open=display,
                 ),
-                Td(
-                    A(
-                        "Download JSON",
-                        href=f"{database.url}/rows/{relname}.json",
-                        role="button",
-                        cls="secondary outline thin",
-                    ),
-                    cls="top right",
+                Form(
+                    Input(type="submit", value=f"{relation['count']} rows"),
+                    action=f"{database.url}/rows/{relname}",
+                    method="GET",
                 ),
+                Details(
+                    Summary("Actions"),
+                    Ul(*actions),
+                    cls="dropdown"
+                ),
+                cls="grid",
             )
         )
-    return Table(Tbody(*rows))
+    return Card(*rows)
 
 
 def parse_csv_content(content):

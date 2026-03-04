@@ -139,7 +139,7 @@ def get(database: items.Item):
             Tbody(*plot_rows),
         )
     else:
-        plots_table = I("None.")
+        plots_table = I("No plots.")
 
     return (
         Title(database.title),
@@ -182,15 +182,12 @@ def get(database: items.Item):
                 cls="grid",
             ),
             Card(
-                Header("Plots"),
-                plots_table,
-                Footer(
-                    Form(
-                        Input(type="submit", value="Add plot"),
-                        action=f"{database.url}/plot",
-                        method="GET",
-                    ),
+                Header(
+                    Span("Plots"),
+                    A("Add plot", href=f"{database.url}/plot", role="button"),
+                    cls="grid",
                 ),
+                plots_table,
             ),
             components.get_xrefs_card(database),
             cls="container",

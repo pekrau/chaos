@@ -54,7 +54,7 @@ def get(request):
                     ),
                 ),
                 components.get_text_input(None),
-                components.get_listset_keyword_inputs(None),
+                components.get_keyword_inputs(None),
                 Input(type="submit", value="Add database"),
                 action="/database/",
                 method="POST",
@@ -71,7 +71,6 @@ async def post(
     title: str,
     text: str,
     upfile: UploadFile = None,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually create the database."
@@ -93,11 +92,6 @@ async def post(
         raise errors.Error(error)
     cnx.close()
     database.text = text.strip()
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(database)
-        listset.write()
     database.keywords = keywords or list()
     database.write()
     return components.redirect(database.url)
@@ -201,7 +195,6 @@ def get(database: items.Item):
                 ),
             ),
             Div(
-                components.get_listsets_card(database),
                 components.get_keywords_card(database),
                 cls="grid",
             ),
@@ -760,7 +753,7 @@ def get(request, database: items.Item):
             Form(
                 components.get_title_input(database),
                 components.get_text_input(database),
-                components.get_listset_keyword_inputs(database),
+                components.get_keyword_inputs(database),
                 Input(type="submit", value="Save"),
                 action=f"{database.url}/edit",
                 method="POST",
@@ -776,12 +769,11 @@ async def post(
     database: items.Item,
     title: str,
     text: str,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually edit the database."
     assert isinstance(database, items.Database)
-    database.edit(title, text, listsets, keywords)
+    database.edit(title, text, keywords)
     database.write()
     return components.redirect(database.url)
 

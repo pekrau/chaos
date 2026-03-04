@@ -8,8 +8,9 @@ import marko
 
 import constants
 import errors
-import settings
 import items
+import markdown
+import settings
 
 
 class ItemConvertor(Convertor):
@@ -141,10 +142,6 @@ def get_graphic_icon(title="Graphic"):
     return get_icon("graph-up.svg", title=title)
 
 
-def get_listset_icon(title="Listset"):
-    return get_icon("list-ul.svg", title=title)
-
-
 def get_nav_menu():
     return Details(
         Summary(
@@ -164,10 +161,8 @@ def get_nav_menu():
             Li(A("Files", href="/files")),
             Li(A("Databases", href="/databases")),
             Li(A("Graphics", href="/graphics")),
-            Li(A("Listsets", href="/listsets")),
             Li(A("Keywords", href="/keywords")),
             Li(A("Without keywords", href="/withoutkeywords")),
-            Li(A("No similar", href="/nosimilar")),
             Li(A("Random", href="/random")),
             Li(A("System", href="/system")),
             Li(A("Logout", href="/logout")),
@@ -263,19 +258,9 @@ def get_items_table_page(title, items, page, href, after=""):
 
 def get_text_card(item):
     if text := item.text:
-        return Card(NotStr(marko.convert(text)))
+        return Card(NotStr(markdown.to_html(text)))
     else:
         return Card(I("No text."))
-
-
-def get_listsets_card(item):
-    if listsets := list(item.listsets):
-        return Card(
-            Header("In listsets"),
-            get_items_table(listsets),
-        )
-    else:
-        return Card(I("In no listsets."))
 
 
 def get_keywords_card(item):
@@ -283,13 +268,6 @@ def get_keywords_card(item):
         return Card(
             Header(
                 Span("Keywords"),
-                A(
-                    "Similar items",
-                    href=f"/similar/{item.id}",
-                    role="button",
-                    cls="thin",
-                ),
-                cls="grid",
             ),
             keywords_links,
         )
@@ -329,8 +307,6 @@ def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
                     get_file_icon(item.file_mimetype, title="View or download file"),
                     href=item.url_file,
                 )
-            case "Listset":
-                icon = A(get_listset_icon(), href=item.url)
             case _:
                 raise NotImplementedError
         if edit:
@@ -443,35 +419,6 @@ def get_text_input(item):
             rows=10,
             placeholder="Text...",
         ),
-    )
-
-
-def get_listset_keyword_inputs(item):
-    return Div(
-        get_listset_input(item),
-        get_keyword_input(item),
-        cls="grid",
-    )
-
-
-def get_listset_input(item, max_listsets=constants.MAX_LISTSETS):
-    listsets = items.get_possible_listsets(item)
-    listsets.sort(key=lambda i: i.modified, reverse=True)
-    listsets = listsets[:max_listsets]
-    return Details(
-        Summary("Add to listsets..."),
-        Ul(
-            *[
-                Li(
-                    Label(
-                        Input(type="checkbox", name="listsets", value=listset.id),
-                        listset.title,
-                    )
-                )
-                for listset in listsets
-            ]
-        ),
-        cls="dropdown",
     )
 
 

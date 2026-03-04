@@ -19,7 +19,7 @@ import settings
 import utils
 
 # The item types.
-TYPES = ["Note", "Link", "Image", "File", "Database", "Graphic", "Listset"]
+TYPES = ["Note", "Link", "Image", "File", "Database", "Graphic"]
 
 
 # Global item lookup. Key: item id; value: item instance.
@@ -39,7 +39,6 @@ class Item:
         self._path = path
         self.frontmatter = {}
         self.text = ""
-        self.similarities = {}  # Key: item id; value: similarity number.
 
     def __str__(self):
         return self.url
@@ -102,17 +101,6 @@ class Item:
     @keywords.setter
     def keywords(self, keywords):
         self.frontmatter["keywords"] = set(keywords).intersection(settings.keywords)
-        self.set_similarities()
-
-    @property
-    def listsets(self):
-        "Return the set of listsets this item is part of."
-        result = set()
-        for item in lookup.values():
-            if isinstance(item, Listset):
-                if self in item:
-                    result.add(item)
-        return result
 
     @property
     def size(self):
@@ -129,18 +117,12 @@ class Item:
         "Modified timestamp in local ISO format."
         return utils.timestamp_local(self.path.stat().st_mtime)
 
-    def edit(self, title, text, listsets, keywords):
+    def edit(self, title, text, keywords):
         """Edit the data of the item.
         Does *not* write out the item.
-        *Does* write out the affected listsets.
         """
         self.title = title.strip() or "no title"
         self.text = text.strip()
-        for id in listsets or list():
-            listset = get(id)
-            assert isinstance(listset, Listset)
-            listset.add(self)
-            listset.write()
         self.keywords = keywords or list()
 
     def write(self):
@@ -148,8 +130,8 @@ class Item:
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = copy.deepcopy(self.frontmatter)
-                if keywords := frontmatter.pop("keywords", None):
-                    frontmatter["keywords"] = list(keywords)
+                # if keywords := frontmatter.pop("keywords", None):
+                #     frontmatter["keywords"] = list(keywords)
                 outfile.write("---\n")
                 outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
                 outfile.write("---\n")
@@ -158,18 +140,10 @@ class Item:
 
     def delete(self):
         """Delete the item from the file system.
-        Remove all similarities to it.
-        Remove from all listsets it is part of.
         Remove from the lookup.
         """
         global lookup
-        id = self.id
-        for item in lookup.values():
-            item.similarities.pop(id, None)
-        for listset in self.listsets:
-            listset.remove(id)
-            listset.write()
-        lookup.pop(id)
+        lookup.pop(self.id)
         self.path.unlink()
 
     def remove_keyword(self, keyword):
@@ -180,35 +154,6 @@ class Item:
             pass
         else:
             self.write()
-            self.set_similarities()
-
-    def set_similarities(self):
-        "Set the similarities between this item and all others."
-        global lookup
-        id = self.id
-        self.similarities = {}  # Key: item id; value: similarity number.
-        for item in lookup.values():
-            if item is self:
-                continue
-            if similarity := self.similarity(item):
-                self.similarities[item.id] = similarity
-                item.similarities[id] = similarity
-            else:
-                item.similarities.pop(id, None)
-
-    def similarity(self, other):
-        "Return the similarity number between this item and the other."
-        assert isinstance(other, Item)
-        return len(self.keywords.intersection(other.keywords))
-
-    def similar(self):
-        "Return the sorted list of similar items."
-        return [
-            get(k)
-            for k, v in sorted(
-                self.similarities.items(), key=lambda r: r[1], reverse=True
-            )
-        ]
 
     def score(self, term):
         """Calculate the score for the term in the title or text of the item.
@@ -234,45 +179,6 @@ class Link(Item):
     @href.setter
     def href(self, href):
         self.frontmatter["href"] = href.strip() or "/"
-
-
-class Listset(Item):
-    "Listset item class."
-
-    def __contains__(self, item):
-        if isinstance(item, Item):
-            return item.id in self.frontmatter["items"]
-        else:
-            return False
-
-    @property
-    def items(self):
-        return [get(id) for id in self.frontmatter["items"]]
-
-    def flattened(self):
-        "Return all subitems, including those in contained listsets."
-        result = [self]
-        for item in self.items:
-            if isinstance(item, Listset):
-                result.extend(item.flattened())
-            else:
-                result.append(item)
-        return result
-
-    def add(self, item):
-        assert isinstance(item, Item)
-        if item in self:
-            return
-        if isinstance(item, Listset):
-            if self in item.flattened():
-                raise ValueError("The given listset contains this listset in its tree.")
-        self.frontmatter["items"].append(item.id)
-
-    def remove(self, id):
-        try:
-            self.frontmatter["items"].remove(id)
-        except ValueError:
-            pass
 
 
 class GenericFile(Item):
@@ -415,30 +321,56 @@ class Graphic(Item):
         return self.frontmatter["specification"]
 
 
+def fixup(dirpath=constants.DATA_DIR):
+    for path in dirpath.iterdir():
+        if path.is_dir():
+            fixup(dirpath=path)
+        elif path.is_file() and path.suffix == ".md":
+            atime = path.stat().st_atime
+            mtime = path.stat().st_mtime
+            content = path.read_text()
+            m = constants.FRONTMATTER.match(content)
+            if not m:
+                continue
+            frontmatter = yaml.safe_load(m.group(1))
+            # Dates must be represented as strings, not datetime.date.
+            for key, value in frontmatter.items():
+                if isinstance(value, datetime.date):
+                    frontmatter[key] = str(value)
+            text = content[m.start(2) :]
+            if keywords := frontmatter.pop("keywords", None):
+                text += f"\n\nKeywords: {', '.join(keywords)}"
+            with path.open(mode="w") as outfile:
+                if frontmatter:
+                    outfile.write("---\n")
+                    outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
+                    outfile.write("---\n")
+                if text:
+                    outfile.write(text)
+            os.utime(path, (atime, mtime))
+
+
 def read_items(dirpath=None):
     """Recursively read all items from files in the given directory.
     If no directory is given, start with the data dir.
     Create the data dir if it does not exist.
-    Compute similarities between the items based on the keywords.
     """
     global lookup
     if dirpath is None:
         lookup.clear()
     for path in constants.DATA_DIR.iterdir():
         if path.is_dir():
-            if path.name == ".trash":
-                continue
             read_items(path)
         elif path.is_file() and path.suffix == ".md":
             content = path.read_text()
-            match = constants.FRONTMATTER.match(content)
-            if match:
-                frontmatter = yaml.safe_load(match.group(1))
+            m = constants.FRONTMATTER.match(content)
+            if m:
+                frontmatter = yaml.safe_load(m.group(1))
                 # Dates must be represented as strings, not datetime.date.
                 for key, value in frontmatter.items():
                     if isinstance(value, datetime.date):
                         frontmatter[key] = str(value)
-                text = content[match.start(2) :]
+                text = content[m.start(2) :]
             else:
                 frontmatter = {}
                 text = content
@@ -452,30 +384,14 @@ def read_items(dirpath=None):
                     item = Database(path)
                 else:
                     item = File(path)
-            elif "items" in frontmatter:
-                item = Listset(path)
             elif "graphic" in frontmatter:
                 item = Graphic(path)
             else:
                 item = Note(path)
             lookup[item.id] = item
-            frontmatter["keywords"] = set(frontmatter.pop("keywords", []))
+            # frontmatter["keywords"] = set(frontmatter.pop("keywords", []))
             item.frontmatter = frontmatter
             item.text = text
-    set_all_similarities()
-
-
-def set_all_similarities():
-    "Compute similarities between the items based on the keywords."
-    global lookup
-    items = list(lookup.values())
-    for item in items:
-        item.similarities = {}  # Key: item id; value: similarity number.
-    for pos, item1 in enumerate(items):
-        for item2 in items[pos + 1 :]:
-            if similarity := item1.similarity(item2):
-                item1.similarities[item2.id] = similarity
-                item2.similarities[item1.id] = similarity
 
 
 def get_items(cls=None):
@@ -501,14 +417,6 @@ def get_total_keyword_items(keyword):
     "Return the number of items having the keyword."
     global lookup
     return len([e for e in lookup.values() if keyword in e.keywords])
-
-
-def get_no_similar_items():
-    "Get the items with no similars sorted by modified time."
-    global lookup
-    result = [i for i in lookup.values() if len(i.similar()) == 0]
-    result.sort(key=lambda e: e.modified, reverse=True)
-    return result
 
 
 def get_no_keyword_items():
@@ -542,20 +450,6 @@ def get_all():
         result[item.id] = item.modified
         if isinstance(item, (File, Image)):
             result[str(item.filename)] = item.file_modified
-    return result
-
-
-def get_possible_listsets(item):
-    "Get the listsets this item could be included in."
-    result = []
-    for listset in get_items(Listset):
-        if item in listset:
-            continue
-        if item is listset:
-            continue
-        if isinstance(item, Listset) and item in listset.flattened():
-            continue
-        result.append(listset)
     return result
 
 

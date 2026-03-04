@@ -30,7 +30,7 @@ def get(request):
                 components.get_title_input(None),
                 Input(type="href", name="href", placeholder="Href...", required=True),
                 components.get_text_input(None),
-                components.get_listset_keyword_inputs(None),
+                components.get_keyword_inputs(None),
                 Input(type="submit", value="Add link"),
                 action="/link/",
                 method="POST",
@@ -48,7 +48,6 @@ def post(
     href: str,
     text: str,
     keywords: list[str] = None,
-    listsets: list[str] = None,
 ):
     "Actually add the link."
     link = items.Link()
@@ -57,11 +56,6 @@ def post(
     link.href = href.strip() or "/"
     link.text = text.strip()
     link.keywords = keywords or list()
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(link)
-        listset.write()
     link.write()
     return components.redirect(link.url)
 
@@ -93,11 +87,7 @@ def get(link: items.Item):
                 )
             ),
             components.get_text_card(link),
-            Div(
-                components.get_listsets_card(link),
-                components.get_keywords_card(link),
-                cls="grid",
-            ),
+            components.get_keywords_card(link),
             cls="container",
         ),
         Footer(
@@ -140,7 +130,7 @@ def get(request, link: items.Item):
                     required=True,
                 ),
                 components.get_text_input(link),
-                components.get_listset_keyword_inputs(link),
+                components.get_keyword_inputs(link),
                 Input(type="submit", value="Save"),
                 action=f"{link.url}/edit",
                 method="POST",
@@ -157,12 +147,11 @@ def post(
     title: str,
     href: str,
     text: str,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually edit the link."
     assert isinstance(link, items.Link)
-    link.edit(title, text, listsets, keywords)
+    link.edit(title, text, keywords)
     link.href = href.strip() or "/"
     link.write()
     return components.redirect(link.url)

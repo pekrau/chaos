@@ -46,7 +46,7 @@ def get(request):
                     cls="specification",
                 ),
                 components.get_text_input(None),
-                components.get_listset_keyword_inputs(None),
+                components.get_keyword_inputs(None),
                 Input(type="submit", value="Add graphic"),
                 action="/graphic/",
                 method="POST",
@@ -64,7 +64,6 @@ def post(
     text: str,
     graphic_type: str,
     specification: str,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually add the graphic."
@@ -82,11 +81,6 @@ def post(
             errors.Error(str(error))
     else:
         errors.Error("unknown graphic type.")
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(graphic)
-        listset.write()
     graphic.keywords = keywords or list()
     graphic.write()
     return components.redirect(graphic.url)
@@ -117,7 +111,6 @@ def get(graphic: items.Item):
             Div(id="graphic"),
             components.get_text_card(graphic),
             Div(
-                components.get_listsets_card(graphic),
                 components.get_keywords_card(graphic),
                 cls="grid",
             ),
@@ -177,7 +170,7 @@ def get(request, graphic: items.Item):
                     cls="specification",
                 ),
                 components.get_text_input(graphic),
-                components.get_listset_keyword_inputs(graphic),
+                components.get_keyword_inputs(graphic),
                 Input(type="submit", value="Save"),
                 action=f"{graphic.url}/edit",
                 method="POST",
@@ -194,7 +187,6 @@ def post(
     title: str,
     text: str,
     specification: str,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually edit the graphic."
@@ -208,7 +200,7 @@ def post(
             errors.Error(str(error))
     else:
         errors.Error("unknown graphic type.")
-    graphic.edit(title, text, listsets, keywords)
+    graphic.edit(title, text, keywords)
     graphic.write()
     return components.redirect(graphic.url)
 

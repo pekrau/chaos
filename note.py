@@ -30,7 +30,6 @@ def get(request):
             Form(
                 components.get_title_input(None),
                 components.get_text_input(None),
-                components.get_listset_keyword_inputs(None),
                 Input(type="submit", value="Add note"),
                 action="/note/",
                 method="POST",
@@ -46,7 +45,6 @@ def post(
     request,
     title: str,
     text: str,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually add the note."
@@ -54,11 +52,6 @@ def post(
     note.owner = request.scope["auth"]
     note.title = title.strip() or "no title"
     note.text = text.strip()
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(note)
-        listset.write()
     note.keywords = keywords or list()
     note.write()
     return components.redirect(note.url)
@@ -84,11 +77,7 @@ def get(note: items.Item):
         ),
         Main(
             components.get_text_card(note),
-            Div(
-                components.get_listsets_card(note),
-                components.get_keywords_card(note),
-                cls="grid",
-            ),
+            components.get_keywords_card(note),
             cls="container",
         ),
         Footer(
@@ -124,7 +113,7 @@ def get(request, note: items.Item):
             Form(
                 components.get_title_input(note),
                 components.get_text_input(note),
-                components.get_listset_keyword_inputs(note),
+                components.get_keyword_inputs(note),
                 Input(type="submit", value="Save"),
                 action=f"{note.url}/edit",
                 method="POST",
@@ -140,12 +129,11 @@ def post(
     note: items.Item,
     title: str,
     text: str,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually edit the note."
     assert isinstance(note, items.Note)
-    note.edit(title, text, listsets, keywords)
+    note.edit(title, text, keywords)
     note.write()
     return components.redirect(note.url)
 

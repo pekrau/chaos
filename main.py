@@ -11,7 +11,6 @@ import sys
 import bokeh
 import fasthtml
 from fasthtml.common import *
-import starlette.routing
 import marko
 import numpy
 import psutil
@@ -35,7 +34,6 @@ import file
 import image
 import database
 import graphic
-import listset
 import keywords
 import api
 import utils
@@ -48,14 +46,14 @@ app, rt = components.get_app_rt(
         Mount("/image", image.app),
         Mount("/database", database.app),
         Mount("/graphic", graphic.app),
-        Mount("/listset", listset.app),
         Mount("/keywords", keywords.app),
         Mount("/api", api.app),
     ]
 )
 setup_toasts(app)
 
-settings.read()
+# settings.read()
+items.fixup()
 items.read_items()
 
 
@@ -233,16 +231,6 @@ def get():
                 method="GET",
                 action="/graphic",
             ),
-            Form(
-                Button(
-                    components.get_listset_icon(),
-                    "Add listset",
-                    type="submit",
-                    cls="outline",
-                ),
-                method="GET",
-                action="/listset",
-            ),
             cls="container",
         ),
     )
@@ -361,17 +349,6 @@ def get(page: int = 1):
     )
 
 
-@rt("/listsets")
-def get(page: int = 1):
-    "Display listset items."
-    return components.get_items_table_page(
-        "Listsets",
-        items.get_items(items.Listset),
-        page,
-        "/listsets",
-    )
-
-
 @rt("/withoutkeywords")
 def get(page: int = 1):
     "Display items without keywords."
@@ -380,50 +357,6 @@ def get(page: int = 1):
         items.get_no_keyword_items(),
         page,
         "/nokeywords",
-    )
-
-
-@rt("/similar/{item:Item}")
-def get(item: items.Item, page: int = 1):
-    "Display items similiar to the given item."
-    similar = item.similar()
-    total_items = len(similar)
-    page = min(max(1, page), components.get_total_pages(total_items))
-    start = (page - 1) * constants.MAX_PAGE_ITEMS
-    end = page * constants.MAX_PAGE_ITEMS
-    table = components.get_items_table(similar[start:end])
-    pager = components.get_table_pager(page, total_items, f"/similar/{item.id}")
-    return (
-        Title("Similar items"),
-        components.clipboard_script(),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu()),
-                    Li("Similar items"),
-                    Li(components.search_form()),
-                ),
-                cls="main",
-            ),
-            cls="container",
-        ),
-        Main(
-            Card(components.get_items_table([item])),
-            Card(Header("Similar items"), table, Footer(pager)),
-            cls="container",
-        ),
-        components.clipboard_activate(),
-    )
-
-
-@rt("/nosimilar")
-def get(page: int = 1):
-    "Display items having no similarites to any item."
-    return components.get_items_table_page(
-        "No similar",
-        items.get_no_similar_items(),
-        page,
-        "/nosimilar",
     )
 
 
@@ -523,7 +456,6 @@ def get(term: str = None, keywords: list[str] = [], type: str = None):
                                     "File",
                                     "Database",
                                     "Graphic",
-                                    "Listset",
                                 ]
                             ]
                         ),

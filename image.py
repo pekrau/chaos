@@ -42,7 +42,7 @@ def get(request):
                 ),
                 Small("Image file: PNG, JPEG, SVG, WEBP or GIF.", id="file-helper"),
                 components.get_text_input(None),
-                components.get_listset_keyword_inputs(None),
+                components.get_keyword_inputs(None),
                 Input(type="submit", value="Add image"),
                 action="/image/",
                 method="POST",
@@ -59,7 +59,6 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually add the image."
@@ -81,11 +80,6 @@ async def post(
     except OSError as error:
         raise errors.Error(error)
     image.text = text.strip()
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(image)
-        listset.write()
     image.keywords = keywords or list()
     image.write()
     return components.redirect(image.url)
@@ -118,7 +112,6 @@ def get(image: items.Item):
             ),
             components.get_text_card(image),
             Div(
-                components.get_listsets_card(image),
                 components.get_keywords_card(image),
                 cls="grid",
             ),
@@ -185,7 +178,7 @@ def get(request, image: items.Item):
                     cls="grid",
                 ),
                 components.get_text_input(image),
-                components.get_listset_keyword_inputs(image),
+                components.get_keyword_inputs(image),
                 Input(type="submit", value="Save"),
                 action=f"{image.url}/edit",
                 method="POST",
@@ -202,7 +195,6 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually edit the image."
@@ -218,7 +210,7 @@ async def post(
                 outfile.write(filecontent)
         except OSError as error:
             raise errors.Error(error)
-    image.edit(title, text, listsets, keywords)
+    image.edit(title, text, keywords)
     image.write()
     return components.redirect(image.url)
 

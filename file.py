@@ -32,7 +32,7 @@ def get(request):
                 components.get_title_input(None),
                 Input(type="file", name="upfile", required=True),
                 components.get_text_input(None),
-                components.get_listset_keyword_inputs(None),
+                components.get_keyword_inputs(None),
                 Input(type="submit", value="Add file"),
                 action="/file/",
                 method="POST",
@@ -49,7 +49,6 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually add the file."
@@ -69,11 +68,6 @@ async def post(
     except OSError as error:
         raise errors.Error(error)
     file.text = text.strip()
-    for id in listsets or list():
-        listset = items.get(id)
-        assert isinstance(listset, items.Listset)
-        listset.add(file)
-        listset.write()
     file.keywords = keywords or list()
     file.write()
     return components.redirect(file.url)
@@ -104,7 +98,6 @@ def get(file: items.Item):
             Card(A(file.filename, href=file.url_file)),
             components.get_text_card(file),
             Div(
-                components.get_listsets_card(file),
                 components.get_keywords_card(file),
                 cls="grid",
             ),
@@ -163,7 +156,7 @@ def get(request, file: items.Item):
                     cls="grid",
                 ),
                 components.get_text_input(file),
-                components.get_listset_keyword_inputs(file),
+                components.get_keyword_inputs(file),
                 Input(type="submit", value="Save"),
                 action=f"{file.url}/edit",
                 method="POST",
@@ -180,7 +173,6 @@ async def post(
     title: str,
     upfile: UploadFile,
     text: str,
-    listsets: list[str] = None,
     keywords: list[str] = None,
 ):
     "Actually edit the file."
@@ -196,7 +188,7 @@ async def post(
                 outfile.write(filecontent)
         except OSError as error:
             raise errors.Error(error)
-    file.edit(title, text, listsets, keywords)
+    file.edit(title, text, keywords)
     file.write()
     return components.redirect(file.url)
 

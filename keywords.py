@@ -179,5 +179,4 @@ def post(keyword: str, target: str):
         item.remove_keyword(keyword)
     settings.keywords.discard(keyword)
     settings.write()
-    items.set_all_similarities()
     return components.redirect(target)

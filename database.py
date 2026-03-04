@@ -91,6 +91,7 @@ async def post(
         raise errors.Error(error)
     cnx.close()
     database.write()
+    items.setup_all_xrefs()     # This should be done more efficiently.
     return components.redirect(database.url)
 
 
@@ -191,6 +192,7 @@ def get(database: items.Item):
                     ),
                 ),
             ),
+            components.get_xrefs_card(database),
             cls="container",
         ),
         Footer(
@@ -1418,9 +1420,7 @@ def get_overview(database, display=False):
         else:
             actions = []
 
-        actions.append(
-            Li(A("Download CSV", href=f"{database.url}/rows/{relname}.csv"))
-        )
+        actions.append(Li(A("Download CSV", href=f"{database.url}/rows/{relname}.csv")))
         actions.append(
             Li(A("Download JSON", href=f"{database.url}/rows/{relname}.json"))
         )
@@ -1431,7 +1431,8 @@ def get_overview(database, display=False):
                         f"{relation['type'].capitalize()} ",
                         Strong(relname),
                         role="button",
-                        cls="outline"),
+                        cls="outline",
+                    ),
                     Ul(*spec),
                     open=display,
                 ),
@@ -1440,11 +1441,7 @@ def get_overview(database, display=False):
                     action=f"{database.url}/rows/{relname}",
                     method="GET",
                 ),
-                Details(
-                    Summary("Actions"),
-                    Ul(*actions),
-                    cls="dropdown"
-                ),
+                Details(Summary("Actions"), Ul(*actions), cls="dropdown"),
                 cls="grid",
             )
         )

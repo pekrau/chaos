@@ -49,11 +49,10 @@ app, rt = components.get_app_rt(
 )
 setup_toasts(app)
 
-path = constants.DATA_DIR / ".chaos.yaml"
-if path.exists():
-    path.unlink()
-
+# Read in all items in memory.
 items.read_items()
+# Set up xrefs between all items.
+items.setup_all_xrefs()
 
 
 @rt("/")

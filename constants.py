@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (0, 18, 1)
+VERSION = (0, 18, 2)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -19,6 +19,7 @@ if not DATA_DIR.exists():
 FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 
 FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
+XREF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
 
 DEFAULT_LOCALE = "sv_SE"
 DEFAULT_TIMEZONE = babel.dates.get_timezone("Europe/Stockholm")

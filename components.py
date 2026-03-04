@@ -64,11 +64,7 @@ def get_app_rt(routes=None):
             skip=[r"/static/.*"],
         ),
         hdrs=(
-            Link(
-                rel="stylesheet",
-                href="/static/style_modifications.css",
-                type="text/css",
-            ),
+            Link(rel="stylesheet", href="/static/modifications.css", type="text/css"),
             Link(rel="icon", href="/static/favicon.ico", type="image/x-icon"),
         ),
         exception_handlers={errors.Error: errors.error_handler},
@@ -199,24 +195,17 @@ def get_item_links(item):
             get_icon("trash.svg", title=f"Delete {item.name}"),
             href=f"{item.url}/delete",
         ),
-    ] + get_item_clipboards(item)
-
-
-def get_item_clipboards(item):
-    return [
-        get_icon(
-            "info-square.svg",
-            title="Copy identifier to clipboard",
-            cls="icon to_clipboard",
-            data_clipboard_text=item.id,
-        ),
-        get_icon(
-            "markdown.svg",
-            title="Copy Markdown link to clipboard",
-            cls="icon to_clipboard",
-            data_clipboard_text=f"[{item.title}]({item.url})",
-        ),
+        get_item_clipboard(item),
     ]
+
+
+def get_item_clipboard(item):
+    return get_icon(
+        "markdown.svg",
+        title="Copy Markdown xref to clipboard",
+        cls="icon to_clipboard",
+        data_clipboard_text=f"[[{item.id}]]",
+    )
 
 
 def clipboard_script():
@@ -260,9 +249,31 @@ def get_text_card(item):
         return Card(I("No text."))
 
 
+def get_xrefs_card(item):
+    "Show the xrefs that other items make to this item."
+    xrefs_from = sorted(
+        [items.get(id) for id in item.xrefs_to_self],
+        key=lambda i: i.modified,
+        reverse=True,
+    )
+    xrefs_to = sorted(
+        [items.get(id) for id in item.xrefs_from_self],
+        key=lambda i: i.modified,
+        reverse=True,
+    )
+    return Div(
+        Card(Header("Referred from"),
+             get_items_table(xrefs_from, max_items=None)),
+        Card(Header("Refers to"),
+             get_items_table(xrefs_to, max_items=None)),
+        cls="grid",
+    )
+
+
 def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
     rows = []
-    items = items[0:max_items]
+    if max_items:
+        items = items[0:max_items]
     for item in items:
         match item.__class__.__name__:
             case "Note":
@@ -311,13 +322,13 @@ def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
             rows.append(
                 Tr(
                     Td(icon, A(item.title, href=item.url)),
-                    Td(*get_item_clipboards(item), cls="right"),
+                    Td(get_item_clipboard(item), cls="right"),
                 )
             )
     if rows:
         if len(items) > constants.MAX_PAGE_ITEMS:
             rows.append(Tr(Td(I("Some not shown..."), colspan=3)))
-        return Table(Tbody(*rows), cls="striped compressed")
+        return Table(Tbody(*rows), cls="compressed")
     else:
         return Article(I("No items."))
 

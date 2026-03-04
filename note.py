@@ -51,6 +51,7 @@ def post(
     note.title = title.strip() or "no title"
     note.text = text.strip()
     note.write()
+    items.setup_all_xrefs()     # This should be done more efficiently.
     return components.redirect(note.url)
 
 
@@ -74,6 +75,7 @@ def get(note: items.Item):
         ),
         Main(
             components.get_text_card(note),
+            components.get_xrefs_card(note),
             cls="container",
         ),
         Footer(

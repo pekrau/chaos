@@ -38,8 +38,13 @@ class Item:
         self._path = path
         self.frontmatter = {}
         self.text = ""
+        self.xrefs_from_self = set()
+        self.xrefs_to_self = set()
 
     def __str__(self):
+        return self.url
+
+    def __repr__(self):
         return self.url
 
     @property
@@ -107,7 +112,9 @@ class Item:
         return utils.timestamp_local(self.path.stat().st_mtime)
 
     def write(self):
-        "Write the item to file."
+        """Write the item to file.
+        Update the relevant 'xrefs_from_self' and 'xrefs_to_self' for the item.
+        """
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = copy.deepcopy(self.frontmatter)
@@ -116,14 +123,33 @@ class Item:
                 outfile.write("---\n")
             if self.text:
                 outfile.write(self.text)
+        old_xrefs_from_self = set(self.xrefs_from_self)
+        self.xrefs_from_self.clear()
+        # Which items are currently referenced by this item?
+        for m in constants.XREF.finditer(self.text):
+            try:
+                other = get(m.group(1))
+            except KeyError:
+                pass
+            else:
+                self.xrefs_from_self.add(other.id)
+                other.xrefs_to_self.add(self.id)
+        # Remove reference from items that are no longer referenced by this.
+        for id in old_xrefs_from_self.difference(self.xrefs_from_self):
+            get(id).xrefs_from_self.remove(self.id)
 
     def delete(self):
         """Delete the item from the file system.
+        Remove references to it from other items.
         Remove from the lookup.
         """
         global lookup
-        lookup.pop(self.id)
+        for id in self.xrefs_to_self:
+            get(id).xrefs_from_self.remove(self.id)
+        for id in self.xrefs_from_self:
+            get(id).xrefs_to_self.remove(self.id)
         self.path.unlink()
+        lookup.pop(self.id)
 
     def score(self, term):
         """Calculate the score for the term in the title or text of the item.
@@ -291,35 +317,6 @@ class Graphic(Item):
         return self.frontmatter["specification"]
 
 
-# def fixup(dirpath=constants.DATA_DIR):
-#     for path in dirpath.iterdir():
-#         if path.is_dir():
-#             fixup(dirpath=path)
-#         elif path.is_file() and path.suffix == ".md":
-#             atime = path.stat().st_atime
-#             mtime = path.stat().st_mtime
-#             content = path.read_text()
-#             m = constants.FRONTMATTER.match(content)
-#             if not m:
-#                 continue
-#             frontmatter = yaml.safe_load(m.group(1))
-#             # Dates must be represented as strings, not datetime.date.
-#             for key, value in frontmatter.items():
-#                 if isinstance(value, datetime.date):
-#                     frontmatter[key] = str(value)
-#             text = content[m.start(2) :]
-#             if keywords := frontmatter.pop("keywords", None):
-#                 text += f"\n\nKeywords: {', '.join(keywords)}"
-#             with path.open(mode="w") as outfile:
-#                 if frontmatter:
-#                     outfile.write("---\n")
-#                     outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
-#                     outfile.write("---\n")
-#                 if text:
-#                     outfile.write(text)
-#             os.utime(path, (atime, mtime))
-
-
 def read_items(dirpath=None):
     """Recursively read all items from files in the given directory.
     If no directory is given, start with the data dir.
@@ -344,6 +341,7 @@ def read_items(dirpath=None):
             else:
                 frontmatter = {}
                 text = content
+            # Which type of item depends on the presence of a keyword in front matter.
             if "href" in frontmatter:
                 item = Link(path)
             elif "filename" in frontmatter:
@@ -361,6 +359,22 @@ def read_items(dirpath=None):
             lookup[item.id] = item
             item.frontmatter = frontmatter
             item.text = text
+
+
+def setup_all_xrefs():
+    "Set the 'xrefs_from' and 'xrefs_to' for item xrefs."
+    for item in lookup.values():
+        item.xrefs_from_self.clear()
+        item.xrefs_to_self.clear()
+    for item in lookup.values():
+        for m in constants.XREF.finditer(item.text):
+            try:
+                other = get(m.group(1))
+            except KeyError:
+                pass
+            else:
+                item.xrefs_from_self.add(other.id)
+                other.xrefs_to_self.add(item.id)
 
 
 def get_items(cls=None):

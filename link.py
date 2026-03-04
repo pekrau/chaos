@@ -54,6 +54,7 @@ def post(
     link.href = href.strip() or "/"
     link.text = text.strip()
     link.write()
+    items.setup_all_xrefs()     # This should be done more efficiently.
     return components.redirect(link.url)
 
 
@@ -84,6 +85,7 @@ def get(link: items.Item):
                 )
             ),
             components.get_text_card(link),
+            components.get_xrefs_card(link),
             cls="container",
         ),
         Footer(

@@ -67,6 +67,7 @@ async def post(
     except OSError as error:
         raise errors.Error(error)
     file.write()
+    items.setup_all_xrefs()     # This should be done more efficiently.
     return components.redirect(file.url)
 
 
@@ -94,6 +95,7 @@ def get(file: items.Item):
         Main(
             Card(A(file.filename, href=file.url_file)),
             components.get_text_card(file),
+            components.get_xrefs_card(file),
             cls="container",
         ),
         Footer(

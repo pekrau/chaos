@@ -79,6 +79,7 @@ def post(
     else:
         errors.Error("unknown graphic type.")
     graphic.write()
+    items.setup_all_xrefs()     # This should be done more efficiently.
     return components.redirect(graphic.url)
 
 
@@ -106,6 +107,7 @@ def get(graphic: items.Item):
         Main(
             Div(id="graphic"),
             components.get_text_card(graphic),
+            components.get_xrefs_card(graphic),
             cls="container",
         ),
         Footer(

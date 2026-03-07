@@ -31,7 +31,7 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_input(None),
+                components.get_title_input(),
                 Input(
                     type="file",
                     name="upfile",
@@ -40,7 +40,7 @@ def get(request):
                     aria_describedby="file-helper",
                 ),
                 Small("Image file: PNG, JPEG, SVG, WEBP or GIF.", id="file-helper"),
-                components.get_text_input(None),
+                components.get_text_input(),
                 Input(type="submit", value="Add image"),
                 action="/image/",
                 method="POST",
@@ -78,7 +78,7 @@ async def post(
     except OSError as error:
         raise errors.Error(error)
     image.write()
-    items.setup_all_xrefs()     # This should be done more efficiently.
+    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(image.url)
 
 
@@ -152,7 +152,7 @@ def get(request, image: items.Item):
         ),
         Main(
             Form(
-                components.get_title_input(image),
+                components.get_title_input(image.title),
                 Div(
                     Div(
                         Input(
@@ -171,7 +171,7 @@ def get(request, image: items.Item):
                     ),
                     cls="grid",
                 ),
-                components.get_text_input(image),
+                components.get_text_input(image.text),
                 Input(type="submit", value="Save"),
                 action=f"{image.url}/edit",
                 method="POST",

@@ -30,7 +30,7 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_input(None),
+                components.get_title_input(),
                 Select(
                     Option(
                         "Select graphic type", selected=True, disabled=True, value=""
@@ -44,7 +44,7 @@ def get(request):
                     placeholder="Specification...",
                     cls="specification",
                 ),
-                components.get_text_input(None),
+                components.get_text_input(),
                 Input(type="submit", value="Add graphic"),
                 action="/graphic/",
                 method="POST",
@@ -79,7 +79,7 @@ def post(
     else:
         errors.Error("unknown graphic type.")
     graphic.write()
-    items.setup_all_xrefs()     # This should be done more efficiently.
+    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(graphic.url)
 
 
@@ -150,7 +150,7 @@ def get(request, graphic: items.Item):
         ),
         Main(
             Form(
-                components.get_title_input(graphic),
+                components.get_title_input(graphic.title),
                 Input(
                     type="text",
                     name="graphic",
@@ -163,7 +163,7 @@ def get(request, graphic: items.Item):
                     rows=10,
                     cls="specification",
                 ),
-                components.get_text_input(graphic),
+                components.get_text_input(graphic.text),
                 Input(type="submit", value="Save"),
                 action=f"{graphic.url}/edit",
                 method="POST",

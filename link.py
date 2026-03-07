@@ -27,9 +27,9 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_input(None),
+                components.get_title_input(),
                 Input(type="href", name="href", placeholder="Href...", required=True),
-                components.get_text_input(None),
+                components.get_text_input(),
                 Input(type="submit", value="Add link"),
                 action="/link/",
                 method="POST",
@@ -54,7 +54,7 @@ def post(
     link.href = href.strip() or "/"
     link.text = text.strip()
     link.write()
-    items.setup_all_xrefs()     # This should be done more efficiently.
+    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(link.url)
 
 
@@ -119,7 +119,7 @@ def get(request, link: items.Item):
         ),
         Main(
             Form(
-                components.get_title_input(link),
+                components.get_title_input(link.title),
                 Input(
                     type="href",
                     name="href",
@@ -127,7 +127,7 @@ def get(request, link: items.Item):
                     placeholder="Href...",
                     required=True,
                 ),
-                components.get_text_input(link),
+                components.get_text_input(link.text),
                 Input(type="submit", value="Save"),
                 action=f"{link.url}/edit",
                 method="POST",

@@ -29,9 +29,9 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_input(None),
+                components.get_title_input(),
                 Input(type="file", name="upfile", required=True),
-                components.get_text_input(None),
+                components.get_text_input(),
                 Input(type="submit", value="Add file"),
                 action="/file/",
                 method="POST",
@@ -67,7 +67,7 @@ async def post(
     except OSError as error:
         raise errors.Error(error)
     file.write()
-    items.setup_all_xrefs()     # This should be done more efficiently.
+    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(file.url)
 
 
@@ -139,7 +139,7 @@ def get(request, file: items.Item):
         ),
         Main(
             Form(
-                components.get_title_input(file),
+                components.get_title_input(file.title),
                 Div(
                     Label(
                         Span("Current file: ", A(file.filename, href=file.url_file)),
@@ -150,7 +150,7 @@ def get(request, file: items.Item):
                     ),
                     cls="grid",
                 ),
-                components.get_text_input(file),
+                components.get_text_input(file.text),
                 Input(type="submit", value="Save"),
                 action=f"{file.url}/edit",
                 method="POST",

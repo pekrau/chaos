@@ -12,7 +12,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(request):
+def get(request, form: dict):
     "Form for adding a note."
     return (
         Title("Add note"),
@@ -27,8 +27,9 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_input(None),
-                components.get_text_input(None),
+                components.get_title_input(),
+                components.get_text_input(),
+                Input(type="hidden", name="id", value=form.get("title", "")),
                 Input(type="submit", value="Add note"),
                 action="/note/",
                 method="POST",
@@ -40,18 +41,18 @@ def get(request):
 
 
 @rt("/")
-def post(
-    request,
-    title: str,
-    text: str,
-):
+def post(request, title: str, text: str, id: str = ""):
     "Actually add the note."
-    note = items.Note()
+    if id:
+        note = items.Note(constants.DATA_DIR / f"{id}.md")
+        items.lookup[note.id] = note
+    else:
+        note = items.Note()
     note.owner = request.scope["auth"]
     note.title = title.strip() or "no title"
     note.text = text.strip()
     note.write()
-    items.setup_all_xrefs()     # This should be done more efficiently.
+    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(note.url)
 
 
@@ -109,8 +110,8 @@ def get(request, note: items.Item):
         ),
         Main(
             Form(
-                components.get_title_input(note),
-                components.get_text_input(note),
+                components.get_title_input(note.title),
+                components.get_text_input(note.text),
                 Input(type="submit", value="Save"),
                 action=f"{note.url}/edit",
                 method="POST",

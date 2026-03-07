@@ -44,7 +44,7 @@ def get(request):
         ),
         Main(
             Form(
-                components.get_title_input(None),
+                components.get_title_input(),
                 Label(
                     "Optional Sqlite3 database binary file.",
                     Input(
@@ -53,7 +53,7 @@ def get(request):
                         aria_describedby="file-helper",
                     ),
                 ),
-                components.get_text_input(None),
+                components.get_text_input(),
                 Input(type="submit", value="Add database"),
                 action="/database/",
                 method="POST",
@@ -91,7 +91,7 @@ async def post(
         raise errors.Error(error)
     cnx.close()
     database.write()
-    items.setup_all_xrefs()     # This should be done more efficiently.
+    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(database.url)
 
 
@@ -127,19 +127,6 @@ def get(database: items.Item):
         )
         for name, plot in database.plots.items()
     ]
-    if plot_rows:
-        plots_table = Table(
-            Thead(
-                Tr(
-                    Th("Plot"),
-                    Th("Type"),
-                    Th(),
-                ),
-            ),
-            Tbody(*plot_rows),
-        )
-    else:
-        plots_table = I("No plots.")
 
     return (
         Title(database.title),
@@ -157,37 +144,41 @@ def get(database: items.Item):
         ),
         Main(
             components.get_text_card(database),
-            Card(get_overview(database)),
+            get_overview(database),
             Card(
                 Form(
-                    Input(type="submit", value="SQL command"),
+                    Input(type="submit", value="SQL command", cls="outline"),
                     action=f"{database.url}/execute",
                     method="POST",
                 ),
-                Form(
-                    Input(type="submit", value="Create table from CSV file"),
-                    action=f"{database.url}.csv",
-                    method="GET",
-                ),
-                Form(
-                    Input(type="submit", value="Download Sqlite", cls="outline"),
-                    action=database.url_file,
-                    method="GET",
-                ),
-                Form(
-                    Input(type="submit", value="Download SQL", cls="outline"),
-                    action=database.url_sql,
-                    method="GET",
+                Details(
+                    Summary("Actions"),
+                    Ul(
+                        Li(A("Add plot", href=f"{database.url}/plot")),
+                        Li(A("Create table from CSV file", href=f"{database.url}.csv")),
+                        Li(A("Download Sqlite", href=database.url_file)),
+                        Li(A("Download SQL", href=database.url_sql)),
+                    ),
+                    cls="dropdown",
                 ),
                 cls="grid",
             ),
             Card(
-                Header(
-                    Span("Plots"),
-                    A("Add plot", href=f"{database.url}/plot", role="button"),
-                    cls="grid",
+                Header("Plots"),
+                (
+                    Table(
+                        Thead(
+                            Tr(
+                                Th("Plot"),
+                                Th("Type"),
+                                Th(),
+                            ),
+                        ),
+                        Tbody(*plot_rows),
+                    )
+                    if plot_rows
+                    else I("No plots.")
                 ),
-                plots_table,
             ),
             components.get_xrefs_card(database),
             cls="container",
@@ -254,12 +245,12 @@ def get(request, database: items.Item, tablename: str):
         else:
             inputs.append((Div(*label), Input(type="text", **kwargs)))
     return (
-        Title(f"Add row to table {tablename}"),
+        Title("Add row to table"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add row to table ", tablename),
+                    Li("Add row to table"),
                 ),
             ),
             cls="container",
@@ -271,10 +262,12 @@ def get(request, database: items.Item, tablename: str):
                     A(database.title, href=database.url),
                 ),
                 A(
-                    f"{schema[tablename]['count']} rows",
+                    "Table ",
+                    Strong(tablename),
+                    f", {schema[tablename]['count']} rows",
                     href=f"{database.url}/rows/{tablename}",
                     role="button",
-                    cls="thin",
+                    cls="outline",
                 ),
                 cls="grid",
             ),
@@ -648,27 +641,22 @@ def post(database: items.Item, sql: str = None):
     else:
         result_card = ""
     return (
-        Title(f"SQL command in database {database.title} "),
+        Title(f"SQL command"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(
-                        "SQL command in database ",
-                        database.title,
-                    ),
+                    Li("SQL command"),
                 ),
             ),
             cls="container",
         ),
         Main(
             Card(
-                Header(
-                    components.get_database_icon(),
-                    A(database.title, href=database.url),
-                ),
-                get_overview(database, display=True),
+                components.get_database_icon(),
+                A(database.title, href=database.url),
             ),
+            get_overview(database, display=True),
             Card(
                 Form(
                     Label("SQL command"),
@@ -743,8 +731,8 @@ def get(request, database: items.Item):
         ),
         Main(
             Form(
-                components.get_title_input(database),
-                components.get_text_input(database),
+                components.get_title_input(database.title),
+                components.get_text_input(database.text),
                 Input(type="submit", value="Save"),
                 action=f"{database.url}/edit",
                 method="POST",
@@ -1402,6 +1390,7 @@ def get_overview(database, display=False):
     "Get an overview of the basic structure of the database."
     rows = []
     for relname, relation in database.get_schema().items():
+        actions = []
         spec = [
             Li(
                 f"{column_name} {column['type']} {not column['null'] and 'NOT NULL' or ''} {column['primary'] and 'PRIMARY KEY' or ''}"
@@ -1410,13 +1399,12 @@ def get_overview(database, display=False):
         ]
         spec.append(Li(relation["sql"]))
         if relation["type"] == "table":
-            actions = [
-                Li(A("Add row", href=f"{database.url}/row/{relname}")),
-                Li(A("Add CSV file", href=f"{database.url}/rows/{relname}/csv")),
-            ]
-        else:
-            actions = []
+            actions.append(Li(A("Add row", href=f"{database.url}/row/{relname}")))
+            actions.append(
+                Li(A("Add CSV file", href=f"{database.url}/rows/{relname}/csv"))
+            )
 
+        actions.append(Li(A("View rows", href=f"{database.url}/rows/{relname}")))
         actions.append(Li(A("Download CSV", href=f"{database.url}/rows/{relname}.csv")))
         actions.append(
             Li(A("Download JSON", href=f"{database.url}/rows/{relname}.json"))
@@ -1433,12 +1421,11 @@ def get_overview(database, display=False):
                     Ul(*spec),
                     open=display,
                 ),
-                Form(
-                    Input(type="submit", value=f"{relation['count']} rows"),
-                    action=f"{database.url}/rows/{relname}",
-                    method="GET",
+                Details(
+                    Summary(f"{relation['count']} rows", role="button", cls="outline"),
+                    Ul(*actions),
+                    cls="dropdown",
                 ),
-                Details(Summary("Actions"), Ul(*actions), cls="dropdown"),
                 cls="grid",
             )
         )

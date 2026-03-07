@@ -102,6 +102,28 @@ def get_icon(filename, title="", **kwargs):
     )
 
 
+def get_question_icon():
+    return get_icon("question-circle.svg")
+
+
+def get_item_icon(item):
+    match item.__class__.__name__:
+        case "Note":
+            return get_note_icon()
+        case "Link":
+            return get_link_icon()
+        case "File":
+            return get_file_icon(item.file_mimetype)
+        case "Image":
+            return get_image_icon()
+        case "Graphic":
+            return get_graphic_icon()
+        case "Database":
+            return get_database_icon()
+        case _:
+            raise NotImplementedError
+
+
 def get_note_icon(title="Note"):
     return get_icon("card-text.svg", title=title)
 
@@ -118,10 +140,10 @@ def get_file_icon(mimetype=None, title="", **kwargs):
             return get_icon("file-earmark-word.svg", title=title, **kwargs)
         case constants.EPUB_MIMETYPE:
             return get_icon("file-earmark-text.svg", title=title, **kwargs)
-        # case constants.CSV_MIMETYPE:
-        #     return get_icon("filetype-csv.svg", title=title, **kwargs)
-        # case constants.JSON_MIMETYPE:
-        #     return get_icon("filetype-json.svg", title=title, **kwargs)
+        case constants.CSV_MIMETYPE:
+            return get_icon("filetype-csv.svg", title=title, **kwargs)
+        case constants.JSON_MIMETYPE:
+            return get_icon("filetype-json.svg", title=title, **kwargs)
     return get_icon("file-earmark-binary.svg", title=title, **kwargs)
 
 
@@ -262,10 +284,8 @@ def get_xrefs_card(item):
         reverse=True,
     )
     return Div(
-        Card(Header("Referred from"),
-             get_items_table(xrefs_from, max_items=None)),
-        Card(Header("Refers to"),
-             get_items_table(xrefs_to, max_items=None)),
+        Card(Header("Referred from"), get_items_table(xrefs_from, max_items=None)),
+        Card(Header("Refers to"), get_items_table(xrefs_to, max_items=None)),
         cls="grid",
     )
 
@@ -372,21 +392,20 @@ def get_table_pager(current_page, total_items, href):
     return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=href)
 
 
-def get_title_input(item):
+def get_title_input(title=""):
     return Input(
         type="text",
         name="title",
-        value=item.title if item else "",
+        value=title,
         placeholder="Title...",
         required=True,
-        autofocus=item is None,
     )
 
 
-def get_text_input(item):
+def get_text_input(text=""):
     return (
         Textarea(
-            item.text if item else "",
+            text,
             name="text",
             rows=10,
             placeholder="Text...",

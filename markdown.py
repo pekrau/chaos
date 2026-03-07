@@ -4,6 +4,7 @@ import marko
 import marko.inline
 import marko.helpers
 
+import components
 import constants
 import items
 
@@ -24,9 +25,9 @@ class XrefRenderer:
     def render_xref(self, element):
         try:
             item = items.get(element.xref)
-            return f'<mark><a href="{item.url}">{item.title}</a></mark>'
+            return f'<mark><a href="{item.url}">{components.get_item_icon(item)} {item.title}</a></mark>'
         except KeyError:
-            return f'<s>[[{element.xref}]]</s>'
+            return f'<mark><a title="Create note" href="/note?title={element.xref}">{components.get_question_icon()}{element.xref}</a></mark>'
 
 
 to_html = marko.Markdown(

@@ -16,13 +16,14 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get(request):
     "Form for adding a file."
+    title = "Add file"
     return (
-        Title("Add file"),
+        Title(title),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_file_icon(), "Add file"),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -81,14 +82,12 @@ def get(file: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(file)),
                     Li(
                         components.get_file_icon(file.file_mimetype, title="File"),
                         file.title,
                     ),
-                    Li(*components.get_item_links(file)),
                 ),
-                Ul(Li(components.search_form())),
             ),
             cls="container",
         ),
@@ -126,13 +125,14 @@ def get(file: items.Item, ext: str):
 def get(request, file: items.Item):
     "Form for editing the data for the file."
     assert isinstance(file, items.File)
+    title = f"Edit '{file.title}'"
     return (
-        Title(f"Edit {file.title}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Edit "), file.title),
+                    Li(components.get_nav_menu(file)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -191,13 +191,14 @@ async def post(
 def get(request, file: items.Item):
     "Form for making a copy of the file."
     assert isinstance(file, items.File)
+    title = f"Copy '{file.title}'"
     return (
-        Title("Copy"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(f"Copy '{file.title}'"),
+                    Li(components.get_nav_menu(file)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -251,13 +252,14 @@ def get(request, file: items.Item):
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
     if redirect == f"/file/{file.id}":
         redirect = "/files"
+    title = f"Delete '{file.title}'"
     return (
-        Title(f"Delete {file.title}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Delete "), file.title),
+                    Li(components.get_nav_menu(file)),
+                    Li(title),
                 ),
             ),
             cls="container",

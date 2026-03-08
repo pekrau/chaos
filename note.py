@@ -14,13 +14,14 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get(request, form: dict):
     "Form for adding a note."
+    title = "Add note"
     return (
-        Title("Add note"),
+        Title(title),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_note_icon(), "Add note"),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -66,11 +67,9 @@ def get(note: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(note)),
                     Li(components.get_note_icon(), note.title),
-                    Li(*components.get_item_links(note)),
                 ),
-                Ul(Li(components.search_form())),
             ),
             cls="container",
         ),
@@ -97,13 +96,14 @@ def get(note: items.Item):
 def get(request, note: items.Item):
     "Form for editing a note."
     assert isinstance(note, items.Note)
+    title = f"Edit '{note.title}'"
     return (
-        Title(f"Edit {note.title}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Edit "), note.title),
+                    Li(components.get_nav_menu(note)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -140,13 +140,14 @@ def post(
 def get(request, note: items.Item):
     "Form for making a copy of the note."
     assert isinstance(note, items.Note)
+    title = f"Copy '{note.title}'"
     return (
-        Title("Copy"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(f"Copy '{note.title}'"),
+                    Li(components.get_nav_menu(note)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -190,13 +191,14 @@ def get(request, note: items.Item):
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
     if redirect == f"/note/{note.id}":
         redirect = "/notes"
+    title = f"Delete '{note.title}'"
     return (
-        Title(f"Delete {note.title}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Delete "), note.title),
+                    Li(components.get_nav_menu(note)),
+                    Li(title),
                 ),
             ),
             cls="container",

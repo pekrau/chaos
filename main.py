@@ -72,13 +72,7 @@ def get(session, page: int = 1):
                     Ul(
                         Li(
                             A(
-                                Img(
-                                    src="/chaos.png",
-                                    height=24,
-                                    width=24,
-                                    cls="white",
-                                ),
-                                title="chaos: Web-based repository of notes, links, images and files with no intrinsic order.",
+                                components.get_chaos_icon(),
                                 role="button",
                                 cls="secondary outline nomargin",
                                 href="/",
@@ -252,6 +246,7 @@ def get(page: int = 1):
         items.get_items(items.Note),
         page,
         "/notes",
+        "Note",
     )
 
 
@@ -263,6 +258,7 @@ def get(page: int = 1):
         items.get_items(items.Link),
         page,
         "/links",
+        "Link",
     )
 
 
@@ -299,9 +295,10 @@ def get(page: int = 1):
                 Ul(
                     Li(components.get_nav_menu()),
                     Li("Images"),
-                    Li(components.search_form()),
                 ),
-                cls="main",
+                Ul(
+                    Li(components.get_search_form(type="Image")),
+                ),
             ),
             cls="container",
         ),
@@ -321,6 +318,7 @@ def get(page: int = 1):
         items.get_items(items.File),
         page,
         "/files",
+        "File",
     )
 
 
@@ -332,6 +330,7 @@ def get(page: int = 1):
         items.get_items(items.Database),
         page,
         "/databases",
+        "Database",
     )
 
 
@@ -343,6 +342,7 @@ def get(page: int = 1):
         items.get_items(items.Graphic),
         page,
         "/graphics",
+        "Graphic",
     )
 
 
@@ -358,12 +358,12 @@ def get():
 
 
 @rt("/search")
-def get(term: str = None, type: str = None):
+def get(term: str = None, type: str = ""):
     "Search the items."
     if type:
         type = type.capitalize()
         if type not in items.TYPES:
-            type = None
+            type = ""
     result = []
     for item in items.lookup.values():
         if type and item.__class__.__name__ != type:
@@ -373,6 +373,8 @@ def get(term: str = None, type: str = None):
                 if score:
                     result.append((score, item.modified_local, item))
     result.sort(key=lambda e: (e[0], e[1]), reverse=True)
+    if type not in items.TYPES:
+        type = "Any"
     return (
         Title("Search"),
         components.clipboard_script(),
@@ -411,15 +413,7 @@ def get(term: str = None, type: str = None):
                                         t,
                                     )
                                 )
-                                for t in [
-                                    "Any",
-                                    "Note",
-                                    "Link",
-                                    "Image",
-                                    "File",
-                                    "Database",
-                                    "Graphic",
-                                ]
+                                for t in ["Any"] + items.TYPES
                             ]
                         ),
                         cls="dropdown",
@@ -463,18 +457,24 @@ def get():
                 Td(constants.DATA_DIR, cls="right"),
             ),
             Tr(
-                Td("Disk"),
+                Td("Disk usage"),
                 Td(
-                    f"{100 * disk_usage / (disk_usage + disk_free):.1f}%",
-                    Span(utils.numerical(disk_usage), style="margin-left: 2em;"),
+                    utils.numerical(disk_usage),
+                    Span(
+                        f"{100 * disk_usage / (disk_usage + disk_free):.1f}%",
+                        style="margin-left: 2em;",
+                    ),
                     cls="right",
                 ),
             ),
             Tr(
                 Td("Disk free"),
                 Td(
-                    f"{100 * (disk_free - disk_usage) / (disk_usage + disk_free):.1f}%",
-                    Span(utils.numerical(disk_free), style="margin-left: 2em;"),
+                    utils.numerical(disk_free),
+                    Span(
+                        f"{100 * disk_free / (disk_usage + disk_free):.1f}%",
+                        style="margin-left: 2em;",
+                    ),
                     cls="right",
                 ),
             ),

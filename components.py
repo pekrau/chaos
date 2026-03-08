@@ -102,6 +102,15 @@ def get_icon(filename, title="", **kwargs):
     )
 
 
+def get_chaos_icon():
+    return Img(
+        src="/static/chaos.png",
+        width=24,
+        height=24,
+        cls="white",
+    )
+
+
 def get_question_icon():
     return get_icon("question-circle.svg")
 
@@ -159,66 +168,35 @@ def get_graphic_icon(title="Graphic"):
     return get_icon("graph-up.svg", title=title)
 
 
-def get_nav_menu():
+def get_nav_menu(item=None):
+    links = [A("Home", href="/"), A("Search...", href="/search")]
+    if item:
+        links.append(A(f"Edit {item.type}", href=f"{item.url}/edit"))
+        links.append(A(f"Copy {item.type}", href=f"{item.url}/copy"))
+        links.append(A(f"Delete {item.type}", href=f"{item.url}/delete"))
+        links.append(
+            Span(
+                "Xref to clipboard",
+                cls="to_clipboard",
+                data_clipboard_text=f"[[{item.id}]]",
+            )
+        )
+    links.append(A("Add...", href="/add/"))
+    links.append(A("Notes", href="/notes")),
+    links.append(A("Links", href="/links"))
+    links.append(A("Images", href="/images"))
+    links.append(A("Files", href="/files"))
+    links.append(A("Databases", href="/databases"))
+    links.append(A("Graphics", href="/graphics"))
+    links.append(A("Random", href="/random"))
+    links.append(A("System", href="/system"))
+    links.append(A("Logout", href="/logout"))
     return Details(
-        Summary(
-            Img(
-                src="/static/chaos.png",
-                width=24,
-                height=24,
-                cls="white",
-            ),
-        ),
-        Ul(
-            Li(A("Home", href="/")),
-            Li(A("Add...", href="/add/")),
-            Li(A("Notes", href="/notes")),
-            Li(A("Links", href="/links")),
-            Li(A("Images", href="/images")),
-            Li(A("Files", href="/files")),
-            Li(A("Databases", href="/databases")),
-            Li(A("Graphics", href="/graphics")),
-            Li(A("Random", href="/random")),
-            Li(A("System", href="/system")),
-            Li(A("Logout", href="/logout")),
-        ),
-        title="chaos: Web-based repository of notes, links, images and files with no intrinsic order.",
+        Summary(get_chaos_icon()),
+        Ul(*[Li(l) for l in links]),
+        title="chaos: Web-based repository of items with no intrinsic order.",
         cls="dropdown",
     )
-
-
-def search_form(term=None):
-    return Form(
-        Input(
-            type="search",
-            name="term",
-            placeholder="Search...",
-            aria_label="Search",
-            value=term or "",
-        ),
-        cls="search",
-        role="search",
-        action="/search",
-        method="GET",
-    )
-
-
-def get_item_links(item):
-    return [
-        A(
-            get_icon("pencil.svg", title=f"Edit {item.name}"),
-            href=f"{item.url}/edit",
-        ),
-        A(
-            get_icon("copy.svg", title=f"Copy {item.name}"),
-            href=f"{item.url}/copy",
-        ),
-        A(
-            get_icon("trash.svg", title=f"Delete {item.name}"),
-            href=f"{item.url}/delete",
-        ),
-        get_item_clipboard(item),
-    ]
 
 
 def get_item_clipboard(item):
@@ -238,7 +216,7 @@ def clipboard_activate():
     return Script("new ClipboardJS('.to_clipboard');", type="text/javascript")
 
 
-def get_items_table_page(title, items, page, href, after=""):
+def get_items_table_page(title, items, page, href, type=""):
     "Get the page displaying a table of the given items."
     total_items = len(items)
     page = min(max(1, page), get_total_pages(total_items))
@@ -255,12 +233,30 @@ def get_items_table_page(title, items, page, href, after=""):
                     Li(get_nav_menu()),
                     Li(title),
                 ),
-                Ul(Li(search_form())),
+                Ul(
+                    Li(get_search_form(type=type)),
+                ),
             ),
             cls="container",
         ),
-        Main(table, pager, after, cls="container"),
+        Main(table, pager, cls="container"),
         clipboard_activate(),
+    )
+
+
+def get_search_form(type=""):
+    return Form(
+        Input(type="hidden", name="type", value=type),
+        Input(
+            type="search",
+            name="term",
+            placeholder="Search...",
+            aria_label="Search",
+        ),
+        cls="search",
+        role="search",
+        action="/search",
+        method="GET",
     )
 
 
@@ -350,7 +346,7 @@ def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
             rows.append(Tr(Td(I("Some not shown..."), colspan=3)))
         return Table(Tbody(*rows), cls="compressed")
     else:
-        return Article(I("No items."))
+        return I("No items.")
 
 
 def get_table_pager(current_page, total_items, href):

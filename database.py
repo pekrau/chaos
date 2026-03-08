@@ -31,13 +31,14 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get(request):
     "Form for adding a database."
+    title = "Add database"
     return (
-        Title("Add database"),
+        Title(title),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_database_icon(), "Add database"),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -109,21 +110,6 @@ def get(database: items.Item):
                 )
             ),
             Td(plot["type"]),
-            Td(
-                A(
-                    components.get_icon("pencil.svg", title=f"Edit {name}"),
-                    href=f"{database.url}/plot/{name}/edit",
-                ),
-                A(
-                    components.get_icon("copy.svg", title=f"Copy {name}"),
-                    href=f"{database.url}/plot/{name}/copy",
-                ),
-                A(
-                    components.get_icon("trash.svg", title=f"Delete {name}"),
-                    href=f"{database.url}/plot/{name}/delete",
-                ),
-                cls="right",
-            ),
         )
         for name, plot in database.plots.items()
     ]
@@ -134,11 +120,9 @@ def get(database: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(database)),
                     Li(components.get_database_icon(), database.title),
-                    Li(*components.get_item_links(database)),
                 ),
-                Ul(Li(components.search_form())),
             ),
             cls="container",
         ),
@@ -152,7 +136,7 @@ def get(database: items.Item):
                     method="POST",
                 ),
                 Details(
-                    Summary("Actions"),
+                    Summary("Operations"),
                     Ul(
                         Li(A("Add plot", href=f"{database.url}/plot")),
                         Li(A("Create table from CSV file", href=f"{database.url}.csv")),
@@ -244,13 +228,14 @@ def get(request, database: items.Item, tablename: str):
             inputs.append((Div(*label), Input(type="number", **kwargs)))
         else:
             inputs.append((Div(*label), Input(type="text", **kwargs)))
+    title = "Add row to table"
     return (
-        Title("Add row to table"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li("Add row to table"),
+                    Li(components.get_nav_menu(database)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -342,10 +327,9 @@ def get(database: items.Item, relname: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(database)),
                     Li(title),
                 ),
-                Ul(Li(components.search_form())),
             ),
             cls="container",
         ),
@@ -429,7 +413,7 @@ def get(request, database: items.Item, tablename: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(databse)),
                     Li(title),
                 ),
             ),
@@ -524,7 +508,7 @@ def get(request, database: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(database)),
                     Li(title),
                 ),
             ),
@@ -640,13 +624,14 @@ def post(database: items.Item, sql: str = None):
         )
     else:
         result_card = ""
+    title = "SQL command"
     return (
-        Title(f"SQL command"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li("SQL command"),
+                    Li(components.get_nav_menu(database)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -718,13 +703,14 @@ def post(database: items.Item, sql: str, ext: str):
 def get(request, database: items.Item):
     "Form for editing the data for the database."
     assert isinstance(database, items.Database)
+    title = f"Edit '{database.title}'"
     return (
-        Title(f"Edit {database.title}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Edit "), database.title),
+                    Li(components.get_nav_menu(database)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -761,13 +747,14 @@ async def post(
 def get(request, database: items.Item):
     "Form for making a copy of the database."
     assert isinstance(database, items.Database)
+    title = f"Copy '{database.title}'"
     return (
-        Title("Copy"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(f"Copy '{database.title}'"),
+                    Li(components.get_nav_menu(database)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -818,14 +805,14 @@ def post(request, source: items.Database, title: str):
 def get(request, database: items.Item, sql: str = None):
     "Form for creating a view in the database."
     assert isinstance(database, items.Database)
-    title = f"Create view in database {database.title}"
+    title = f"Create view in '{database.title}'"
     return (
         Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(f"Create view in database {database.title}"),
+                    Li(components.get_nav_menu(database)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -874,13 +861,14 @@ def get(request, database: items.Item):
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
     if redirect == database.url:
         redirect = "/databases"
+    title = f"Delete '{database.title}'"
     return (
-        Title(f"Delete {database.title}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Delete "), database.title),
+                    Li(components.get_nav_menu(database)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -916,13 +904,14 @@ def get(request, database: items.Item):
     "Add a plot in the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
+    title = f"Add a plot in '{database.title}'"
     return (
-        Title("Add a plot"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li("Add a plot"),
+                    Li(components.get_nav_menu(database)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -1059,26 +1048,9 @@ def get(request, database: items.Item, plotname: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong(plot["title"])),
-                    Li(
-                        A(
-                            components.get_icon("pencil.svg", title=f"Edit {plotname}"),
-                            href=f"{database.url}/plot/{plotname}/edit",
-                        ),
-                        A(
-                            components.get_icon("copy.svg", title=f"Copy {plotname}"),
-                            href=f"{database.url}/plot/{plotname}/copy",
-                        ),
-                        A(
-                            components.get_icon(
-                                "trash.svg", title=f"Delete {plotname}"
-                            ),
-                            href=f"{database.url}/plot/{plotname}/delete",
-                        ),
-                    ),
+                    Li(components.get_nav_menu(database)),
+                    Li(plot["title"]),
                 ),
-                Ul(Li(components.search_form())),
             ),
             cls="container",
         ),
@@ -1089,6 +1061,17 @@ def get(request, database: items.Item, plotname: str):
             ),
             Card(NotStr(div)),
             description,
+            Card(
+                Details(
+                    Summary("Operations"),
+                    Ul(
+                        Li(A("Edit", href=f"{database.url}/plot/{plotname}/edit")),
+                        Li(A("Copy", href=f"{database.url}/plot/{plotname}/copy")),
+                        Li(A("Delete", href=f"{database.url}/plot/{plotname}/delete")),
+                    ),
+                    cls="dropdown",
+                ),
+            ),
             cls="container",
         ),
         NotStr(script),
@@ -1105,13 +1088,14 @@ def get(request, database: items.Item, plotname: str):
     for relname, relation in schema.items():
         for column in relation["columns"]:
             sources.append(f"{relname} / {column}")
+    title = f"Edit '{plot['title']}'"
     return (
-        Title(f"Edit {plot['title']}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Edit "), plotname),
+                    Li(components.get_nav_menu(database)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -1301,13 +1285,14 @@ def post(request, database: items.Item, plotname: str, form: dict):
 def get(request, database: items.Item, plotname: str):
     "Copy the named plot in the database."
     assert isinstance(database, items.Database)
+    title = f"Copy '{plotname}'"
     return (
-        Title(f"Copy {plotname}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Copy "), plotname),
+                    Li(components.get_nav_menu(database)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -1351,13 +1336,14 @@ def post(request, database: items.Item, plotname: str, form: dict):
 def get(request, database: items.Item, plotname: str):
     "Ask for confirmation to delete the plot."
     assert isinstance(database, items.Database)
+    title = f"Delete '{plotname}'"
     return (
-        Title(f"Delete {plotname}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Delete "), plotname),
+                    Li(components.get_nav_menu(database)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -1390,7 +1376,7 @@ def get_overview(database, display=False):
     "Get an overview of the basic structure of the database."
     rows = []
     for relname, relation in database.get_schema().items():
-        actions = []
+        operations = []
         spec = [
             Li(
                 f"{column_name} {column['type']} {not column['null'] and 'NOT NULL' or ''} {column['primary'] and 'PRIMARY KEY' or ''}"
@@ -1399,14 +1385,16 @@ def get_overview(database, display=False):
         ]
         spec.append(Li(relation["sql"]))
         if relation["type"] == "table":
-            actions.append(Li(A("Add row", href=f"{database.url}/row/{relname}")))
-            actions.append(
+            operations.append(Li(A("Add row", href=f"{database.url}/row/{relname}")))
+            operations.append(
                 Li(A("Add CSV file", href=f"{database.url}/rows/{relname}/csv"))
             )
 
-        actions.append(Li(A("View rows", href=f"{database.url}/rows/{relname}")))
-        actions.append(Li(A("Download CSV", href=f"{database.url}/rows/{relname}.csv")))
-        actions.append(
+        operations.append(Li(A("View rows", href=f"{database.url}/rows/{relname}")))
+        operations.append(
+            Li(A("Download CSV", href=f"{database.url}/rows/{relname}.csv"))
+        )
+        operations.append(
             Li(A("Download JSON", href=f"{database.url}/rows/{relname}.json"))
         )
         rows.append(
@@ -1423,7 +1411,7 @@ def get_overview(database, display=False):
                 ),
                 Details(
                     Summary(f"{relation['count']} rows", role="button", cls="outline"),
-                    Ul(*actions),
+                    Ul(*operations),
                     cls="dropdown",
                 ),
                 cls="grid",

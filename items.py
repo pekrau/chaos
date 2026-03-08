@@ -48,7 +48,7 @@ class Item:
         return self.url
 
     @property
-    def name(self):
+    def type(self):
         return self.__class__.__name__.lower()
 
     @property

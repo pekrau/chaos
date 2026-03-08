@@ -18,13 +18,14 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get(request):
     "Form for adding an image."
+    title = "Add image"
     return (
-        Title("Add image"),
+        Title(title),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_image_icon(), "Add image"),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -92,11 +93,9 @@ def get(image: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(image)),
                     Li(components.get_image_icon(), image.title),
-                    Li(*components.get_item_links(image)),
                 ),
-                Ul(Li(components.search_form())),
             ),
             cls="container",
         ),
@@ -139,13 +138,14 @@ def get(image: items.Item, ext: str):
 def get(request, image: items.Item):
     "Form for editing the data for the image."
     assert isinstance(image, items.Image)
+    title = f"Edit {image.title}"
     return (
-        Title(f"Edit {image.title}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Edit "), image.title),
+                    Li(components.get_nav_menu(image)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -212,13 +212,14 @@ async def post(
 def get(request, image: items.Item):
     "Form for making a copy of the image."
     assert isinstance(image, items.Image)
+    title = f"Copy '{image.title}'"
     return (
-        Title("Copy"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(f"Copy '{image.title}'"),
+                    Li(components.get_nav_menu(image)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -272,13 +273,14 @@ def get(request, image: items.Item):
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
     if redirect == f"/image/{image.id}":
         redirect = "/images"
+    title = f"Delete '{image.title}'"
     return (
-        Title(f"Delete {image.title}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Delete "), image.title),
+                    Li(components.get_nav_menu(image)),
+                    Li(title),
                 ),
             ),
             cls="container",

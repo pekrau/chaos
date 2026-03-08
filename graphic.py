@@ -17,13 +17,14 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get(request):
     "Form for adding a graphic."
+    title = "Add graphic"
     return (
-        Title("Add graphic"),
+        Title(title),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_graphic_icon(), "Add graphic"),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -96,11 +97,9 @@ def get(graphic: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(graphic)),
                     Li(components.get_graphic_icon(), graphic.title),
-                    Li(*components.get_item_links(graphic)),
                 ),
-                Ul(Li(components.search_form())),
             ),
             cls="container",
         ),
@@ -137,13 +136,14 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
 def get(request, graphic: items.Item):
     "Form for editing a graphic."
     assert isinstance(graphic, items.Graphic)
+    title = f"Edit '{graphic.title}'"
     return (
-        Title(f"Edit {graphic.title}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Edit "), graphic.title),
+                    Li(components.get_nav_menu(graphic)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -202,13 +202,14 @@ def post(
 def get(request, graphic: items.Item):
     "Form for making a copy of the graphic."
     assert isinstance(graphic, items.Graphic)
+    title = f"Copy '{graphic.title}'"
     return (
-        Title("Copy"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(f"Copy '{graphic.title}'"),
+                    Li(components.get_nav_menu(graphic)),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -254,13 +255,14 @@ def get(request, graphic: items.Item):
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
     if redirect == f"/graphic/{graphic.id}":
         redirect = "/graphics"
+    title = f"Delete '{graphic.title}'"
     return (
-        Title(f"Delete {graphic.title}"),
+        Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
-                    Li(Strong("Delete "), graphic.title),
+                    Li(components.get_nav_menu(graphic)),
+                    Li(title),
                 ),
             ),
             cls="container",

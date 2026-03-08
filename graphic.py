@@ -80,7 +80,6 @@ def post(
     else:
         errors.Error("unknown graphic type.")
     graphic.write()
-    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(graphic.url)
 
 

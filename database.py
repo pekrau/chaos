@@ -92,7 +92,6 @@ async def post(
         raise errors.Error(error)
     cnx.close()
     database.write()
-    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(database.url)
 
 

@@ -49,10 +49,7 @@ app, rt = components.get_app_rt(
 )
 setup_toasts(app)
 
-# Read in all items in memory.
 items.read_items()
-# Set up xrefs between all items.
-items.setup_all_xrefs()
 
 
 @rt("/")

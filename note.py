@@ -53,7 +53,6 @@ def post(request, title: str, text: str, id: str = ""):
     note.title = title.strip() or "no title"
     note.text = text.strip()
     note.write()
-    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(note.url)
 
 

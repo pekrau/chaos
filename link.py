@@ -55,7 +55,6 @@ def post(
     link.href = href.strip() or "/"
     link.text = text.strip()
     link.write()
-    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(link.url)
 
 

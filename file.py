@@ -68,7 +68,6 @@ async def post(
     except OSError as error:
         raise errors.Error(error)
     file.write()
-    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(file.url)
 
 

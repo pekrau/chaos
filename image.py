@@ -79,7 +79,6 @@ async def post(
     except OSError as error:
         raise errors.Error(error)
     image.write()
-    items.setup_all_xrefs()  # This should be done more efficiently.
     return components.redirect(image.url)
 
 

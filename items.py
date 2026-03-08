@@ -112,9 +112,7 @@ class Item:
         return utils.timestamp_local(self.path.stat().st_mtime)
 
     def write(self):
-        """Write the item to file.
-        Update the relevant 'xrefs_from_self' and 'xrefs_to_self' for the item.
-        """
+        "Write the item to file. Update xrefs."
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = copy.deepcopy(self.frontmatter)
@@ -123,20 +121,7 @@ class Item:
                 outfile.write("---\n")
             if self.text:
                 outfile.write(self.text)
-        old_xrefs_from_self = set(self.xrefs_from_self)
-        self.xrefs_from_self.clear()
-        # Which items are currently referenced by this item?
-        for m in constants.XREF.finditer(self.text):
-            try:
-                other = get(m.group(1))
-            except KeyError:
-                pass
-            else:
-                self.xrefs_from_self.add(other.id)
-                other.xrefs_to_self.add(self.id)
-        # Remove reference from items that are no longer referenced by this.
-        for id in old_xrefs_from_self.difference(self.xrefs_from_self):
-            get(id).xrefs_from_self.remove(self.id)
+        setup_all_xrefs()  # Inefficient, but defensive and safe.
 
     def delete(self):
         """Delete the item from the file system.
@@ -321,6 +306,7 @@ def read_items(dirpath=None):
     """Recursively read all items from files in the given directory.
     If no directory is given, start with the data dir.
     Create the data dir if it does not exist.
+    Set up xrefs between all items.
     """
     global lookup
     if dirpath is None:
@@ -359,6 +345,7 @@ def read_items(dirpath=None):
             lookup[item.id] = item
             item.frontmatter = frontmatter
             item.text = text
+    setup_all_xrefs()
 
 
 def setup_all_xrefs():

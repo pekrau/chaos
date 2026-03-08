@@ -125,16 +125,13 @@ class Item:
 
     def delete(self):
         """Delete the item from the file system.
-        Remove references to it from other items.
         Remove from the lookup.
+        Setup all xrefs again.
         """
         global lookup
-        for id in self.xrefs_to_self:
-            get(id).xrefs_from_self.remove(self.id)
-        for id in self.xrefs_from_self:
-            get(id).xrefs_to_self.remove(self.id)
         self.path.unlink()
         lookup.pop(self.id)
+        setup_all_xrefs()  # Inefficient, but defensive and safe.
 
     def score(self, term):
         """Calculate the score for the term in the title or text of the item.

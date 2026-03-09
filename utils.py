@@ -80,7 +80,5 @@ def since(modified):
     minutes, seconds = divmod(seconds, 60)
     if since.days > 0:
         return f"{since.days} d"
-    elif hours > 0:
-        return f"{hours}:{minutes:02d}"
     else:
-        return f"0:{minutes:02d}:{seconds:02d}"
+        return f"{hours}:{minutes:02d}:{seconds:02d}"

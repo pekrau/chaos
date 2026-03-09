@@ -80,6 +80,7 @@ def get(session, page: int = 1):
                                     aria_label="Search",
                                 ),
                                 cls="search",
+                                style="margin-bottom: 0;",
                                 role="search",
                                 action="/search",
                                 method="GET",

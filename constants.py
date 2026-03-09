@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (0, 18, 7)
+VERSION = (0, 19, 0)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -20,6 +20,8 @@ FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 
 FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
 XREF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
+
+TYPES = ["Note", "Link", "Image", "File", "Database", "Graphic"]
 
 DEFAULT_LOCALE = "sv_SE"
 DEFAULT_TIMEZONE = babel.dates.get_timezone("Europe/Stockholm")
@@ -52,8 +54,6 @@ IMAGE_MIMETYPES = {
 }
 
 MAX_PAGE_ITEMS = 20
-MAX_LISTSETS = 10
-MAX_ROW_KEYWORDS = 5
 N_GALLERY_ROW_ITEMS = 5
 
 SCORE_TITLE_WEIGHT = 2.0

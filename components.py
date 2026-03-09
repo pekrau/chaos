@@ -10,6 +10,7 @@ import constants
 import errors
 import items
 import markdown
+import utils
 
 
 class ItemConvertor(Convertor):
@@ -169,7 +170,7 @@ def get_graphic_icon(title="Graphic"):
 
 
 def get_nav_menu(item=None):
-    links = [A("Home", href="/"), A("Search...", href="/search")]
+    links = [A("Home", href="/")]
     if item:
         links.append(A(f"Edit {item.type}", href=f"{item.url}/edit"))
         links.append(A(f"Copy {item.type}", href=f"{item.url}/copy"))
@@ -181,14 +182,8 @@ def get_nav_menu(item=None):
                 data_clipboard_text=f"[[{item.id}]]",
             )
         )
+    links.append(A("Search...", href="/search"))
     links.append(A("Add...", href="/add/"))
-    links.append(A("Notes", href="/notes")),
-    links.append(A("Links", href="/links"))
-    links.append(A("Images", href="/images"))
-    links.append(A("Files", href="/files"))
-    links.append(A("Databases", href="/databases"))
-    links.append(A("Graphics", href="/graphics"))
-    links.append(A("Random", href="/random"))
     links.append(A("System", href="/system"))
     links.append(A("Logout", href="/logout"))
     return Details(
@@ -216,50 +211,6 @@ def clipboard_activate():
     return Script("new ClipboardJS('.to_clipboard');", type="text/javascript")
 
 
-def get_items_table_page(title, items, page, href, type=""):
-    "Get the page displaying a table of the given items."
-    total_items = len(items)
-    page = min(max(1, page), get_total_pages(total_items))
-    start = (page - 1) * constants.MAX_PAGE_ITEMS
-    end = page * constants.MAX_PAGE_ITEMS
-    table = get_items_table(items[start:end])
-    pager = get_table_pager(page, total_items, href)
-    return (
-        Title(title),
-        clipboard_script(),
-        Header(
-            Nav(
-                Ul(
-                    Li(get_nav_menu()),
-                    Li(title),
-                ),
-                Ul(
-                    Li(get_search_form(type=type)),
-                ),
-            ),
-            cls="container",
-        ),
-        Main(table, pager, cls="container"),
-        clipboard_activate(),
-    )
-
-
-def get_search_form(type=""):
-    return Form(
-        Input(type="hidden", name="type", value=type),
-        Input(
-            type="search",
-            name="term",
-            placeholder="Search...",
-            aria_label="Search",
-        ),
-        cls="search",
-        role="search",
-        action="/search",
-        method="GET",
-    )
-
-
 def get_text_card(item):
     if text := item.text:
         return Card(NotStr(markdown.to_html(text)))
@@ -280,81 +231,101 @@ def get_xrefs_card(item):
         reverse=True,
     )
     return Div(
-        Card(Header("Referred from"), get_items_table(xrefs_from, max_items=None)),
-        Card(Header("Refers to"), get_items_table(xrefs_to, max_items=None)),
+        Card(Header("Referred from"), get_items_list(xrefs_from)),
+        Card(Header("Refers to"), get_items_list(xrefs_to)),
         cls="grid",
     )
 
 
-def get_items_table(items, max_items=constants.MAX_PAGE_ITEMS, edit=False):
+def get_items_display(items, gallery=False):
+    if gallery:
+        return get_items_gallery(items)
+    else:
+        return get_items_list(items)
+
+
+def get_items_list(items):
     rows = []
-    if max_items:
-        items = items[0:max_items]
     for item in items:
-        match item.__class__.__name__:
-            case "Note":
-                icon = A(get_note_icon(), href=item.url)
-            case "Link":
-                icon = A(
-                    get_link_icon(title="Follow link..."),
-                    href=item.href,
-                    target="_blank",
-                )
-            case "Database":
-                icon = A(get_database_icon(), href=item.url)
-            case "Graphic":
-                icon = A(get_graphic_icon(), href=item.url)
-            case "Image":
-                icon = A(get_image_icon(title="View image"), href=item.url_file)
-            case "File":
-                icon = A(
-                    get_file_icon(item.file_mimetype, title="View or download file"),
-                    href=item.url_file,
-                )
-            case _:
-                raise NotImplementedError
-        if edit:
-            rows.append(
-                Tr(
-                    Td(icon, A(item.title, href=item.url)),
-                    Td(
-                        Select(
-                            name=f"position_{item.id}",
-                            *[
-                                Option(str(i), selected=i == len(rows) + 1)
-                                for i in range(0, len(items) + 2)
-                            ],
-                            cls="slim",
-                        ),
-                    ),
-                    Td(
-                        Input(type="checkbox", name="remove", value=item.id),
-                        "Remove",
-                        cls="right",
-                    ),
-                )
+        rows.append(
+            Tr(
+                Td(get_item_display_icon(item), A(item.title, href=item.url)),
+                Td(item.n_xrefs),
+                Td(utils.since(item.modified)),
+                Td(get_item_clipboard(item), cls="right"),
             )
-        else:
-            rows.append(
-                Tr(
-                    Td(icon, A(item.title, href=item.url)),
-                    Td(get_item_clipboard(item), cls="right"),
-                )
-            )
+        )
     if rows:
-        if len(items) > constants.MAX_PAGE_ITEMS:
-            rows.append(Tr(Td(I("Some not shown..."), colspan=3)))
         return Table(Tbody(*rows), cls="compressed")
     else:
         return I("No items.")
 
 
-def get_table_pager(current_page, total_items, href):
-    "Return form with pager buttons given current page."
+def get_items_gallery(items):
+    rows = []
+    for chunk in [
+        items[i : i + constants.N_GALLERY_ROW_ITEMS]
+        for i in range(0, len(items), constants.N_GALLERY_ROW_ITEMS)
+    ]:
+        row = []
+        for item in chunk:
+            if item.type == "image":
+                row.append(
+                    Div(
+                        A(
+                            Img(src=item.url_file, cls="autoscale display"),
+                            title=item.title,
+                            href=str(item.url),
+                        ),
+                    )
+                )
+            else:
+                row.append(
+                    Div(
+                        get_item_display_icon(item),
+                        A(item.title, href=item.url),
+                    )
+                )
+        while len(row) < constants.N_GALLERY_ROW_ITEMS:
+            row.append(Div())
+        rows.append(Div(*row, cls="grid"))
+    if rows:
+        return Table(Tbody(*rows), cls="compressed")
+    else:
+        return I("No items.")
+
+
+def get_item_display_icon(item):
+    match item.type:
+        case "note":
+            return A(get_note_icon(), href=item.url)
+        case "link":
+            return A(
+                get_link_icon(title="Follow link..."),
+                href=item.href,
+                target="_blank",
+            )
+        case "image":
+            return A(get_image_icon(title="View image"), href=item.url_file)
+        case "file":
+            return A(
+                get_file_icon(item.file_mimetype, title="View or download file"),
+                href=item.url_file,
+            )
+        case "database":
+            return A(get_database_icon(), href=item.url)
+        case "graphic":
+            return A(get_graphic_icon(), href=item.url)
+        case _:
+            raise NotImplementedError
+
+
+def get_items_display_pager(current_page, total_items):
+    "Return pager buttons given current page."
     if total_items <= constants.MAX_PAGE_ITEMS:
         return ""
     pages = [1]
-    total_pages = get_total_pages(total_items)
+    total_pages = utils.get_total_pages(total_items)
     for page in range(2, total_pages):
         if abs(current_page - page) < 2:
             pages.append(page)
@@ -385,7 +356,7 @@ def get_table_pager(current_page, total_items, href):
         else:
             buttons.append(Input(type="submit", name="page", value=str(page)))
         prev_page = page
-    return Form(Div(*[Div(b) for b in buttons], cls="grid"), action=href)
+    return Div(*[Div(b) for b in buttons], cls="grid")
 
 
 def get_title_input(title=""):
@@ -419,10 +390,3 @@ def get_cancel_form(href):
         action=href,
         method="GET",
     )
-
-
-def get_total_pages(total_items=None):
-    "Return the total number of table pages for the given number of items."
-    if total_items is None:
-        total_items = total()
-    return (total_items - 1) // constants.MAX_PAGE_ITEMS + 1

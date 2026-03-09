@@ -1,11 +1,10 @@
-"Item class and functions."
+"Item class, subclasses and helper functions."
 
 import copy
 import datetime
 import mimetypes
 import os
 import pathlib
-import random
 import re
 import sqlite3
 
@@ -16,10 +15,6 @@ import yaml
 import constants
 import errors
 import utils
-
-# The item types.
-TYPES = ["Note", "Link", "Image", "File", "Database", "Graphic"]
-
 
 # Global item lookup. Key: item id; value: item instance.
 lookup = {}
@@ -110,6 +105,10 @@ class Item:
     def modified_local(self):
         "Modified timestamp in local ISO format."
         return utils.timestamp_local(self.path.stat().st_mtime)
+
+    @property
+    def n_xrefs(self):
+        return len(self.xrefs_from_self) + len(self.xrefs_to_self)
 
     def write(self):
         "Write the item to file. Update xrefs."
@@ -367,20 +366,11 @@ def get_items(cls=None):
     if cls is None:
         result = list(lookup.values())
     else:
+        if cls in constants.TYPES:
+            cls = eval(cls)
         result = [e for e in lookup.values() if isinstance(e, cls)]
     result.sort(key=lambda e: e.modified, reverse=True)
     return result
-
-
-def get_random_items():
-    "Get a set of at most MAX_PAGE_ITEMS random items."
-    global lookup
-    items = list(lookup.values())
-    if len(items) <= constants.MAX_PAGE_ITEMS:
-        random.shuffle(items)
-        return items
-    else:
-        return random.sample(items, constants.MAX_PAGE_ITEMS)
 
 
 def get_all():
@@ -400,7 +390,7 @@ def get_all():
 
 def get_statistics():
     result = dict(item=len(lookup))
-    result.update(dict([(type.lower(), 0) for type in TYPES]))
+    result.update(dict([(type.lower(), 0) for type in constants.TYPES]))
     for item in lookup.values():
         result[item.__class__.__name__.lower()] += 1
     return result

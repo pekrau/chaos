@@ -47,7 +47,6 @@ app, rt = components.get_app_rt(
         Mount("/api", api.app),
     ]
 )
-setup_toasts(app)
 
 items.read_items()
 
@@ -55,12 +54,53 @@ items.read_items()
 @rt("/")
 def get(session, page: int = 1):
     if session.get("auth"):
-        return components.get_items_table_page(
-            "chaos",
-            items.get_items(),
-            page,
-            "/",
+        result = items.get_items()
+        total_items = len(result)
+        page = min(max(1, page), utils.get_total_pages(total_items))
+        start = (page - 1) * constants.MAX_PAGE_ITEMS
+        end = page * constants.MAX_PAGE_ITEMS
+        result = result[start:end]
+        title = "chaos"
+        return (
+            Title(title),
+            components.clipboard_script(),
+            Header(
+                Nav(
+                    Ul(
+                        Li(components.get_nav_menu()),
+                        Li(title),
+                    ),
+                    Ul(
+                        Li(
+                            Form(
+                                Input(
+                                    type="search",
+                                    name="term",
+                                    placeholder="Search...",
+                                    aria_label="Search",
+                                ),
+                                cls="search",
+                                role="search",
+                                action="/search",
+                                method="GET",
+                            ),
+                        ),
+                    ),
+                ),
+                cls="container",
+            ),
+            Main(
+                components.get_items_list(result),
+                Form(
+                    components.get_items_display_pager(page, total_items),
+                    method="GET",
+                    action="/",
+                ),
+                cls="container",
+            ),
+            components.clipboard_activate(),
         )
+
     else:
         return (
             Title("chaos"),
@@ -225,153 +265,36 @@ def get():
     )
 
 
-@rt("/bin/{file:Item}")
-def get(file: items.Item):
-    "Return the binary data of the file or image item."
-    assert isinstance(file, items.GenericFile)
-    return Response(
-        content=file.filepath.read_bytes(),
-        media_type=file.file_mimetype or constants.BINARY_MIMETYPE,
-    )
-
-
-@rt("/notes")
-def get(page: int = 1):
-    "Display note items."
-    return components.get_items_table_page(
-        "Notes",
-        items.get_items(items.Note),
-        page,
-        "/notes",
-        "Note",
-    )
-
-
-@rt("/links")
-def get(page: int = 1):
-    "Display link items."
-    return components.get_items_table_page(
-        "Links",
-        items.get_items(items.Link),
-        page,
-        "/links",
-        "Link",
-    )
-
-
-@rt("/images")
-def get(page: int = 1):
-    "Display image items."
-    images = items.get_items(items.Image)
-    total_items = len(images)
-    images = list(
-        images[(page - 1) * constants.MAX_PAGE_ITEMS : page * constants.MAX_PAGE_ITEMS]
-    )
-    rows = []
-    for chunk in [
-        images[i : i + constants.N_GALLERY_ROW_ITEMS]
-        for i in range(0, len(images), constants.N_GALLERY_ROW_ITEMS)
-    ]:
-        row = [
-            Div(
-                A(
-                    Img(src=image.url_file, cls="autoscale display"),
-                    title=image.title,
-                    href=str(image.url),
-                ),
-            )
-            for image in chunk
-        ]
-        while len(row) < constants.N_GALLERY_ROW_ITEMS:
-            row.append(Div())
-        rows.append(Div(*row, cls="grid"))
-    return (
-        Title("Images"),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu()),
-                    Li("Images"),
-                ),
-                Ul(
-                    Li(components.get_search_form(type="Image")),
-                ),
-            ),
-            cls="container",
-        ),
-        Main(
-            *rows,
-            components.get_table_pager(page, total_items, "/images"),
-            cls="container",
-        ),
-    )
-
-
-@rt("/files")
-def get(page: int = 1):
-    "Display file items."
-    return components.get_items_table_page(
-        "Files",
-        items.get_items(items.File),
-        page,
-        "/files",
-        "File",
-    )
-
-
-@rt("/databases")
-def get(page: int = 1):
-    "Display database items."
-    return components.get_items_table_page(
-        "Databases",
-        items.get_items(items.Database),
-        page,
-        "/databases",
-        "Database",
-    )
-
-
-@rt("/graphics")
-def get(page: int = 1):
-    "Display graphics items."
-    return components.get_items_table_page(
-        "Graphics",
-        items.get_items(items.Graphic),
-        page,
-        "/graphics",
-        "Graphic",
-    )
-
-
-@rt("/random")
-def get():
-    "Display a page of random items."
-    return components.get_items_table_page(
-        "Random",
-        items.get_random_items(),
-        1,
-        "/random",
-    )
-
-
 @rt("/search")
-def get(term: str = None, type: str = ""):
+def get(term: str = None, type: str = "", display: str = "list", page: int = 1):
     "Search the items."
     if type:
         type = type.capitalize()
-        if type not in items.TYPES:
+        if type not in constants.TYPES:
             type = ""
     result = []
-    for item in items.lookup.values():
-        if type and item.__class__.__name__ != type:
-            continue
+    if type:
         if term:
-            if score := item.score(term):
-                if score:
+            for item in items.get_items(type):
+                if score := item.score(term):
                     result.append((score, item.modified_local, item))
-    result.sort(key=lambda e: (e[0], e[1]), reverse=True)
-    if type not in items.TYPES:
+        else:
+            for item in items.get_items(type):
+                result.append((1.0, item.modified_local, item))
+    elif term:
+        for item in items.get_items():
+            if score := item.score(term):
+                result.append((score, item.modified_local, item))
+    if type not in constants.TYPES:
         type = "Any"
+
+    total_items = len(result)
+    result.sort(key=lambda e: (e[0], e[1]), reverse=True)
+    page = min(max(1, page), utils.get_total_pages(total_items))
+    start = (page - 1) * constants.MAX_PAGE_ITEMS
+    end = page * constants.MAX_PAGE_ITEMS
+    result = [i for s, m, i in result[start:end]]
+
     return (
         Title("Search"),
         components.clipboard_script(),
@@ -390,13 +313,13 @@ def get(term: str = None, type: str = ""):
                 Input(
                     type="text",
                     name="term",
-                    placeholder="Term...",
+                    placeholder="Search...",
                     value=term or "",
                     autofocus=True,
                 ),
                 Fieldset(
                     Details(
-                        Summary("Filter by type..."),
+                        Summary("Select type..."),
                         Ul(
                             *[
                                 Li(
@@ -410,18 +333,30 @@ def get(term: str = None, type: str = ""):
                                         t,
                                     )
                                 )
-                                for t in ["Any"] + items.TYPES
+                                for t in ["Any"] + constants.TYPES
                             ]
                         ),
                         cls="dropdown",
                     ),
+                    Select(
+                        Option(
+                            "List display", value="list", selected=display == "list"
+                        ),
+                        Option(
+                            "Gallery display",
+                            value="gallery",
+                            selected=display == "gallery",
+                        ),
+                        name="display",
+                    ),
                     Input(type="submit", value="Search"),
                     cls="grid",
                 ),
+                components.get_items_display(result, gallery=display == "gallery"),
+                components.get_items_display_pager(page, total_items),
                 action="/search",
                 method="GET",
             ),
-            components.get_items_table([e for s, m, e in result]),
             cls="container",
         ),
         components.clipboard_activate(),

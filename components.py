@@ -306,7 +306,7 @@ def get_item_link(item):
             return Span(
                 A(get_file_icon(item.file_mimetype), item.title, href=item.url),
                 ", ",
-                A("[file]", href=item.url_file, cls="contrast"),
+                A(f"[{item.ext}]", href=item.url_file, cls="contrast"),
             )
         case "database":
             return A(get_database_icon(), item.title, href=item.url)

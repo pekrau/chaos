@@ -175,6 +175,10 @@ class GenericFile(Item):
         return self.filepath.stat().st_size
 
     @property
+    def ext(self):
+        return self.filepath.suffix.lstrip(".")
+
+    @property
     def file_mimetype(self):
         """Return MIME type, or None if not recognized.
         Determined from the file data, not from the file extension.

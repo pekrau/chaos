@@ -218,9 +218,7 @@ def get(request, database: items.Item, tablename: str):
             label.append(" NOT NULL")
         if column["primary"]:
             label.append(" PRIMARY KEY")
-        kwargs = dict(
-            name=name, required=not column["null"], autofocus=not bool(inputs)
-        )
+        kwargs = dict(name=name, required=not column["null"])
         if column["type"] == "INTEGER":
             inputs.append((Div(*label), Input(type="number", step="1", **kwargs)))
         elif column["type"] == "REAL":
@@ -644,7 +642,7 @@ def post(database: items.Item, sql: str = None):
             Card(
                 Form(
                     Label("SQL command"),
-                    Input(type="text", name="sql", value=sql or "", autofocus=True),
+                    Input(type="text", name="sql", value=sql or ""),
                     Input(type="submit", value="Execute"),
                     action=f"{database.url}/execute",
                     method="POST",
@@ -766,7 +764,6 @@ def get(request, database: items.Item):
                     value=database.title,
                     placeholder="Title...",
                     required=True,
-                    autofocus=True,
                 ),
                 Input(type="submit", value="Copy database"),
                 action=f"{database.url}/copy",

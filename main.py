@@ -378,7 +378,6 @@ def get(
                     name="term",
                     placeholder="Search...",
                     value=term or "",
-                    autofocus=True,
                 ),
                 Fieldset(
                     Select(

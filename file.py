@@ -210,7 +210,6 @@ def get(request, file: items.Item):
                     value=file.title,
                     placeholder="Title...",
                     required=True,
-                    autofocus=True,
                 ),
                 Input(type="submit", value="Copy file"),
                 action=f"{file.url}/copy",

@@ -221,7 +221,6 @@ def get(request, graphic: items.Item):
                     value=graphic.title,
                     placeholder="Title...",
                     required=True,
-                    autofocus=True,
                 ),
                 Input(type="submit", value="Copy graphic"),
                 action=f"{graphic.url}/copy",

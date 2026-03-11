@@ -171,7 +171,6 @@ def get(request, link: items.Item):
                     value=link.title,
                     placeholder="Title...",
                     required=True,
-                    autofocus=True,
                 ),
                 Input(type="submit", value="Copy link"),
                 action=f"{link.url}/copy",

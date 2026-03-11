@@ -159,7 +159,6 @@ def get(request, note: items.Item):
                     value=note.title,
                     placeholder="Title...",
                     required=True,
-                    autofocus=True,
                 ),
                 Input(type="submit", value="Copy note"),
                 action=f"{note.url}/copy",

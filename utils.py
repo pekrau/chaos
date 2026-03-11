@@ -71,14 +71,3 @@ def get_total_pages(total_items=None):
     if total_items is None:
         total_items = total()
     return (total_items - 1) // constants.MAX_PAGE_ITEMS + 1
-
-
-def since(modified):
-    "Return the string representation of the now minus the modified time."
-    since = datetime.datetime.utcnow() - datetime.datetime.fromisoformat(modified)
-    hours, seconds = divmod(since.seconds, 3600)
-    minutes, seconds = divmod(seconds, 60)
-    if since.days > 0:
-        return f"{since.days} d"
-    else:
-        return f"{hours}:{minutes:02d}:{seconds:02d}"

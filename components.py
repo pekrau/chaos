@@ -252,7 +252,7 @@ def get_items_list_rows(items):
             Tr(
                 Td(get_item_link(item)),
                 Td(item.n_xrefs or ""),
-                Td(utils.since(item.modified)),
+                Td(item.age, cls="nobr"),
                 Td(get_item_clipboard(item), cls="right"),
             )
         )

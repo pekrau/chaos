@@ -1,7 +1,7 @@
 "Item class, subclasses and helper functions."
 
 import copy
-import datetime
+import datetime as dt
 import mimetypes
 import os
 import pathlib
@@ -105,6 +105,19 @@ class Item:
     def modified_local(self):
         "Modified timestamp in local ISO format."
         return utils.timestamp_local(self.path.stat().st_mtime)
+
+    @property
+    def age(self):
+        "String representation of age; hh:mm:ss if less than 1 day, else days."
+        age = dt.datetime.utcnow() - dt.datetime.fromtimestamp(
+            self.path.stat().st_mtime
+        )
+        hours, seconds = divmod(age.seconds, 3600)
+        minutes, seconds = divmod(seconds, 60)
+        if age.days > 0:
+            return f"{age.days} d"
+        else:
+            return f"{hours}:{minutes:02d}:{seconds:02d}"
 
     @property
     def n_xrefs(self):
@@ -321,7 +334,7 @@ def read_items(dirpath=None):
                 frontmatter = yaml.safe_load(m.group(1))
                 # Dates must be represented as strings, not datetime.date.
                 for key, value in frontmatter.items():
-                    if isinstance(value, datetime.date):
+                    if isinstance(value, dt.date):
                         frontmatter[key] = str(value)
                 text = content[m.start(2) :]
             else:

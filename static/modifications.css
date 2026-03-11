@@ -26,6 +26,10 @@
     margin: 2px 8px 2px 4px;
 }
 
+.nobr {
+    white-space: nowrap;
+};
+
 img.white {
     background-color: white;
     padding: 1px;

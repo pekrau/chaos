@@ -75,13 +75,7 @@ def get(link: items.Item):
             cls="container",
         ),
         Main(
-            Card(
-                A(
-                    link.href,
-                    href=link.href,
-                    target="_blank",
-                )
-            ),
+            Card(Strong(A(link.href, href=link.href, target="_blank"))),
             components.get_text_card(link),
             components.get_xrefs_card(link),
             cls="container",

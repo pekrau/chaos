@@ -2,6 +2,7 @@
 
 from http import HTTPStatus as HTTP
 import os
+from urllib.parse import urlsplit
 
 from fasthtml.common import *
 import marko
@@ -237,62 +238,25 @@ def get_xrefs_card(item):
     )
 
 
-def get_items_display(items, gallery=False):
-    if gallery:
-        return get_items_gallery(items)
-    else:
-        return get_items_list(items)
-
-
 def get_items_list(items):
+    if rows := get_items_list_rows(items):
+        return Table(Tbody(*rows), cls="compressed")
+    else:
+        return I("No items.")
+
+
+def get_items_list_rows(items):
     rows = []
     for item in items:
         rows.append(
             Tr(
-                Td(get_item_display_icon(item), A(item.title, href=item.url)),
-                Td(item.n_xrefs),
+                Td(get_item_link(item)),
+                Td(item.n_xrefs or ""),
                 Td(utils.since(item.modified)),
                 Td(get_item_clipboard(item), cls="right"),
             )
         )
-    if rows:
-        return Table(Tbody(*rows), cls="compressed")
-    else:
-        return I("No items.")
-
-
-def get_items_gallery(items):
-    rows = []
-    for chunk in [
-        items[i : i + constants.N_GALLERY_ROW_ITEMS]
-        for i in range(0, len(items), constants.N_GALLERY_ROW_ITEMS)
-    ]:
-        row = []
-        for item in chunk:
-            if item.type == "image":
-                row.append(
-                    Div(
-                        A(
-                            Img(src=item.url_file, cls="autoscale display"),
-                            title=item.title,
-                            href=str(item.url),
-                        ),
-                    )
-                )
-            else:
-                row.append(
-                    Div(
-                        get_item_display_icon(item),
-                        A(item.title, href=item.url),
-                    )
-                )
-        while len(row) < constants.N_GALLERY_ROW_ITEMS:
-            row.append(Div())
-        rows.append(Div(*row, cls="grid"))
-    if rows:
-        return Table(Tbody(*rows), cls="compressed")
-    else:
-        return I("No items.")
+    return rows
 
 
 def get_item_display_icon(item):
@@ -316,6 +280,38 @@ def get_item_display_icon(item):
             return A(get_database_icon(), href=item.url)
         case "graphic":
             return A(get_graphic_icon(), href=item.url)
+        case _:
+            raise NotImplementedError
+
+
+def get_item_link(item):
+    "Get link to item. For link type, also provide link to external href."
+    match item.type:
+        case "note":
+            return A(get_note_icon(), item.title, href=item.url)
+        case "link":
+            return Span(
+                A(get_link_icon(), item.title, href=item.url),
+                ", ",
+                A(
+                    urlsplit(item.href).hostname,
+                    href=item.href,
+                    target="_blank",
+                    cls="contrast",
+                ),
+            )
+        case "image":
+            return A(get_image_icon(), item.title, href=item.url)
+        case "file":
+            return Span(
+                A(get_file_icon(item.file_mimetype), item.title, href=item.url),
+                ", ",
+                A("[file]", href=item.url_file, cls="contrast"),
+            )
+        case "database":
+            return A(get_database_icon(), item.title, href=item.url)
+        case "graphic":
+            return A(get_graphic_icon(), item.title, href=item.url)
         case _:
             raise NotImplementedError
 

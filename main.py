@@ -1,4 +1,4 @@
-"chaos: Web-based repository of notes, links, images and files with no intrinsic order."
+"chaos: Web-based repository of notes, links, images, files, graphics and databases."
 
 from icecream import install
 
@@ -267,34 +267,96 @@ def get():
 
 
 @rt("/search")
-def get(term: str = None, type: str = "", display: str = "list", page: int = 1):
+def get(
+    term: str = None, type: str = "", display: str = "", order: str = "", page: int = 1
+):
     "Search the items."
     if type:
         type = type.capitalize()
         if type not in constants.TYPES:
             type = ""
-    result = []
+
+    # Filter by type.
     if type:
+        # Items with a non-zero score.
         if term:
+            result = []
             for item in items.get_items(type):
                 if score := item.score(term):
-                    result.append((score, item.modified_local, item))
+                    result.append((score, item))
+        # All items of the type.
         else:
-            for item in items.get_items(type):
-                result.append((1.0, item.modified_local, item))
+            result = [(0, i) for i in items.get_items(type)]
+
+    # Items with a non-zero score.
     elif term:
+        result = []
         for item in items.get_items():
             if score := item.score(term):
-                result.append((score, item.modified_local, item))
-    if type not in constants.TYPES:
-        type = "Any"
+                result.append((score, item))
+
+    # Neither type nor term specified; no result.
+    else:
+        result = []
+
+    match order:
+        case "term_desc":
+            if term:
+                result.sort(key=lambda t: (t[0], t[1].modified), reverse=True)
+            else:
+                result.sort(key=lambda t: t[1].modified, reverse=True)
+        case "age_asc":
+            result.sort(key=lambda t: t[1].modified, reverse=True)
+        case "age_desc":
+            result.sort(key=lambda t: t[1].modified)
+        case "cnx_asc":
+            result.sort(key=lambda t: (-t[1].n_xrefs, t[1].modified), reverse=True)
+        case "cnx_desc":
+            result.sort(key=lambda t: (t[1].n_xrefs, t[1].modified), reverse=True)
+        case _:
+            if term:
+                result.sort(key=lambda t: (t[0], t[1].modified), reverse=True)
+            else:
+                result.sort(key=lambda t: t[1].modified, reverse=True)
 
     total_items = len(result)
-    result.sort(key=lambda e: (e[0], e[1]), reverse=True)
     page = min(max(1, page), utils.get_total_pages(total_items))
     start = (page - 1) * constants.MAX_PAGE_ITEMS
     end = page * constants.MAX_PAGE_ITEMS
-    result = [i for s, m, i in result[start:end]]
+    result = [i for s, i in result[start:end]]
+
+    display = display.lower()
+    if display == "gallery":
+        rows = []
+        for chunk in [
+            result[i : i + constants.N_GALLERY_ROW_ITEMS]
+            for i in range(0, len(result), constants.N_GALLERY_ROW_ITEMS)
+        ]:
+            row = []
+            for item in chunk:
+                if item.type == "image":
+                    row.append(
+                        Div(
+                            A(
+                                components.get_image_icon(),
+                                item.title,
+                                Img(src=item.url_file, cls="autoscale display"),
+                                href=str(item.url),
+                            ),
+                        )
+                    )
+                else:
+                    row.append(Div(components.get_item_link(item)))
+            while len(row) < constants.N_GALLERY_ROW_ITEMS:
+                row.append(Div())
+            rows.append(Div(*row, cls="bottom grid", style="margin-bottom: 1em;"))
+    else:
+        rows = components.get_items_list_rows(result)
+
+    if rows:
+        items_display = Table(Tbody(*rows), cls="compressed")
+    else:
+        items_display = I("No items.")
 
     return (
         Title("Search"),
@@ -319,41 +381,53 @@ def get(term: str = None, type: str = "", display: str = "list", page: int = 1):
                     autofocus=True,
                 ),
                 Fieldset(
-                    Details(
-                        Summary("Select type..."),
-                        Ul(
-                            *[
-                                Li(
-                                    Label(
-                                        Input(
-                                            type="radio",
-                                            name="type",
-                                            value=t,
-                                            checked=t == type,
-                                        ),
-                                        t,
-                                    )
-                                )
-                                for t in ["Any"] + constants.TYPES
-                            ]
-                        ),
-                        cls="dropdown",
+                    Select(
+                        Option("Filter by type...", disabled=True, selected=True),
+                        *[
+                            Option(t, selected=t == type)
+                            for t in ["Any"] + constants.TYPES
+                        ],
+                        name="type",
                     ),
                     Select(
-                        Option(
-                            "List display", value="list", selected=display == "list"
-                        ),
-                        Option(
-                            "Gallery display",
-                            value="gallery",
-                            selected=display == "gallery",
-                        ),
+                        Option("Display...", disabled=True, selected=True),
+                        Option("List", selected=display == "list"),
+                        Option("Gallery", selected=display == "gallery"),
                         name="display",
+                    ),
+                    Select(
+                        Option("Order by...", disabled=True, selected=True),
+                        Option(
+                            "Term score, descending",
+                            value="term_desc",
+                            selected=order == "term_desc",
+                        ),
+                        Option(
+                            "Age, ascending",
+                            value="age_asc",
+                            selected=order == "age_asc",
+                        ),
+                        Option(
+                            "Age, descending",
+                            value="age_desc",
+                            selected=order == "age_desc",
+                        ),
+                        Option(
+                            "Connectivity, ascending",
+                            value="cnx_asc",
+                            selected=order == "cnx_asc",
+                        ),
+                        Option(
+                            "Connectivity, descending",
+                            value="cnx_desc",
+                            selected=order == "cnx_desc",
+                        ),
+                        name="order",
                     ),
                     Input(type="submit", value="Search"),
                     cls="grid",
                 ),
-                components.get_items_display(result, gallery=display == "gallery"),
+                items_display,
                 components.get_items_display_pager(page, total_items),
                 action="/search",
                 method="GET",

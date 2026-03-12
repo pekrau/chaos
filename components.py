@@ -175,6 +175,10 @@ def get_nav_menu(item=None):
     if item:
         links.append(A(f"Edit {item.type}", href=f"{item.url}/edit"))
         links.append(A(f"Copy {item.type}", href=f"{item.url}/copy"))
+        if item.frontmatter.get("pinned"):
+            links.append(A(f"Unpin {item.type}", href=f"/unpin/{item.id}"))
+        else:
+            links.append(A(f"Pin {item.type}", href=f"/pin/{item.id}"))
         links.append(A(f"Delete {item.type}", href=f"{item.url}/delete"))
     links.append(A("Search...", href="/search"))
     links.append(A("Add...", href="/add/"))
@@ -188,34 +192,34 @@ def get_nav_menu(item=None):
     )
 
 
-def get_recent_menu(session, item=None):
+def get_shortcuts_menu(session, item=None):
+    pinned = list(items.pinned)
+    pinned.sort(key=lambda i: i.modified, reverse=True)
     recent = []
-    try:
-        for itemid in session["recent"].split(","):
-            try:
-                recent.append(items.get(itemid))
-            except KeyError:
-                pass
-    except KeyError:
-        pass
-    if item:
+    for itemid in session.get("recent", "").split(","):
         try:
-            recent.remove(item)
-        except ValueError:
+            i = items.get(itemid)
+            if i == item:
+                raise KeyError
+            if i in pinned:
+                raise KeyError
+        except KeyError:
             pass
+        else:
+            recent.append(i)
+    entries = [Li(Strong(get_item_link(i, full=False))) for i in pinned]
+    entries.extend(
+        [Li(get_item_link(i, full=False)) for i in recent[: constants.MAX_RECENT_ITEMS]]
+    )
     result = Details(
-        Summary("Recently viewed..."),
-        Ul(
-            *[
-                Li(get_item_link(i, full=False))
-                for i in recent[: constants.MAX_RECENT_ITEMS]
-            ]
-        ),
+        Summary("Shortcuts..."),
+        Ul(*entries),
         cls="dropdown",
+        style="padding-right: 10em;",
     )
     if item:
         recent.insert(0, item)
-    while len(recent) > constants.MAX_RECENT_ITEMS + 1:
+    while len(recent) > constants.MAX_RECENT_ITEMS + len(items.pinned) + 1:
         recent.pop()
     session["recent"] = ",".join([i.id for i in recent])
     return result

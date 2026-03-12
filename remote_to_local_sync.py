@@ -34,7 +34,7 @@ def update(url, apikey, target_dir):
     remote_items = response.json()
 
     target_dir = Path(target_dir)
-    items.read_items()
+    items.read()
     local_items = items.get_all()
 
     # Download the set of files with different modified timestamps from the remote.

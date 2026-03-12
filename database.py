@@ -124,7 +124,7 @@ def get(session, database: items.Item):
                     Li(components.to_clipboard(database)),
                 ),
                 Ul(
-                    Li(components.get_recent_menu(session, database)),
+                    Li(components.get_shortcuts_menu(session, database)),
                 ),
             ),
             cls="container",

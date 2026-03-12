@@ -73,7 +73,7 @@ def get(session, link: items.Item):
                     Li(components.to_clipboard(link)),
                 ),
                 Ul(
-                    Li(components.get_recent_menu(session, link)),
+                    Li(components.get_shortcuts_menu(session, link)),
                 ),
             ),
             cls="container",

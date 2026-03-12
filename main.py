@@ -48,7 +48,7 @@ app, rt = components.get_app_rt(
     ]
 )
 
-items.read_items()
+items.read()
 
 
 @rt("/")
@@ -70,7 +70,7 @@ def get(session, page: int = 1):
                     Li(title),
                 ),
                 Ul(
-                    Li(components.get_recent_menu(session)),
+                    Li(components.get_shortcuts_menu(session)),
                 ),
             ),
             cls="container",
@@ -356,7 +356,7 @@ def get(
                     Li("Search"),
                 ),
                 Ul(
-                    Li(components.get_recent_menu(session)),
+                    Li(components.get_shortcuts_menu(session)),
                 ),
             ),
             cls="container",
@@ -425,6 +425,20 @@ def get(
         ),
         components.clipboard_activate(),
     )
+
+
+@rt("/pin/{item:Item}")
+def get(item: items.Item):
+    "Pin this item to the shortcuts menu."
+    item.pin()
+    return components.redirect(item.url)
+
+
+@rt("/unpin/{item:Item}")
+def get(item: items.Item):
+    "Remove this item from the shortcuts menu."
+    item.unpin()
+    return components.redirect(item.url)
 
 
 @rt("/system")
@@ -544,7 +558,7 @@ def get():
 @rt("/system/reread")
 def post():
     "Reread all items from disk."
-    items.read_items()
+    items.read()
     return components.redirect("/system")
 
 

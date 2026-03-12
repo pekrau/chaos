@@ -97,7 +97,7 @@ def get(session, image: items.Item):
                     Li(components.to_clipboard(image)),
                 ),
                 Ul(
-                    Li(components.get_recent_menu(session, image)),
+                    Li(components.get_shortcuts_menu(session, image)),
                 ),
             ),
             cls="container",

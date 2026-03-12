@@ -71,7 +71,7 @@ def get(session, note: items.Item):
                     Li(components.to_clipboard(note)),
                 ),
                 Ul(
-                    Li(components.get_recent_menu(session, note)),
+                    Li(components.get_shortcuts_menu(session, note)),
                 ),
             ),
             cls="container",

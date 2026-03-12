@@ -89,7 +89,7 @@ def get(session, file: items.Item):
                     Li(components.to_clipboard(file)),
                 ),
                 Ul(
-                    Li(components.get_recent_menu(session, file)),
+                    Li(components.get_shortcuts_menu(session, file)),
                 ),
             ),
             cls="container",

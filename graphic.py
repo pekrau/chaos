@@ -101,7 +101,7 @@ def get(session, graphic: items.Item):
                     Li(components.to_clipboard(graphic)),
                 ),
                 Ul(
-                    Li(components.get_recent_menu(session, graphic)),
+                    Li(components.get_shortcuts_menu(session, graphic)),
                 ),
             ),
             cls="container",

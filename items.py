@@ -19,6 +19,9 @@ import utils
 # Global item lookup. Key: item id; value: item instance.
 lookup = {}
 
+# Pinned items.
+pinned = set()
+
 
 def get(itemid):
     "Get the item from the global lookup given its identifier."
@@ -123,6 +126,23 @@ class Item:
     def n_xrefs(self):
         return len(self.xrefs_from_self) + len(self.xrefs_to_self)
 
+    def pin(self):
+        "Pin this item to the shortcuts menu."
+        global pinned
+        self.frontmatter["pinned"] = True
+        pinned.add(self)
+        self.write()
+
+    def unpin(self):
+        "Remove this item from the shortcuts menu."
+        global pinned
+        try:
+            del self.frontmatter["pinned"]
+            pinned.remove(self)
+        except KeyError:
+            pass
+        self.write()
+
     def write(self):
         "Write the item to file. Update xrefs."
         with self.path.open(mode="w") as outfile:
@@ -133,7 +153,7 @@ class Item:
                 outfile.write("---\n")
             if self.text:
                 outfile.write(self.text)
-        setup_all_xrefs()  # Inefficient, but defensive and safe.
+        setup_xrefs()  # Inefficient, but defensive and safe.
 
     def delete(self):
         """Delete the item from the file system.
@@ -143,7 +163,7 @@ class Item:
         global lookup
         self.path.unlink()
         lookup.pop(self.id)
-        setup_all_xrefs()  # Inefficient, but defensive and safe.
+        setup_xrefs()  # Inefficient, but defensive and safe.
 
     def score(self, term):
         """Calculate the score for the term in the title or text of the item.
@@ -315,7 +335,7 @@ class Graphic(Item):
         return self.frontmatter["specification"]
 
 
-def read_items(dirpath=None):
+def read(dirpath=None):
     """Recursively read all items from files in the given directory.
     If no directory is given, start with the data dir.
     Create the data dir if it does not exist.
@@ -326,7 +346,7 @@ def read_items(dirpath=None):
         lookup.clear()
     for path in constants.DATA_DIR.iterdir():
         if path.is_dir():
-            read_items(path)
+            read(path)
         elif path.is_file() and path.suffix == ".md":
             content = path.read_text()
             m = constants.FRONTMATTER.match(content)
@@ -358,10 +378,11 @@ def read_items(dirpath=None):
             lookup[item.id] = item
             item.frontmatter = frontmatter
             item.text = text
-    setup_all_xrefs()
+    setup_xrefs()
+    setup_pinned()
 
 
-def setup_all_xrefs():
+def setup_xrefs():
     "Set the 'xrefs_from' and 'xrefs_to' for item xrefs."
     for item in lookup.values():
         item.xrefs_from_self.clear()
@@ -375,6 +396,14 @@ def setup_all_xrefs():
             else:
                 item.xrefs_from_self.add(other.id)
                 other.xrefs_to_self.add(item.id)
+
+
+def setup_pinned():
+    global pinned
+    pinned.clear()
+    for item in lookup.values():
+        if item.frontmatter.get("pinned"):
+            pinned.add(item)
 
 
 def get_items(cls=None):

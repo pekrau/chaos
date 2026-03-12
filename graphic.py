@@ -84,7 +84,7 @@ def post(
 
 
 @rt("/{graphic:Item}")
-def get(graphic: items.Item):
+def get(session, graphic: items.Item):
     "View the graphic."
     assert isinstance(graphic, items.Graphic)
     return (
@@ -98,6 +98,10 @@ def get(graphic: items.Item):
                 Ul(
                     Li(components.get_nav_menu(graphic)),
                     Li(components.get_graphic_icon(), graphic.title),
+                    Li(components.to_clipboard(graphic)),
+                ),
+                Ul(
+                    Li(components.get_recent_menu(session, graphic)),
                 ),
             ),
             cls="container",

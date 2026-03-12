@@ -49,11 +49,6 @@ img.norescale {
     max-width: none;
 };
 
-form.search {
-    padding-top: 0px;
-    margin-bottom: 2px;
-}
-
 a.nomargin {
     margin: 0px;
 }

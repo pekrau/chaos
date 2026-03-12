@@ -53,106 +53,94 @@ items.read_items()
 
 @rt("/")
 def get(session, page: int = 1):
-    if session.get("auth"):
-        result = items.get_items()
-        total_items = len(result)
-        page = min(max(1, page), utils.get_total_pages(total_items))
-        start = (page - 1) * constants.MAX_PAGE_ITEMS
-        end = page * constants.MAX_PAGE_ITEMS
-        result = result[start:end]
-        title = "chaos"
-        return (
-            Title(title),
-            components.clipboard_script(),
-            Header(
-                Nav(
-                    Ul(
-                        Li(components.get_nav_menu()),
-                        Li(title),
-                    ),
-                    Ul(
-                        Li(
-                            Form(
-                                Input(
-                                    type="search",
-                                    name="term",
-                                    placeholder="Search...",
-                                    aria_label="Search",
-                                ),
-                                cls="search",
-                                style="margin-bottom: 0;",
-                                role="search",
-                                action="/search",
-                                method="GET",
-                            ),
-                        ),
-                    ),
+    result = items.get_items()
+    total_items = len(result)
+    page = min(max(1, page), utils.get_total_pages(total_items))
+    start = (page - 1) * constants.MAX_PAGE_ITEMS
+    end = page * constants.MAX_PAGE_ITEMS
+    result = result[start:end]
+    title = "chaos"
+    return (
+        Title(title),
+        components.clipboard_script(),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(title),
                 ),
-                cls="container",
-            ),
-            Main(
-                components.get_items_list(result),
-                Form(
-                    components.get_items_display_pager(page, total_items),
-                    method="GET",
-                    action="/",
+                Ul(
+                    Li(components.get_recent_menu(session)),
                 ),
-                cls="container",
             ),
-            components.clipboard_activate(),
-        )
+            cls="container",
+        ),
+        Main(
+            components.get_items_list(result),
+            Form(
+                components.get_items_display_pager(page, total_items),
+                method="GET",
+                action="/",
+            ),
+            cls="container",
+        ),
+        components.clipboard_activate(),
+    )
 
-    else:
-        return (
-            Title("chaos"),
-            Header(
-                Nav(
-                    Ul(
-                        Li(
-                            A(
-                                components.get_chaos_icon(),
-                                role="button",
-                                cls="secondary outline nomargin",
-                                href="/",
-                            )
-                        ),
-                        Li("Login"),
+
+@rt("/login")
+def get():
+    "Form for logging in."
+    return (
+        Title("chaos"),
+        Header(
+            Nav(
+                Ul(
+                    Li(
+                        A(
+                            components.get_chaos_icon(),
+                            role="button",
+                            cls="secondary outline nomargin",
+                            href="/",
+                        )
                     ),
-                    cls="login",
+                    Li("Login"),
                 ),
-                cls="container",
+                cls="login",
             ),
-            Main(
+            cls="container",
+        ),
+        Main(
+            Div(
                 Div(
-                    Div(
-                        Form(
-                            Input(
-                                type="text",
-                                name="username",
-                                placeholder="User name...",
-                                autofocus=True,
-                                required=True,
-                            ),
-                            Input(
-                                type="password",
-                                name="password",
-                                placeholder="Password...",
-                                required=True,
-                            ),
-                            Input(type="submit", value="Login"),
-                            action="/",
-                            method="POST",
+                    Form(
+                        Input(
+                            type="text",
+                            name="username",
+                            placeholder="User name...",
+                            autofocus=True,
+                            required=True,
                         ),
-                        Div(),
-                        cls="grid",
+                        Input(
+                            type="password",
+                            name="password",
+                            placeholder="Password...",
+                            required=True,
+                        ),
+                        Input(type="submit", value="Login"),
+                        action="/login",
+                        method="POST",
                     ),
+                    Div(),
+                    cls="grid",
                 ),
-                cls="container",
             ),
-        )
+            cls="container",
+        ),
+    )
 
 
-@rt("/")
+@rt("/login")
 def post(session, username: str, password: str):
     "Actually perform login."
     if not username or not password:
@@ -170,18 +158,13 @@ def post(session, username: str, password: str):
     return components.redirect(session.pop("path", None) or "/")
 
 
-@rt("/data/{item:Item}.{ext:Ext}")
-def get(item: items.Item, ext: str):
-    return f"{item} {ext}"
-
-
 @rt("/static/{filename:path}")
 async def get(filename: str):
     """Replacement of the default static response handler.
     Required since the 'static' convertor has been made useless, which
     in turn was needed to enable using file extensions for determining
-    format of the data content for '/data' resources. The
-    predefined 'static' convertor somehow prevented this.
+    format of the data content for different items. The predefined
+    'static' convertor somehow prevented this.
     """
     return FileResponse(f"static/{filename}")
 
@@ -268,7 +251,12 @@ def get():
 
 @rt("/search")
 def get(
-    term: str = None, type: str = "", display: str = "", order: str = "", page: int = 1
+    session,
+    term: str = None,
+    type: str = "",
+    display: str = "",
+    order: str = "",
+    page: int = 1,
 ):
     "Search the items."
     if type:
@@ -367,7 +355,9 @@ def get(
                     Li(components.get_nav_menu()),
                     Li("Search"),
                 ),
-                cls="search",
+                Ul(
+                    Li(components.get_recent_menu(session)),
+                ),
             ),
             cls="container",
         ),

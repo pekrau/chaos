@@ -46,11 +46,11 @@ register_url_convertor("Ext", ExtConvertor())
 
 
 class StaticNoMatchConvertor(StringConvertor):
-    """To bypass the standard 'static' convertor.
+    """Replacement of the default static response handler.
     Required since the 'static' convertor has been made useless, which
     in turn was needed to enable using file extensions for determining
-    format of the data content for '/data' resources. The
-    predefined 'static' convertor somehow prevented this.
+    format of the data content for different items. The predefined
+    'static' convertor somehow prevented this.
     """
 
     regex = "static_do_not_match_anything_at_all"
@@ -85,10 +85,10 @@ def set_auth_before(request, session):
             request.scope["auth"] = session["auth"] = os.environ["CHAOS_USERNAME"]
         else:
             return Response(content="invalid API key", status_code=HTTP.UNAUTHORIZED)
-    elif request.url.path != "/":
+    elif request.url.path != "/login":
         add_toast(session, "Login required.", "error")
         session["path"] = request.url.path
-        return redirect("/")
+        return redirect("/login")
 
 
 def redirect(href):
@@ -176,13 +176,6 @@ def get_nav_menu(item=None):
         links.append(A(f"Edit {item.type}", href=f"{item.url}/edit"))
         links.append(A(f"Copy {item.type}", href=f"{item.url}/copy"))
         links.append(A(f"Delete {item.type}", href=f"{item.url}/delete"))
-        links.append(
-            Span(
-                "Xref to clipboard",
-                cls="to_clipboard",
-                data_clipboard_text=f"[[{item.id}]]",
-            )
-        )
     links.append(A("Search...", href="/search"))
     links.append(A("Add...", href="/add/"))
     links.append(A("System", href="/system"))
@@ -195,10 +188,43 @@ def get_nav_menu(item=None):
     )
 
 
-def get_item_clipboard(item):
+def get_recent_menu(session, item=None):
+    recent = []
+    try:
+        for itemid in session["recent"].split(","):
+            try:
+                recent.append(items.get(itemid))
+            except KeyError:
+                pass
+    except KeyError:
+        pass
+    if item:
+        try:
+            recent.remove(item)
+        except ValueError:
+            pass
+    result = Details(
+        Summary("Recently viewed..."),
+        Ul(
+            *[
+                Li(get_item_link(i, full=False))
+                for i in recent[: constants.MAX_RECENT_ITEMS]
+            ]
+        ),
+        cls="dropdown",
+    )
+    if item:
+        recent.insert(0, item)
+    while len(recent) > constants.MAX_RECENT_ITEMS + 1:
+        recent.pop()
+    session["recent"] = ",".join([i.id for i in recent])
+    return result
+
+
+def to_clipboard(item):
     return get_icon(
         "markdown.svg",
-        title="Copy Markdown xref to clipboard",
+        title="Copy Markdown for xref to clipboard",
         cls="icon to_clipboard",
         data_clipboard_text=f"[[{item.id}]]",
     )
@@ -253,61 +279,42 @@ def get_items_list_rows(items):
                 Td(get_item_link(item)),
                 Td(item.n_xrefs or ""),
                 Td(item.age, cls="nobr"),
-                Td(get_item_clipboard(item), cls="right"),
+                Td(to_clipboard(item)),
             )
         )
     return rows
 
 
-def get_item_display_icon(item):
-    match item.type:
-        case "note":
-            return A(get_note_icon(), href=item.url)
-        case "link":
-            return A(
-                get_link_icon(title="Follow link..."),
-                href=item.href,
-                target="_blank",
-            )
-        case "image":
-            return A(get_image_icon(title="View image"), href=item.url_file)
-        case "file":
-            return A(
-                get_file_icon(item.file_mimetype, title="View or download file"),
-                href=item.url_file,
-            )
-        case "database":
-            return A(get_database_icon(), href=item.url)
-        case "graphic":
-            return A(get_graphic_icon(), href=item.url)
-        case _:
-            raise NotImplementedError
-
-
-def get_item_link(item):
+def get_item_link(item, full=True):
     "Get link to item. For link type, also provide link to external href."
     match item.type:
         case "note":
             return A(get_note_icon(), item.title, href=item.url)
         case "link":
-            return Span(
-                A(get_link_icon(), item.title, href=item.url),
-                ", ",
-                A(
-                    urlsplit(item.href).hostname,
-                    href=item.href,
-                    target="_blank",
-                    cls="contrast",
-                ),
-            )
+            if full:
+                return Span(
+                    A(get_link_icon(), item.title, href=item.url),
+                    ", ",
+                    A(
+                        urlsplit(item.href).hostname,
+                        href=item.href,
+                        target="_blank",
+                        cls="contrast",
+                    ),
+                )
+            else:
+                return A(get_link_icon(), item.title, href=item.url)
         case "image":
             return A(get_image_icon(), item.title, href=item.url)
         case "file":
-            return Span(
-                A(get_file_icon(item.file_mimetype), item.title, href=item.url),
-                ", ",
-                A(f"[{item.ext}]", href=item.url_file, cls="contrast"),
-            )
+            if full:
+                return Span(
+                    A(get_file_icon(item.file_mimetype), item.title, href=item.url),
+                    ", ",
+                    A(f"[{item.ext}]", href=item.url_file, cls="contrast"),
+                )
+            else:
+                return A(get_file_icon(item.file_mimetype), item.title, href=item.url)
         case "database":
             return A(get_database_icon(), item.title, href=item.url)
         case "graphic":

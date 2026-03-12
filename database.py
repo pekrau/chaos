@@ -96,7 +96,7 @@ async def post(
 
 
 @rt("/{database:Item}")
-def get(database: items.Item):
+def get(session, database: items.Item):
     "View the data and the list of plots for the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
@@ -121,6 +121,10 @@ def get(database: items.Item):
                 Ul(
                     Li(components.get_nav_menu(database)),
                     Li(components.get_database_icon(), database.title),
+                    Li(components.to_clipboard(database)),
+                ),
+                Ul(
+                    Li(components.get_recent_menu(session, database)),
                 ),
             ),
             cls="container",

@@ -59,7 +59,7 @@ def post(
 
 
 @rt("/{link:Item}")
-def get(link: items.Item):
+def get(session, link: items.Item):
     "View the data for the link."
     assert isinstance(link, items.Link)
     return (
@@ -70,6 +70,10 @@ def get(link: items.Item):
                 Ul(
                     Li(components.get_nav_menu(link)),
                     Li(components.get_link_icon(), link.title),
+                    Li(components.to_clipboard(link)),
+                ),
+                Ul(
+                    Li(components.get_recent_menu(session, link)),
                 ),
             ),
             cls="container",

@@ -215,7 +215,6 @@ def get_shortcuts_menu(session, item=None):
         Summary("Shortcuts..."),
         Ul(*entries),
         cls="dropdown",
-        style="padding-right: 10em;",
     )
     if item:
         recent.insert(0, item)

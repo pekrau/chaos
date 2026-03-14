@@ -415,11 +415,12 @@ def get_items(cls=None):
 def get_all():
     "Get a map of item paths and filepaths with their modified timestamps."
     global lookup
-    result = {
-        ".chaos.yaml": utils.timestamp_utc(
-            (constants.DATA_DIR / ".chaos.yaml").stat().st_mtime
-        )
-    }
+    # result = {
+    #     ".chaos.yaml": utils.timestamp_utc(
+    #         (constants.DATA_DIR / ".chaos.yaml").stat().st_mtime
+    #     )
+    # }
+    result = {}
     for item in lookup.values():
         result[item.id] = item.modified
         if isinstance(item, (File, Image)):

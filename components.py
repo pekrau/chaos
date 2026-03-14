@@ -63,7 +63,7 @@ def get_app_rt(routes=None):
     app, rt = fast_app(
         before=Beforeware(
             check_auth_before,
-            skip=[r"/static/.*"],
+            skip=["/login", r"/static/.*"],
         ),
         hdrs=(
             Link(rel="stylesheet", href="/static/modifications.css", type="text/css"),

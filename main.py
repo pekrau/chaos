@@ -49,6 +49,16 @@ app, rt = components.get_app_rt(
 )
 
 items.read()
+for item in items.get_items():
+    try:
+        del item.frontmatter["owner"]
+    except KeyError:
+        pass
+    else:
+        atime = item.path.stat().st_atime
+        mtime = item.path.stat().st_mtime
+        item.write()
+        os.utime(item.path, (atime, mtime))
 
 
 @rt("/")

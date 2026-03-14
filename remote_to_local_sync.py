@@ -9,7 +9,7 @@ import tarfile
 
 import requests
 
-# This must be done before importing 'constants'.
+# This must be done before importing 'constants'. Imports the production '.env' file.
 import dotenv
 
 dotenv.load_dotenv()

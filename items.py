@@ -370,7 +370,7 @@ def get_recent(item=None):
             result.append(get(id))
         except KeyError:
             pass
-    return list(result[:constants.MAX_RECENT_ITEMS])
+    return list(result[: constants.MAX_RECENT_ITEMS])
 
 
 def read(dirpath=None):
@@ -458,7 +458,9 @@ def get_all():
     "Get a map of item paths and filepaths with their modified timestamps."
     global lookup
     result = {
-        constants.STATE_FILE.name: utils.timestamp_utc(constants.STATE_FILE.stat().st_mtime)
+        constants.STATE_FILE.name: utils.timestamp_utc(
+            constants.STATE_FILE.stat().st_mtime
+        )
     }
     result = {}
     for item in lookup.values():

@@ -1,6 +1,5 @@
 "chaos: Web-based personal repository of notes, links, images, files, graphics and databases."
 
-
 import os
 import shutil
 import sys
@@ -18,6 +17,7 @@ from dotenv import load_dotenv
 
 if os.environ.get("CHAOS_DEVELOPMENT"):
     from icecream import install
+
     install()
     with open(".env-development") as infile:
         load_dotenv(stream=infile)
@@ -51,16 +51,6 @@ app, rt = components.get_app_rt(
 )
 
 items.read()
-for item in items.get_items():
-    try:
-        del item.frontmatter["owner"]
-    except KeyError:
-        pass
-    else:
-        atime = item.path.stat().st_atime
-        mtime = item.path.stat().st_mtime
-        item.write()
-        os.utime(item.path, (atime, mtime))
 
 
 @rt("/")

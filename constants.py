@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (0, 19, 7)
+VERSION = (1, 0, 0)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -27,6 +27,9 @@ DEFAULT_LOCALE = "sv_SE"
 DEFAULT_TIMEZONE = babel.dates.get_timezone("Europe/Stockholm")
 DATETIME_BABEL_FORMAT = "yyyy-MM-dd HH:mm:ss"
 DATETIME_ISO_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+SCRYPT_DATALENGTH = 64
+SCRYPT_MAXTIME = 0.1
 
 TEXT_MIMETYPE = "text/plain"
 BINARY_MIMETYPE = "application/octet-stream"

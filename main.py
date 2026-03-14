@@ -1,4 +1,4 @@
-"chaos: Web-based repository of notes, links, images, files, graphics and databases."
+"chaos: Web-based personal repository of notes, links, images, files, graphics and databases."
 
 from icecream import install
 
@@ -115,13 +115,6 @@ def get():
                 Div(
                     Form(
                         Input(
-                            type="text",
-                            name="username",
-                            placeholder="User name...",
-                            autofocus=True,
-                            required=True,
-                        ),
-                        Input(
                             type="password",
                             name="password",
                             placeholder="Password...",
@@ -141,20 +134,18 @@ def get():
 
 
 @rt("/login")
-def post(session, username: str, password: str):
+def post(session, password: str):
     "Actually perform login."
-    if not username or not password:
-        add_toast(session, "Missing username and/or password.", "error")
-        return components.redirect("/")
+    if not password:
+        add_toast(session, "Missing password.", "error")
+        return components.redirect("/login")
     try:
-        if username != os.environ.get("CHAOS_USERNAME"):
-            raise KeyError
         if password != os.environ.get("CHAOS_PASSWORD"):
             raise KeyError
     except KeyError:
-        add_toast(session, "Invalid username and/or password.", "error")
-        return components.redirect("/")
-    session["auth"] = username
+        add_toast(session, "Invalid password.", "error")
+        return components.redirect("/login")
+    session["auth"] = "logged in"
     return components.redirect(session.pop("path", None) or "/")
 
 

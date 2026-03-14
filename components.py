@@ -62,7 +62,7 @@ register_url_convertor("static", StaticNoMatchConvertor())
 def get_app_rt(routes=None):
     app, rt = fast_app(
         before=Beforeware(
-            set_auth_before,
+            check_auth_before,
             skip=[r"/static/.*"],
         ),
         hdrs=(
@@ -76,19 +76,18 @@ def get_app_rt(routes=None):
     return app, rt
 
 
-def set_auth_before(request, session):
-    auth = session.get("auth", None)
-    if auth:
-        request.scope["auth"] = auth
-    elif apikey := request.headers.get("apikey"):
-        if apikey == os.environ.get("CHAOS_APIKEY"):
-            request.scope["auth"] = session["auth"] = os.environ["CHAOS_USERNAME"]
+def check_auth_before(request, session):
+    if session.get("auth", None):
+        return
+    if password := request.headers.get("password"):
+        if password == os.environ.get("CHAOS_PASSWORD"):
+            session["auth"] = "logged in"
+            return
         else:
-            return Response(content="invalid API key", status_code=HTTP.UNAUTHORIZED)
-    elif request.url.path != "/login":
-        add_toast(session, "Login required.", "error")
-        session["path"] = request.url.path
-        return redirect("/login")
+            return Response(content="Invalid password", status_code=HTTP.UNAUTHORIZED)
+    add_toast(session, "Login required.", "error")
+    session["path"] = request.url.path
+    return redirect("/login")
 
 
 def redirect(href):

@@ -1,11 +1,6 @@
 # chaos
 
-Web-based repository of notes, links, images, files, graphics and databases.
-
-## NOTE
-
-Currently lacks user account handling; a single set of username & password
-is hard-wired in environment variables.
+Web-based personal repository of notes, links, images, files, graphics and databases.
 
 ## Software
 

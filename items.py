@@ -62,15 +62,6 @@ class Item:
         return f"/{self.__class__.__name__.casefold()}/{self.id}"
 
     @property
-    def owner(self):
-        return self.frontmatter["owner"]
-
-    @owner.setter
-    def owner(self, owner):
-        assert owner
-        self.frontmatter["owner"] = owner
-
-    @property
     def title(self):
         try:
             return self.frontmatter["title"]
@@ -177,6 +168,8 @@ class Item:
 
 class Note(Item):
     "Note item class."
+
+    pass
 
 
 class Link(Item):

@@ -74,7 +74,6 @@ async def post(
 ):
     "Actually create the database."
     database = items.Database()
-    database.owner = request.scope["auth"]
     database.title = title.strip()
     database.text = text.strip()
     database.frontmatter["filename"] = database.id + ".sqlite"
@@ -175,7 +174,6 @@ def get(session, database: items.Item):
             Div(
                 Div(database.modified_local),
                 Div(f"{database.size:,d} + {database.file_size:,d} bytes"),
-                Div(database.owner),
                 cls="grid",
             ),
             cls="container",
@@ -359,7 +357,6 @@ def get(database: items.Item, relname: str):
             Div(
                 Div(database.modified_local),
                 Div(f"{database.size:,d} + {database.file_size:,d} bytes"),
-                Div(database.owner),
                 cls="grid",
             ),
             cls="container",
@@ -785,7 +782,6 @@ def post(request, source: items.Database, title: str):
     assert isinstance(source, items.Database)
     databasename = pathlib.Path(source.databasename)
     database = items.Database()
-    database.owner = request.scope["auth"]
     database.title = title.strip() or databasename.stem
     database.text = source.text
     with open(source.filepath, "rb") as infile:

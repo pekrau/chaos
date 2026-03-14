@@ -56,7 +56,6 @@ async def post(
     if ext == ".md":
         raise errors.Error("Upload of Markdown file is disallowed.")
     file = items.File()
-    file.owner = request.scope["auth"]
     file.title = title.strip() or filename.stem
     file.text = text.strip()
     filecontent = await upfile.read()
@@ -105,7 +104,6 @@ def get(session, file: items.Item):
             Div(
                 Div(file.modified_local),
                 Div(f"{file.size:,d} + {file.file_size:,d} bytes"),
-                Div(file.owner),
                 cls="grid",
             ),
             cls="container",
@@ -231,7 +229,6 @@ def post(request, source: items.File, title: str):
     assert isinstance(source, items.File)
     filename = pathlib.Path(source.filename)
     file = items.File()
-    file.owner = request.scope["auth"]
     file.title = title.strip() or filename.stem
     file.text = source.text
     with open(source.filepath, "rb") as infile:

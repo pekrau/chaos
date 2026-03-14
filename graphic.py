@@ -66,7 +66,6 @@ def post(
 ):
     "Actually add the graphic."
     graphic = items.Graphic()
-    graphic.owner = request.scope["auth"]
     graphic.title = title.strip() or "no title"
     graphic.text = text.strip()
     if graphic_type == constants.VEGA_LITE:
@@ -117,7 +116,6 @@ def get(session, graphic: items.Item):
             Div(
                 Div(graphic.modified_local),
                 Div(f"{graphic.size} bytes"),
-                Div(graphic.owner),
                 cls="grid",
             ),
             cls="container",
@@ -241,7 +239,6 @@ def post(request, source: items.File, title: str):
     "Actually copy the graphic."
     assert isinstance(source, items.Graphic)
     graphic = items.Graphic()
-    graphic.owner = request.scope["auth"]
     graphic.title = title.strip()
     graphic.text = source.text
     graphic.frontmatter["graphic"] = source.graphic

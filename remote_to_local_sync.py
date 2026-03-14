@@ -21,11 +21,11 @@ from timer import Timer
 timer = Timer()
 
 
-def update(url, apikey, target_dir):
+def update(url, password, target_dir):
     """Get the current state of the remote site and update the local data.
     Return a dictionary with statistics.
     """
-    response = requests.get(url.rstrip("/") + "/api/", headers=dict(apikey=apikey))
+    response = requests.get(url.rstrip("/") + "/api/", headers=dict(password=password))
     if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
         raise IOError(f"invalid response: {response.status_code=}")
     elif response.status_code != HTTP.OK:
@@ -47,7 +47,7 @@ def update(url, apikey, target_dir):
         response = requests.post(
             url + "/api/download",
             json={"items": list(download_items)},
-            headers=dict(apikey=apikey),
+            headers=dict(password=password),
         )
         if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
             raise IOError(f"invalid response: {response.status_code=}")
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     url = os.environ["CHAOS_REMOTE_URL"]
     target_dir = os.environ["CHAOS_DIR"]
     try:
-        result = update(url, os.environ["CHAOS_APIKEY"], target_dir)
+        result = update(url, os.environ["CHAOS_PASSWORD"], target_dir)
         if result:
             print(f"{timer.now}, instance {url}, target {target_dir}")
             print(", ".join([f"{k}={v}" for k, v in result.items()]))

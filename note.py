@@ -49,7 +49,6 @@ def post(request, title: str, text: str, id: str = ""):
         items.lookup[note.id] = note
     else:
         note = items.Note()
-    note.owner = request.scope["auth"]
     note.title = title.strip() or "no title"
     note.text = text.strip()
     note.write()
@@ -86,7 +85,6 @@ def get(session, note: items.Item):
             Div(
                 Div(note.modified_local),
                 Div(f"{note.size} bytes"),
-                Div(note.owner),
                 cls="grid",
             ),
             cls="container",
@@ -179,7 +177,6 @@ def post(request, source: items.File, title: str):
     "Actually copy the note."
     assert isinstance(source, items.Note)
     note = items.Note()
-    note.owner = request.scope["auth"]
     note.title = title.strip()
     note.text = source.text
     note.write()

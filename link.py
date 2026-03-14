@@ -50,7 +50,6 @@ def post(
 ):
     "Actually add the link."
     link = items.Link()
-    link.owner = request.scope["auth"]
     link.title = title.strip() or "no title"
     link.href = href.strip() or "/"
     link.text = text.strip()
@@ -89,7 +88,6 @@ def get(session, link: items.Item):
             Div(
                 Div(link.modified_local),
                 Div(f"{link.size} bytes"),
-                Div(link.owner),
                 cls="grid",
             ),
             cls="container",
@@ -191,7 +189,6 @@ def post(request, source: items.File, title: str):
     "Actually copy the link."
     assert isinstance(source, items.Link)
     link = items.Link()
-    link.owner = request.scope["auth"]
     link.title = title.strip()
     link.href = source.href
     link.text = source.text

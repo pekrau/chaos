@@ -52,7 +52,7 @@ items.read()
 
 
 @rt("/")
-def get(session, page: int = 1):
+def get(page: int = 1):
     result = items.get_items()
     total_items = len(result)
     page = min(max(1, page), utils.get_total_pages(total_items))
@@ -70,7 +70,7 @@ def get(session, page: int = 1):
                     Li(title),
                 ),
                 Ul(
-                    Li(components.get_shortcuts_menu(session)),
+                    Li(components.get_shortcuts_menu()),
                 ),
             ),
             cls="container",
@@ -242,7 +242,6 @@ def get():
 
 @rt("/search")
 def get(
-    session,
     term: str = None,
     type: str = "",
     display: str = "",
@@ -347,7 +346,7 @@ def get(
                     Li("Search"),
                 ),
                 Ul(
-                    Li(components.get_shortcuts_menu(session)),
+                    Li(components.get_shortcuts_menu()),
                 ),
             ),
             cls="container",

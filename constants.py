@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (1, 0, 2)
+VERSION = (1, 0, 3)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -15,6 +15,8 @@ GITHUB_URL = "https://github.com/pekrau/chaos"
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
 if not DATA_DIR.exists():
     raise OSError(f"DATA_DIR {DATA_DIR} does not exist")
+
+STATE_FILE = DATA_DIR / ".state.yaml"
 
 FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 

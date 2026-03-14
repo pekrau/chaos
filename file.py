@@ -71,7 +71,7 @@ async def post(
 
 
 @rt("/{file:Item}")
-def get(session, file: items.Item):
+def get(file: items.Item):
     "View the data for the file."
     assert isinstance(file, items.File)
     return (
@@ -88,7 +88,7 @@ def get(session, file: items.Item):
                     Li(components.to_clipboard(file)),
                 ),
                 Ul(
-                    Li(components.get_shortcuts_menu(session, file)),
+                    Li(components.get_shortcuts_menu(file)),
                 ),
             ),
             cls="container",

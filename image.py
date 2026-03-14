@@ -82,7 +82,7 @@ async def post(
 
 
 @rt("/{image:Item}")
-def get(session, image: items.Item):
+def get(image: items.Item):
     "View the data for the image."
     assert isinstance(image, items.Image)
     return (
@@ -96,7 +96,7 @@ def get(session, image: items.Item):
                     Li(components.to_clipboard(image)),
                 ),
                 Ul(
-                    Li(components.get_shortcuts_menu(session, image)),
+                    Li(components.get_shortcuts_menu(image)),
                 ),
             ),
             cls="container",

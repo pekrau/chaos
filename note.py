@@ -56,7 +56,7 @@ def post(request, title: str, text: str, id: str = ""):
 
 
 @rt("/{note:Item}")
-def get(session, note: items.Item):
+def get(note: items.Item):
     "View the note."
     assert isinstance(note, items.Note)
     return (
@@ -70,7 +70,7 @@ def get(session, note: items.Item):
                     Li(components.to_clipboard(note)),
                 ),
                 Ul(
-                    Li(components.get_shortcuts_menu(session, note)),
+                    Li(components.get_shortcuts_menu(note)),
                 ),
             ),
             cls="container",

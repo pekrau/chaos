@@ -174,7 +174,7 @@ def get_nav_menu(item=None):
     if item:
         links.append(A(f"Edit {item.type}", href=f"{item.url}/edit"))
         links.append(A(f"Copy {item.type}", href=f"{item.url}/copy"))
-        if item.frontmatter.get("pinned"):
+        if item.pinned:
             links.append(A(f"Unpin {item.type}", href=f"/unpin/{item.id}"))
         else:
             links.append(A(f"Pin {item.type}", href=f"/pin/{item.id}"))
@@ -191,35 +191,16 @@ def get_nav_menu(item=None):
     )
 
 
-def get_shortcuts_menu(session, item=None):
-    pinned = list(items.pinned)
-    pinned.sort(key=lambda i: i.modified, reverse=True)
-    recent = []
-    for itemid in session.get("recent", "").split(","):
-        try:
-            i = items.get(itemid)
-            if i == item:
-                raise KeyError
-            if i in pinned:
-                raise KeyError
-        except KeyError:
-            pass
-        else:
-            recent.append(i)
-    entries = [Li(Strong(get_item_link(i, full=False))) for i in pinned]
-    entries.extend(
-        [Li(get_item_link(i, full=False)) for i in recent[: constants.MAX_RECENT_ITEMS]]
-    )
+def get_shortcuts_menu(item=None):
+    entries = [Li(Strong(get_item_link(i, full=False))) for i in items.get_pinned()]
+    entries.extend([Li(get_item_link(i, full=False)) for i in items.get_recent(item)])
     result = Details(
         Summary("Shortcuts..."),
         Ul(*entries),
         cls="dropdown",
     )
     if item:
-        recent.insert(0, item)
-    while len(recent) > constants.MAX_RECENT_ITEMS + len(items.pinned) + 1:
-        recent.pop()
-    session["recent"] = ",".join([i.id for i in recent])
+        items.update_state(recent=item)
     return result
 
 

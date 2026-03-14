@@ -19,14 +19,8 @@ import utils
 # Global item lookup. Key: item id; value: item instance.
 lookup = {}
 
-# Pinned items.
-pinned = set()
-
-
-def get(itemid):
-    "Get the item from the global lookup given its identifier."
-    global lookup
-    return lookup[itemid]
+# Global current state.
+state = dict(pinned=[], recent=[])
 
 
 class Item:
@@ -101,6 +95,11 @@ class Item:
         return utils.timestamp_local(self.path.stat().st_mtime)
 
     @property
+    def pinned(self):
+        global state
+        return self.id in state["pinned"]
+
+    @property
     def age(self):
         "String representation of age; hh:mm:ss if less than 1 day, else days."
         age = dt.datetime.utcnow() - dt.datetime.fromtimestamp(
@@ -119,20 +118,11 @@ class Item:
 
     def pin(self):
         "Pin this item to the shortcuts menu."
-        global pinned
-        self.frontmatter["pinned"] = True
-        pinned.add(self)
-        self.write()
+        update_state(pin=self)
 
     def unpin(self):
         "Remove this item from the shortcuts menu."
-        global pinned
-        try:
-            del self.frontmatter["pinned"]
-            pinned.remove(self)
-        except KeyError:
-            pass
-        self.write()
+        update_state(unpin=self)
 
     def write(self):
         "Write the item to file. Update xrefs."
@@ -328,51 +318,110 @@ class Graphic(Item):
         return self.frontmatter["specification"]
 
 
+def get(itemid):
+    "Get the item from the global lookup given its identifier."
+    global lookup
+    return lookup[itemid]
+
+
+def update_state(recent=None, pin=None, unpin=None):
+    global state
+    if recent:
+        try:
+            state["recent"].remove(recent.id)
+        except ValueError:
+            pass
+        state["recent"].insert(0, recent.id)
+    if pin:
+        if pin.id not in state["pinned"]:
+            state["pinned"].append(pin.id)
+    if unpin:
+        try:
+            state["pinned"].remove(unpin.id)
+        except ValueError:
+            pass
+    state["recent"] = [id for id in state["recent"] if id in lookup]
+    state["pinned"] = [id for id in state["pinned"] if id in lookup]
+    while len(state["recent"]) > constants.MAX_RECENT_ITEMS + len(state["pinned"]) + 1:
+        state["recent"].pop()
+    constants.STATE_FILE.write_text(yaml.safe_dump(state, allow_unicode=True))
+
+
+def get_pinned():
+    global state
+    result = []
+    for id in state["pinned"]:
+        try:
+            result.append(get(id))
+        except KeyError:
+            pass
+    return result
+
+
+def get_recent(item=None):
+    global state
+    result = []
+    for id in state["recent"]:
+        if item and item.id == id:
+            continue
+        if id in state["pinned"]:
+            continue
+        try:
+            result.append(get(id))
+        except KeyError:
+            pass
+    return list(result[:constants.MAX_RECENT_ITEMS])
+
+
 def read(dirpath=None):
     """Recursively read all items from files in the given directory.
     If no directory is given, start with the data dir.
     Create the data dir if it does not exist.
     Set up xrefs between all items.
     """
-    global lookup
+    global lookup, state
     if dirpath is None:
         lookup.clear()
+    try:
+        state.clear()
+        state.update(yaml.safe_load(constants.STATE_FILE.read_text()))
+    except IOError:
+        write_state()
+
     for path in constants.DATA_DIR.iterdir():
-        if path.is_dir():
-            read(path)
-        elif path.is_file() and path.suffix == ".md":
-            content = path.read_text()
-            m = constants.FRONTMATTER.match(content)
-            if m:
-                frontmatter = yaml.safe_load(m.group(1))
-                # Dates must be represented as strings, not datetime.date.
-                for key, value in frontmatter.items():
-                    if isinstance(value, dt.date):
-                        frontmatter[key] = str(value)
-                text = content[m.start(2) :]
+        if not path.suffix == ".md":
+            continue
+        content = path.read_text()
+        m = constants.FRONTMATTER.match(content)
+        if m:
+            frontmatter = yaml.safe_load(m.group(1))
+            # Dates must be represented as strings, not datetime.date.
+            for key, value in frontmatter.items():
+                if isinstance(value, dt.date):
+                    frontmatter[key] = str(value)
+            text = content[m.start(2) :]
+        else:
+            frontmatter = {}
+            text = content
+        # Which type of item depends on the presence of a keyword in front matter.
+        if "href" in frontmatter:
+            item = Link(path)
+        elif "filename" in frontmatter:
+            mimetype = mimetypes.guess_type(frontmatter["filename"])[0]
+            if mimetype in constants.IMAGE_MIMETYPES:
+                item = Image(path)
+            elif mimetype == constants.SQLITE_MIMETYPE:
+                item = Database(path)
             else:
-                frontmatter = {}
-                text = content
-            # Which type of item depends on the presence of a keyword in front matter.
-            if "href" in frontmatter:
-                item = Link(path)
-            elif "filename" in frontmatter:
-                mimetype = mimetypes.guess_type(frontmatter["filename"])[0]
-                if mimetype in constants.IMAGE_MIMETYPES:
-                    item = Image(path)
-                elif mimetype == constants.SQLITE_MIMETYPE:
-                    item = Database(path)
-                else:
-                    item = File(path)
-            elif "graphic" in frontmatter:
-                item = Graphic(path)
-            else:
-                item = Note(path)
-            lookup[item.id] = item
-            item.frontmatter = frontmatter
-            item.text = text
+                item = File(path)
+        elif "graphic" in frontmatter:
+            item = Graphic(path)
+        else:
+            item = Note(path)
+        lookup[item.id] = item
+        item.frontmatter = frontmatter
+        item.text = text
     setup_xrefs()
-    setup_pinned()
 
 
 def setup_xrefs():
@@ -391,14 +440,6 @@ def setup_xrefs():
                 other.xrefs_to_self.add(item.id)
 
 
-def setup_pinned():
-    global pinned
-    pinned.clear()
-    for item in lookup.values():
-        if item.frontmatter.get("pinned"):
-            pinned.add(item)
-
-
 def get_items(cls=None):
     "Get all items, or of a given type, sorted by modified time."
     global lookup
@@ -415,11 +456,9 @@ def get_items(cls=None):
 def get_all():
     "Get a map of item paths and filepaths with their modified timestamps."
     global lookup
-    # result = {
-    #     ".chaos.yaml": utils.timestamp_utc(
-    #         (constants.DATA_DIR / ".chaos.yaml").stat().st_mtime
-    #     )
-    # }
+    result = {
+        constants.STATE_FILE.name: utils.timestamp_utc(constants.STATE_FILE.stat().st_mtime)
+    }
     result = {}
     for item in lookup.values():
         result[item.id] = item.modified

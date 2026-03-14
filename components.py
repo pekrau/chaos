@@ -200,7 +200,7 @@ def get_shortcuts_menu(item=None):
         cls="dropdown",
     )
     if item:
-        items.update_state(recent=item)
+        items.write_state(recent=item)
     return result
 
 

@@ -118,11 +118,11 @@ class Item:
 
     def pin(self):
         "Pin this item to the shortcuts menu."
-        update_state(pin=self)
+        write_state(pin=self)
 
     def unpin(self):
         "Remove this item from the shortcuts menu."
-        update_state(unpin=self)
+        write_state(unpin=self)
 
     def write(self):
         "Write the item to file. Update xrefs."
@@ -324,7 +324,7 @@ def get(itemid):
     return lookup[itemid]
 
 
-def update_state(recent=None, pin=None, unpin=None):
+def write_state(recent=None, pin=None, unpin=None):
     global state
     if recent:
         try:

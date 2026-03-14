@@ -1,8 +1,5 @@
 "chaos: Web-based personal repository of notes, links, images, files, graphics and databases."
 
-from icecream import install
-
-install()
 
 import os
 import shutil
@@ -19,9 +16,14 @@ import yaml
 # This must be done before importing 'constants'.
 from dotenv import load_dotenv
 
-load_dotenv()
 if os.environ.get("CHAOS_DEVELOPMENT"):
-    os.environ["CHAOS_DIR"] = "/home/pekrau/Dropbox/chaos-development"
+    from icecream import install
+    install()
+    with open(".env-development") as infile:
+        load_dotenv(stream=infile)
+else:
+    load_dotenv()
+
 
 import components
 import constants

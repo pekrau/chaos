@@ -386,6 +386,7 @@ def read(dirpath=None):
         state.clear()
         state.update(yaml.safe_load(constants.STATE_FILE.read_text()))
     except IOError:
+        state = dict(pinned=[], recent=[])
         write_state()
 
     for path in constants.DATA_DIR.iterdir():

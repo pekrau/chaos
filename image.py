@@ -16,7 +16,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(request):
+def get():
     "Form for adding an image."
     title = "Add image"
     return (
@@ -46,19 +46,14 @@ def get(request):
                 action="/image/",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form("/"),
             cls="container",
         ),
     )
 
 
 @rt("/")
-async def post(
-    request,
-    title: str,
-    upfile: UploadFile,
-    text: str,
-):
+async def post(title: str, upfile: UploadFile, text: str):
     "Actually add the image."
     filename = pathlib.Path(upfile.filename)
     if upfile.content_type not in constants.IMAGE_MIMETYPES:
@@ -245,7 +240,7 @@ def get(request, image: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(request, source: items.File, title: str):
+def post(source: items.File, title: str):
     "Actually copy the image."
     assert isinstance(source, items.Image)
     filename = pathlib.Path(source.filename)

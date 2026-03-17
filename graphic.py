@@ -15,7 +15,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(request):
+def get():
     "Form for adding a graphic."
     title = "Add graphic"
     return (
@@ -50,20 +50,14 @@ def get(request):
                 action="/graphic/",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form("/"),
             cls="container",
         ),
     )
 
 
 @rt("/")
-def post(
-    request,
-    title: str,
-    text: str,
-    graphic_type: str,
-    specification: str,
-):
+def post(title: str, text: str, graphic_type: str, specification: str):
     "Actually add the graphic."
     graphic = items.Graphic()
     graphic.title = title.strip() or "no title"
@@ -235,7 +229,7 @@ def get(request, graphic: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(request, source: items.File, title: str):
+def post(source: items.File, title: str):
     "Actually copy the graphic."
     assert isinstance(source, items.Graphic)
     graphic = items.Graphic()

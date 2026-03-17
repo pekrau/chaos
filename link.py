@@ -12,7 +12,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(request):
+def get():
     "Form for adding a link."
     title = "Add link"
     return (
@@ -35,19 +35,14 @@ def get(request):
                 action="/link/",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form("/"),
             cls="container",
         ),
     )
 
 
 @rt("/")
-def post(
-    request,
-    title: str,
-    href: str,
-    text: str,
-):
+def post(title: str, href: str, text: str):
     "Actually add the link."
     link = items.Link()
     link.title = title.strip() or "no title"
@@ -185,7 +180,7 @@ def get(request, link: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(request, source: items.File, title: str):
+def post(source: items.File, title: str):
     "Actually copy the link."
     assert isinstance(source, items.Link)
     link = items.Link()

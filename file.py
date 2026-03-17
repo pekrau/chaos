@@ -14,7 +14,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(request):
+def get():
     "Form for adding a file."
     title = "Add file"
     return (
@@ -37,19 +37,14 @@ def get(request):
                 action="/file/",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form("/"),
             cls="container",
         ),
     )
 
 
 @rt("/")
-async def post(
-    request,
-    title: str,
-    upfile: UploadFile,
-    text: str,
-):
+async def post(title: str, upfile: UploadFile, text: str):
     "Actually add the file."
     filename = pathlib.Path(upfile.filename)
     ext = filename.suffix
@@ -224,7 +219,7 @@ def get(request, file: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(request, source: items.File, title: str):
+def post(source: items.File, title: str):
     "Actually copy the file."
     assert isinstance(source, items.File)
     filename = pathlib.Path(source.filename)

@@ -117,19 +117,27 @@ def get_question_icon():
 
 
 def get_item_icon(item):
-    match item.__class__.__name__:
+    return get_type_icon(item.__class__.__name__)
+
+
+def get_type_icon(type):
+    match type:
         case "Note":
             return get_note_icon()
         case "Link":
             return get_link_icon()
         case "File":
-            return get_file_icon(item.file_mimetype)
+            return get_file_icon()
         case "Image":
             return get_image_icon()
-        case "Graphic":
-            return get_graphic_icon()
         case "Database":
             return get_database_icon()
+        case "Graphic":
+            return get_graphic_icon()
+        case "Book":
+            return get_book_icon()
+        case "Article":
+            return get_article_icon()
         case _:
             raise NotImplementedError
 
@@ -169,11 +177,20 @@ def get_graphic_icon(title="Graphic"):
     return get_icon("graph-up.svg", title=title)
 
 
-def get_nav_menu(item=None):
+def get_book_icon(title="Book"):
+    return get_icon("book.svg", title=title)
+
+
+def get_article_icon(title="Article"):
+    return get_icon("journal-text.svg", title=title)
+
+
+def get_nav_menu(item=None, copy=True):
     links = [A("Home", href="/")]
     if item:
         links.append(A(f"Edit {item.type}", href=f"{item.url}/edit"))
-        links.append(A(f"Copy {item.type}", href=f"{item.url}/copy"))
+        if copy:
+            links.append(A(f"Copy {item.type}", href=f"{item.url}/copy"))
         if item.pinned:
             links.append(A(f"Unpin {item.type}", href=f"/unpin/{item.id}"))
         else:
@@ -302,6 +319,10 @@ def get_item_link(item, full=True):
             return A(get_database_icon(), item.title, href=item.url)
         case "graphic":
             return A(get_graphic_icon(), item.title, href=item.url)
+        case "book":
+            return A(get_book_icon(), item.title, href=item.url)
+        case "article":
+            return A(get_article_icon(), item.title, href=item.url)
         case _:
             raise NotImplementedError
 

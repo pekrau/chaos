@@ -7,10 +7,13 @@ import string
 
 import babel.dates
 
-VERSION = (1, 0, 5)
+VERSION = (1, 1, 0)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
+ISBN_URL = "https://isbnsearch.org/isbn/{isbn}"
+DOI_URL = "https://doi.org/{doi}"
+PUBMED_URL = "https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
 
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
 if not DATA_DIR.exists():
@@ -23,12 +26,15 @@ FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
 XREF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
 
-TYPES = ["Note", "Link", "Image", "File", "Database", "Graphic"]
-
 DEFAULT_LOCALE = "sv_SE"
 DEFAULT_TIMEZONE = babel.dates.get_timezone("Europe/Stockholm")
 DATETIME_BABEL_FORMAT = "yyyy-MM-dd HH:mm:ss"
 DATETIME_ISO_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+LANGUAGES = dict(
+    en="English",
+    se="Svenska",
+)
 
 SCRYPT_DATALENGTH = 64
 SCRYPT_MAXTIME = 0.1

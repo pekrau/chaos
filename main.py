@@ -1,4 +1,6 @@
-"chaos: Web-based personal repository of notes, links, images, files, graphics and databases."
+"""chaos: Web-based personal repository of notes, links, images, files,
+databases, graphics, books and articles.
+"""
 
 import os
 import shutil
@@ -25,6 +27,7 @@ else:
     load_dotenv()
 
 
+import bibtex
 import components
 import constants
 import errors
@@ -35,6 +38,8 @@ import file
 import image
 import database
 import graphic
+import book
+import article
 import api
 import utils
 
@@ -46,6 +51,8 @@ app, rt = components.get_app_rt(
         Mount("/image", image.app),
         Mount("/database", database.app),
         Mount("/graphic", graphic.app),
+        Mount("/book", book.app),
+        Mount("/article", article.app),
         Mount("/api", api.app),
     ]
 )
@@ -165,6 +172,31 @@ async def get(filename: str):
 @rt("/add")
 def get():
     "Page for selecting type of item to add."
+    forms = [
+        Form(
+            Button(
+                components.get_type_icon(type),
+                f"Add {type.lower()}",
+                type="submit",
+                cls="outline",
+            ),
+            method="GET",
+            action=f"/{type.lower()}",
+        )
+        for type in items.TYPES
+    ]
+    forms.append(
+        Form(
+            Button(
+                components.get_icon("box-arrow-in-right.svg"),
+                "Add from BibTex",
+                type="submit",
+                cls="outline",
+            ),
+            method="GET",
+            action="/bibtex",
+        )
+    )
     return (
         Title("Add item..."),
         Header(
@@ -176,70 +208,90 @@ def get():
             ),
             cls="container",
         ),
-        Main(
-            Form(
-                Button(
-                    components.get_note_icon(),
-                    "Add note",
-                    type="submit",
-                    cls="outline",
+        Main(*forms, cls="container"),
+    )
+
+
+@rt("/bibtex")
+def get():
+    "Form for adding book or article from BibTex data."
+    title = "Add book or article from BibTex data"
+    return (
+        Title(title),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(title),
                 ),
-                method="GET",
-                action="/note",
-            ),
-            Form(
-                Button(
-                    components.get_link_icon(),
-                    "Add link",
-                    type="submit",
-                    cls="outline",
-                ),
-                method="GET",
-                action="/link",
-            ),
-            Form(
-                Button(
-                    components.get_image_icon(),
-                    "Add image",
-                    type="submit",
-                    cls="outline",
-                ),
-                method="GET",
-                action="/image",
-            ),
-            Form(
-                Button(
-                    components.get_file_icon(),
-                    "Add file",
-                    type="submit",
-                    cls="outline",
-                ),
-                method="GET",
-                action="/file",
-            ),
-            Form(
-                Button(
-                    components.get_database_icon(),
-                    "Add database",
-                    type="submit",
-                    cls="outline",
-                ),
-                method="GET",
-                action="/database",
-            ),
-            Form(
-                Button(
-                    components.get_graphic_icon(),
-                    "Add graphic",
-                    type="submit",
-                    cls="outline",
-                ),
-                method="GET",
-                action="/graphic",
             ),
             cls="container",
         ),
+        Main(
+            Form(
+                Input(
+                    name="id",
+                    placeholder="Id...",
+                ),
+                Textarea(
+                    name="data",
+                    rows=10,
+                    placeholder="BibTex...",
+                ),
+                components.get_text_input(),
+                Input(type="submit", value="Add book or article"),
+                action="/bibtex/",
+                method="POST",
+            ),
+            components.get_cancel_form("/"),
+            cls="container",
+        ),
     )
+
+
+@rt("/bibtex")
+def post(id: str, data: str, text: str):
+    "Actually add reference (book or article) from BibTex data."
+    if id in items.lookup:
+        add_toast(session, "Id already in use.", "error")
+        return components.redirect("/bibtex")
+
+    entries = list(bibtex.parse(data))
+    if len(entries) == 0:
+        add_toast(session, "No entry in the BibTex data.", "error")
+        return components.redirect("/")
+
+    entry = entries[0]
+    if entry["type"] == "article":
+        item = items.Article(constants.DATA_DIR / f"{id}.md")
+        item.frontmatter["journal"] = entry["journal"]
+        item.frontmatter["doi"] = entry.get("doi")
+        item.frontmatter["volume"] = entry.get("volume")
+        item.frontmatter["issue"] = entry.get("issue")
+        item.frontmatter["pages"] = entry.get("pages")
+        item.frontmatter["pmid"] = entry.get("pmid")
+        if abstract := entry.get("abstract"):
+            if text:
+                text = abstract + "\n\n" + text
+    elif entry["type"] == "book":
+        item = items.Book(constants.DATA_DIR / f"{id}.md")
+        item.frontmatter["isbn"] = entry.get("isbn")
+        item.frontmatter["publisher"] = entry["publisher"]
+    else:
+        raise ValueError("unknown entry type in BibTex data")
+
+    item.title = entry["title"]
+    item.frontmatter["authors"] = entry["authors"]
+    item.frontmatter["published"] = entry["published"]
+    item.frontmatter["year"] = entry.get("year") or entry["published"].split("-")[0]
+    item.frontmatter["language"] = entry.get("language")
+    item.text = text
+    items.lookup[item.id] = item
+    item.write()
+
+    if len(entries) > 1:
+        add_toast(session, "Parsed only the first entry in the BibTex data.", "warning")
+    return components.redirect(item.url)
 
 
 @rt("/search")
@@ -251,12 +303,17 @@ def get(
     page: int = 1,
 ):
     "Search the items."
-    if type:
-        type = type.capitalize()
-        if type not in constants.TYPES:
-            type = ""
+    # If the term evaluates to an item identifier, then display it.
+    try:
+        return components.redirect(items.lookup[term].url)
+    except KeyError:
+        pass
 
     # Filter by type.
+    if type:
+        type = type.capitalize()
+        if type not in items.TYPES:
+            type = ""
     if type:
         # Items with a non-zero score.
         if term:
@@ -364,10 +421,7 @@ def get(
                 Fieldset(
                     Select(
                         Option("Filter by type...", disabled=True, selected=True),
-                        *[
-                            Option(t, selected=t == type)
-                            for t in ["Any"] + constants.TYPES
-                        ],
+                        *[Option(t, selected=t == type) for t in ["Any"] + items.TYPES],
                         name="type",
                     ),
                     Select(
@@ -445,7 +499,7 @@ def get():
     disk_free = shutil.disk_usage(constants.DATA_DIR).free
     statistics = items.get_statistics()
     usage = Table(
-        Thead(Tr(Th("Resource usage", Th("Bytes or #", cls="right")))),
+        Thead(Tr(Th("Resource usage", colspan=2))),
         Tbody(
             Tr(
                 Td("RAM"),

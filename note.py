@@ -12,7 +12,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(request, form: dict):
+def get(form: dict):
     "Form for adding a note."
     title = "Add note"
     return (
@@ -35,14 +35,14 @@ def get(request, form: dict):
                 action="/note/",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form("/"),
             cls="container",
         ),
     )
 
 
 @rt("/")
-def post(request, title: str, text: str, id: str = ""):
+def post(title: str, text: str, id: str = ""):
     "Actually add the note."
     if id:
         note = items.Note(constants.DATA_DIR / f"{id}.md")
@@ -173,7 +173,7 @@ def get(request, note: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(request, source: items.File, title: str):
+def post(source: items.File, title: str):
     "Actually copy the note."
     assert isinstance(source, items.Note)
     note = items.Note()

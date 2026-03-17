@@ -28,7 +28,7 @@ def timestamp_local(timestamp):
 
 
 def normalize(s):
-    "Normalize string to ASCII, lower case, replacing non-file characters with '-'."
+    "Normalize string to ASCII, fold case, replace non-file characters with '-'."
     result = unicodedata.normalize("NFKD", s).encode("ASCII", "ignore")
     result = "".join(
         [

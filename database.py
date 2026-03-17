@@ -29,7 +29,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(request):
+def get():
     "Form for adding a database."
     title = "Add database"
     return (
@@ -59,19 +59,14 @@ def get(request):
                 action="/database/",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form("/"),
             cls="container",
         ),
     )
 
 
 @rt("/")
-async def post(
-    request,
-    title: str,
-    text: str,
-    upfile: UploadFile = None,
-):
+async def post(title: str, text: str, upfile: UploadFile = None):
     "Actually create the database."
     database = items.Database()
     database.title = title.strip()
@@ -209,7 +204,7 @@ def get(database: items.Item, ext: str):
 
 
 @rt("/{database:Item}/row/{tablename:str}")
-def get(request, database: items.Item, tablename: str):
+def get(database: items.Item, tablename: str):
     "Add a row to the table."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
@@ -401,7 +396,7 @@ def get(database: items.Item, relname: str, ext: str):
 
 
 @rt("/{database:Item}/rows/{tablename:str}/csv")
-def get(request, database: items.Item, tablename: str):
+def get(database: items.Item, tablename: str):
     "Add data to the table from a CSV file."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
@@ -455,7 +450,7 @@ def get(request, database: items.Item, tablename: str):
 
 
 @rt("/{database:Item}/rows/{tablename:str}/csv")
-async def post(request, database: items.Item, tablename: str, upfile: UploadFile):
+async def post(database: items.Item, tablename: str, upfile: UploadFile):
     "Actually add data to the table from a CSV file."
     assert isinstance(database, items.Database)
     table_columns = database.get_schema()[tablename]["columns"]
@@ -549,7 +544,7 @@ def get(request, database: items.Item):
 
 
 @rt("/{database:Item}/csv")
-async def post(request, database: items.Item, tablename: str, upfile: UploadFile):
+async def post(database: items.Item, tablename: str, upfile: UploadFile):
     """Actually create table from CSV file upload.
     Determine columns from header and data.
     """
@@ -777,7 +772,7 @@ def get(request, database: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(request, source: items.Database, title: str):
+def post(source: items.Database, title: str):
     "Actually copy the database."
     assert isinstance(source, items.Database)
     databasename = pathlib.Path(source.databasename)
@@ -798,7 +793,7 @@ def post(request, source: items.Database, title: str):
 
 
 @rt("/{database:Item}/view")
-def get(request, database: items.Item, sql: str = None):
+def get(database: items.Item, sql: str = None):
     "Form for creating a view in the database."
     assert isinstance(database, items.Database)
     title = f"Create view in '{database.title}'"
@@ -841,7 +836,7 @@ def get(request, database: items.Item, sql: str = None):
 
 
 @rt("/{database:Item}/view")
-def post(request, database: items.Item, sql: str, view: str):
+def post(database: items.Item, sql: str, view: str):
     "Actually create a view in the database."
     assert isinstance(database, items.Database)
     with set_modified_when_changed(database):
@@ -896,7 +891,7 @@ def post(database: items.Item, redirect: str):
 
 
 @rt("/{database:Item}/plot")
-def get(request, database: items.Item):
+def get(database: items.Item):
     "Add a plot in the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
@@ -958,7 +953,7 @@ def get(request, database: items.Item):
 
 
 @rt("/{database:Item}/plot")
-def post(request, database: items.Item, form: dict):
+def post(database: items.Item, form: dict):
     "Actually add a plot in the database."
     assert isinstance(database, items.Database)
     if not form.get("type"):
@@ -980,7 +975,7 @@ def post(request, database: items.Item, form: dict):
 
 
 @rt("/{database:Item}/plot/{plotname:str}")
-def get(request, database: items.Item, plotname: str):
+def get(database: items.Item, plotname: str):
     "View the named plot in the database."
     assert isinstance(database, items.Database)
     try:
@@ -1075,7 +1070,7 @@ def get(request, database: items.Item, plotname: str):
 
 
 @rt("/{database:Item}/plot/{plotname:str}/edit")
-def get(request, database: items.Item, plotname: str):
+def get(database: items.Item, plotname: str):
     "Edit the named plot in the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
@@ -1231,7 +1226,7 @@ def get(request, database: items.Item, plotname: str):
 
 
 @rt("/{database:Item}/plot/{plotname:str}/edit")
-def post(request, database: items.Item, plotname: str, form: dict):
+def post(database: items.Item, plotname: str, form: dict):
     "Actually edit the named plot in the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
@@ -1278,7 +1273,7 @@ def post(request, database: items.Item, plotname: str, form: dict):
 
 
 @rt("/{database:Item}/plot/{plotname:str}/copy")
-def get(request, database: items.Item, plotname: str):
+def get(database: items.Item, plotname: str):
     "Copy the named plot in the database."
     assert isinstance(database, items.Database)
     title = f"Copy '{plotname}'"
@@ -1315,7 +1310,7 @@ def get(request, database: items.Item, plotname: str):
 
 
 @rt("/{database:Item}/plot/{plotname:str}/copy")
-def post(request, database: items.Item, plotname: str, form: dict):
+def post(database: items.Item, plotname: str, form: dict):
     "Actually copy the named plot in the database."
     assert isinstance(database, items.Database)
     name = utils.normalize(form["title"])
@@ -1329,7 +1324,7 @@ def post(request, database: items.Item, plotname: str, form: dict):
 
 
 @rt("/{database:Item}/plot/{plotname:str}/delete")
-def get(request, database: items.Item, plotname: str):
+def get(database: items.Item, plotname: str):
     "Ask for confirmation to delete the plot."
     assert isinstance(database, items.Database)
     title = f"Delete '{plotname}'"

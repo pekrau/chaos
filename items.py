@@ -16,6 +16,9 @@ import constants
 import errors
 import utils
 
+# List of item types.
+TYPES = []
+
 # Global item lookup. Key: item id; value: item instance.
 lookup = {}
 
@@ -26,6 +29,11 @@ state = dict(pinned=[], recent=[])
 class Item:
     "Abstract item class."
 
+    def __init_subclass__(cls, **kwargs):
+        global TYPES
+        if not cls.__name__.startswith("_"):
+            TYPES.append(cls.__name__)
+
     def __init__(self, path=None):
         self._path = path
         self.frontmatter = {}
@@ -34,7 +42,7 @@ class Item:
         self.xrefs_to_self = set()
 
     def __str__(self):
-        return self.url
+        return self.title
 
     def __repr__(self):
         return self.url
@@ -102,9 +110,7 @@ class Item:
     @property
     def age(self):
         "String representation of age; hh:mm:ss if less than 1 day, else days."
-        age = dt.datetime.utcnow() - dt.datetime.fromtimestamp(
-            self.path.stat().st_mtime
-        )
+        age = dt.datetime.now() - dt.datetime.fromtimestamp(self.path.stat().st_mtime)
         hours, seconds = divmod(age.seconds, 3600)
         minutes, seconds = divmod(seconds, 60)
         if age.days > 0:
@@ -174,7 +180,7 @@ class Link(Item):
         self.frontmatter["href"] = href.strip() or "/"
 
 
-class GenericFile(Item):
+class _GenericFile(Item):
     "Generic file item class."
 
     @property
@@ -224,19 +230,19 @@ class GenericFile(Item):
         super().delete()
 
 
-class Image(GenericFile):
+class Image(_GenericFile):
     "Image item class."
 
     pass
 
 
-class File(GenericFile):
+class File(_GenericFile):
     "File item class."
 
     pass
 
 
-class Database(GenericFile):
+class Database(_GenericFile):
     "Database (Sqlite3) item class."
 
     def connect(self, readonly=False):
@@ -318,6 +324,77 @@ class Graphic(Item):
         return self.frontmatter["specification"]
 
 
+class _GenericReference(Item):
+    "Generic reference to book or article."
+
+    @property
+    def authors(self):
+        "List of authors."
+        return self.frontmatter["authors"]
+
+
+class Book(_GenericReference):
+    "Reference to a book."
+
+    @property
+    def year(self):
+        "Year first published."
+        return (
+            self.frontmatter.get("year") or self.frontmatter["published"].split("-")[0]
+        )
+
+    @property
+    def isbn(self):
+        return self.frontmatter["isbn"]
+
+    @property
+    def publisher(self):
+        "Publisher for this edition."
+        return self.frontmatter.get("publisher")
+
+    @property
+    def published(self):
+        "Publication date (possibly just year) for this edition."
+        return self.frontmatter["published"]
+
+    @property
+    def language(self):
+        return self.frontmatter["language"]
+
+
+class Article(_GenericReference):
+    "Reference to an article."
+
+    @property
+    def published(self):
+        "Date published."
+        return self.frontmatter["published"]
+
+    @property
+    def journal(self):
+        return self.frontmatter["journal"]
+
+    @property
+    def volume(self):
+        return self.frontmatter.get("volume")
+
+    @property
+    def issue(self):
+        return self.frontmatter.get("issue")
+
+    @property
+    def pages(self):
+        return self.frontmatter.get("pages")
+
+    @property
+    def doi(self):
+        return self.frontmatter["doi"]
+
+    @property
+    def pmid(self):
+        return self.frontmatter.get("pmid")
+
+
 def get(itemid):
     "Get the item from the global lookup given its identifier."
     global lookup
@@ -373,15 +450,14 @@ def get_recent(item=None):
     return list(result[: constants.MAX_RECENT_ITEMS])
 
 
-def read(dirpath=None):
-    """Recursively read all items from files in the given directory.
-    If no directory is given, start with the data dir.
-    Create the data dir if it does not exist.
+def read():
+    """Read all items from Markdowwn files in the data directory.
+    Create the data directory if it does not exist.
+    Read the current state; recent and pinned items.
     Set up xrefs between all items.
     """
     global lookup, state
-    if dirpath is None:
-        lookup.clear()
+
     try:
         state.clear()
         state.update(yaml.safe_load(constants.STATE_FILE.read_text()))
@@ -389,6 +465,7 @@ def read(dirpath=None):
         state = dict(pinned=[], recent=[])
         write_state()
 
+    lookup.clear()
     for path in constants.DATA_DIR.iterdir():
         if not path.suffix == ".md":
             continue
@@ -404,6 +481,7 @@ def read(dirpath=None):
         else:
             frontmatter = {}
             text = content
+
         # Which type of item depends on the presence of a keyword in front matter.
         if "href" in frontmatter:
             item = Link(path)
@@ -417,8 +495,13 @@ def read(dirpath=None):
                 item = File(path)
         elif "graphic" in frontmatter:
             item = Graphic(path)
+        elif "journal" in frontmatter or "doi" in frontmatter:
+            item = Article(path)
+        elif "isbn" in frontmatter:
+            item = Book(path)
         else:
             item = Note(path)
+
         lookup[item.id] = item
         item.frontmatter = frontmatter
         item.text = text
@@ -443,11 +526,11 @@ def setup_xrefs():
 
 def get_items(cls=None):
     "Get all items, or of a given type, sorted by modified time."
-    global lookup
+    global TYPES, lookup
     if cls is None:
         result = list(lookup.values())
     else:
-        if cls in constants.TYPES:
+        if cls in TYPES:
             cls = eval(cls)
         result = [e for e in lookup.values() if isinstance(e, cls)]
     result.sort(key=lambda e: e.modified, reverse=True)
@@ -471,8 +554,9 @@ def get_all():
 
 
 def get_statistics():
+    global TYPES
     result = dict(item=len(lookup))
-    result.update(dict([(type.lower(), 0) for type in constants.TYPES]))
+    result.update(dict([(type.lower(), 0) for type in TYPES]))
     for item in lookup.values():
         result[item.__class__.__name__.lower()] += 1
     return result

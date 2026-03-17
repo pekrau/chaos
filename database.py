@@ -851,7 +851,7 @@ def get(request, database: items.Item):
     assert isinstance(database, items.Database)
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
     if redirect == database.url:
-        redirect = "/databases"
+        redirect = "/"
     title = f"Delete '{database.title}'"
     return (
         Title(title),

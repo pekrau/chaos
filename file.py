@@ -245,7 +245,7 @@ def get(request, file: items.Item):
     assert isinstance(file, items.File)
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
     if redirect == f"/file/{file.id}":
-        redirect = "/files"
+        redirect = "/"
     title = f"Delete '{file.title}'"
     return (
         Title(title),

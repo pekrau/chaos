@@ -266,7 +266,7 @@ def get(request, image: items.Item):
     assert isinstance(image, items.Image)
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
     if redirect == f"/image/{image.id}":
-        redirect = "/images"
+        redirect = "/"
     title = f"Delete '{image.title}'"
     return (
         Title(title),

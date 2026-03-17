@@ -247,7 +247,7 @@ def get(request, graphic: items.Item):
     assert isinstance(graphic, items.Graphic)
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
     if redirect == f"/graphic/{graphic.id}":
-        redirect = "/graphics"
+        redirect = "/"
     title = f"Delete '{graphic.title}'"
     return (
         Title(title),

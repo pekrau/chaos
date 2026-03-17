@@ -197,7 +197,7 @@ def get(request, link: items.Item):
     assert isinstance(link, items.Link)
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
     if redirect == f"/link/{link.id}":
-        redirect = "/links"
+        redirect = "/"
     title = f"Delete {link.title}"
     return (
         Title(title),

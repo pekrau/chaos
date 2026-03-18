@@ -247,21 +247,12 @@ def get_text_card(item):
 
 def get_xrefs_card(item):
     "Show the xrefs that other items make to this item."
-    xrefs_from = sorted(
+    xrefs = sorted(
         [items.get(id) for id in item.xrefs_to_self],
         key=lambda i: i.modified,
         reverse=True,
     )
-    xrefs_to = sorted(
-        [items.get(id) for id in item.xrefs_from_self],
-        key=lambda i: i.modified,
-        reverse=True,
-    )
-    return Div(
-        Card(Header("Referred from"), get_items_list(xrefs_from)),
-        Card(Header("Refers to"), get_items_list(xrefs_to)),
-        cls="grid",
-    )
+    return Card(Header("Referred from"), get_items_list(xrefs))
 
 
 def get_items_list(items):

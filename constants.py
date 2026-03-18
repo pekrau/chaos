@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (1, 1, 1)
+VERSION = (1, 1, 2)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -66,7 +66,7 @@ IMAGE_MIMETYPES = {
 
 MAX_PAGE_ITEMS = 20
 N_GALLERY_ROW_ITEMS = 5
-MAX_RECENT_ITEMS = 4
+MAX_RECENT_ITEMS = 6
 
 SCORE_TITLE_WEIGHT = 2.0
 

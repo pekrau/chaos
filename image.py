@@ -112,6 +112,7 @@ def get(image: items.Item):
             Div(
                 Div(image.modified_local),
                 Div(f"{image.size:,d} + {image.file_size:,d} bytes"),
+                Div(A("Source", href=f"/source/{image.id}"), cls="right"),
                 cls="grid",
             ),
             cls="container",

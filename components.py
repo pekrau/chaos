@@ -122,21 +122,21 @@ def get_item_icon(item):
 
 def get_type_icon(type):
     match type:
-        case "Note":
+        case "note":
             return get_note_icon()
-        case "Link":
+        case "link":
             return get_link_icon()
-        case "File":
+        case "file":
             return get_file_icon()
-        case "Image":
+        case "image":
             return get_image_icon()
-        case "Database":
+        case "database":
             return get_database_icon()
-        case "Graphic":
+        case "graphic":
             return get_graphic_icon()
-        case "Book":
+        case "book":
             return get_book_icon()
-        case "Article":
+        case "article":
             return get_article_icon()
         case _:
             raise NotImplementedError

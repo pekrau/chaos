@@ -10,6 +10,7 @@ import components
 import constants
 import errors
 import items
+import minixml
 
 app, rt = components.get_app_rt()
 
@@ -62,16 +63,30 @@ def post(title: str, text: str, graphic_type: str, specification: str):
     graphic = items.Graphic()
     graphic.title = title.strip() or "no title"
     graphic.text = text.strip()
-    if graphic_type == constants.VEGA_LITE:
-        graphic.frontmatter["graphic"] = graphic_type
-        try:
-            graphic.frontmatter["specification"] = json.dumps(
-                json.loads(specification.strip()), indent=2, ensure_ascii=False
-            )
-        except json.decoder.JSONDecodeError as error:
-            errors.Error(str(error))
-    else:
-        errors.Error("unknown graphic type.")
+
+    match graphic_type:
+
+        case constants.VEGA_LITE:
+            try:
+                specification = json.dumps(
+                    json.loads(specification.strip()), indent=2, ensure_ascii=False
+                )
+            except json.decoder.JSONDecodeError as error:
+                raise errors.Error(str(error))
+
+        case constants.SVG:
+            try:
+                xml = minixml.parse(specification.strip())
+                xml.repr_indent = None
+                specification = repr(xml)
+            except ValueError as error:
+                raise errors.Error(str(error))
+
+        case _:
+            raise errors.Error("unknown graphic type.")
+
+    graphic.frontmatter["graphic"] = graphic_type
+    graphic.frontmatter["specification"] = specification
     graphic.write()
     return components.redirect(graphic.url)
 
@@ -80,12 +95,39 @@ def post(title: str, text: str, graphic_type: str, specification: str):
 def get(graphic: items.Item):
     "View the graphic."
     assert isinstance(graphic, items.Graphic)
+
+    match graphic.frontmatter["graphic"]:
+
+        case constants.VEGA_LITE:
+            header_scripts = [
+                Script(src="https://cdn.jsdelivr.net/npm/vega@6"),
+                Script(src="https://cdn.jsdelivr.net/npm/vega-lite@6"),
+                Script(src="https://cdn.jsdelivr.net/npm/vega-embed@7"),
+            ]
+            display = Div(id="graphic")
+            footer_scripts = [
+                Script(
+                    f"""const specification = {graphic.specification};
+vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
+.then(result=>console.log(result))
+.catch(console.warn);
+""",
+                    type="text/javascript",
+                ),
+            ]
+
+        case constants.SVG:
+            header_scripts = []
+            display = NotStr(graphic.specification)
+            footer_scripts = []
+
+        case _:
+            raise NotImplementedError
+
     return (
         Title(graphic.title),
         components.clipboard_script(),
-        Script(src="https://cdn.jsdelivr.net/npm/vega@6"),
-        Script(src="https://cdn.jsdelivr.net/npm/vega-lite@6"),
-        Script(src="https://cdn.jsdelivr.net/npm/vega-embed@7"),
+        *header_scripts,
         Header(
             Nav(
                 Ul(
@@ -100,7 +142,10 @@ def get(graphic: items.Item):
             cls="container",
         ),
         Main(
-            Div(id="graphic"),
+            Card(
+                display,
+                Footer(graphic.frontmatter["graphic"]),
+            ),
             components.get_text_card(graphic),
             components.get_xrefs_card(graphic),
             cls="container",
@@ -110,20 +155,13 @@ def get(graphic: items.Item):
             Div(
                 Div(graphic.modified_local),
                 Div(f"{graphic.size} bytes"),
+                Div(A("Source", href=f"/source/{graphic.id}"), cls="right"),
                 cls="grid",
             ),
             cls="container",
         ),
         components.clipboard_activate(),
-        Script(
-            f"""
-const specification = {graphic.specification};
-vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
-.then(result=>console.log(result))
-.catch(console.warn);
-""",
-            type="text/javascript",
-        ),
+        *footer_scripts,
     )
 
 
@@ -132,6 +170,23 @@ def get(request, graphic: items.Item):
     "Form for editing a graphic."
     assert isinstance(graphic, items.Graphic)
     title = f"Edit '{graphic.title}'"
+
+    # Make the specification presentable.
+    match graphic.frontmatter["graphic"]:
+
+        case constants.VEGA_LITE:
+            specification = json.dumps(
+                json.loads(graphic.specification),
+                indent=2,
+                ensure_ascii=False,
+            )
+
+        case constants.SVG:
+            specification = repr(minixml.parse(graphic.specification))
+
+        case _:
+            raise NotImplementedError
+
     return (
         Title(title),
         Header(
@@ -153,7 +208,7 @@ def get(request, graphic: items.Item):
                     disabled=True,
                 ),
                 Textarea(
-                    graphic.specification,
+                    specification,
                     name="specification",
                     rows=10,
                     cls="specification",
@@ -178,15 +233,29 @@ def post(
 ):
     "Actually edit the graphic."
     assert isinstance(graphic, items.Graphic)
-    if graphic.graphic == constants.VEGA_LITE:
-        try:
-            graphic.frontmatter["specification"] = json.dumps(
-                json.loads(specification.strip()), indent=2, ensure_ascii=False
-            )
-        except json.decoder.JSONDecodeError as error:
-            errors.Error(str(error))
-    else:
-        errors.Error("unknown graphic type.")
+
+    match graphic.graphic:
+
+        case constants.VEGA_LITE:
+            try:
+                specification = json.dumps(
+                    json.loads(specification.strip()), ensure_ascii=False
+                )
+            except json.decoder.JSONDecodeError as error:
+                raise errors.Error(str(error))
+
+        case constants.SVG:
+            try:
+                xml = minixml.parse(specification.strip())
+                xml.repr_indent = None
+                specification = repr(xml)
+            except ValueError as error:
+                raise errors.Error(str(error))
+
+        case _:
+            raise errors.Error("unknown graphic type.")
+
+    graphic.frontmatter["specification"] = specification
     graphic.title = title.strip()
     graphic.text = text.strip()
     graphic.write()

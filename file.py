@@ -99,6 +99,7 @@ def get(file: items.Item):
             Div(
                 Div(file.modified_local),
                 Div(f"{file.size:,d} + {file.file_size:,d} bytes"),
+                Div(A("Source", href=f"/source/{file.id}"), cls="right"),
                 cls="grid",
             ),
             cls="container",

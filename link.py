@@ -83,6 +83,7 @@ def get(link: items.Item):
             Div(
                 Div(link.modified_local),
                 Div(f"{link.size} bytes"),
+                Div(A("Source", href=f"/source/{link.id}"), cls="right"),
                 cls="grid",
             ),
             cls="container",

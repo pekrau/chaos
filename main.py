@@ -6,6 +6,7 @@ import os
 import shutil
 import sys
 
+import bibtexparser
 import bokeh
 import fasthtml
 from fasthtml.common import *
@@ -58,9 +59,6 @@ app, rt = components.get_app_rt(
 )
 
 items.read()
-for item in items.get_items():
-    with item.patch():
-        item.frontmatter["type"] = item.type
 
 
 @rt("/")
@@ -179,7 +177,7 @@ def get():
         Form(
             Button(
                 components.get_type_icon(type),
-                f"Add {type.lower()}",
+                f"Add {type}",
                 type="submit",
                 cls="outline",
             ),
@@ -313,10 +311,8 @@ def get(
         pass
 
     # Filter by type.
-    if type:
-        type = type.capitalize()
-        if type not in items.TYPES:
-            type = ""
+    if type not in items.TYPES:
+        type = ""
     if type:
         # Items with a non-zero score.
         if term:
@@ -424,7 +420,10 @@ def get(
                 Fieldset(
                     Select(
                         Option("Filter by type...", disabled=True, selected=True),
-                        *[Option(t, selected=t == type) for t in ["Any"] + items.TYPES],
+                        *[
+                            Option(t.capitalize(), value=t, selected=t == type)
+                            for t in ["Any"] + list(items.TYPES)
+                        ],
                         name="type",
                     ),
                     Select(
@@ -490,6 +489,11 @@ def get(item: items.Item):
     return components.redirect(item.url)
 
 
+@rt("/source/{item:Item}")
+def get(item: items.Item):
+    return Response(content=item.path.read_text(), media_type=constants.TEXT_MIMETYPE)
+
+
 @rt("/system")
 def get():
     "Display system information."
@@ -537,22 +541,27 @@ def get():
                     cls="right",
                 ),
             ),
+            Tr(
+                Td("# items"),
+                Td(A(statistics.pop("item"), href="/search"), cls="right"),
+            ),
             *[
                 Tr(
                     Td(f"# {key}s"),
-                    Td(A(statistics[key], href=f"/{key}s"), cls="right"),
+                    Td(A(statistics[key], href=f"/search?type={key}"), cls="right"),
                 )
                 for key in statistics
             ],
         ),
     )
     software = Table(
-        Thead(Tr(Th("Software", Th("Version", cls="right")))),
-        Tbody(
+        Thead(
             Tr(
-                Td(A("chaos", href=constants.GITHUB_URL)),
-                Td(constants.__version__, cls="right"),
+                Th(A("chaos", href=constants.GITHUB_URL)),
+                Th(constants.__version__, cls="right"),
             ),
+        ),
+        Tbody(
             Tr(
                 Td(A("Python", href="https://www.python.org/")),
                 Td(f"{'.'.join([str(v) for v in sys.version_info[0:3]])}", cls="right"),
@@ -576,6 +585,15 @@ def get():
             Tr(
                 Td(A("NumPy", href="https://numpy.org/")),
                 Td(numpy.__version__, cls="right"),
+            ),
+            Tr(
+                Td(
+                    A(
+                        "BibtexParser",
+                        href="https://bibtexparser.readthedocs.io/en/main/",
+                    )
+                ),
+                Td(bibtexparser.__version__, cls="right"),
             ),
         ),
     )

@@ -169,6 +169,7 @@ def get(database: items.Item):
             Div(
                 Div(database.modified_local),
                 Div(f"{database.size:,d} + {database.file_size:,d} bytes"),
+                Div(A("Source", href=f"/source/{database.id}"), cls="right"),
                 cls="grid",
             ),
             cls="container",

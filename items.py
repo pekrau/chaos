@@ -17,8 +17,8 @@ import constants
 import errors
 import utils
 
-# List of item types.
-TYPES = []
+# Lookup of item types.
+TYPES = {}
 
 # Global item lookup. Key: item id; value: item instance.
 lookup = {}
@@ -33,7 +33,7 @@ class Item:
     def __init_subclass__(cls, **kwargs):
         global TYPES
         if not cls.__name__.startswith("_"):
-            TYPES.append(cls.__name__)
+            TYPES[cls.__name__.lower()] = cls
 
     def __init__(self, path=None):
         self._path = path
@@ -50,7 +50,7 @@ class Item:
 
     @property
     def type(self):
-        return self.__class__.__name__.lower()
+        return self.frontmatter["type"]
 
     @property
     def id(self):
@@ -62,7 +62,7 @@ class Item:
 
     @property
     def url(self):
-        return f"/{self.__class__.__name__.casefold()}/{self.id}"
+        return f"/{self.type}/{self.id}"
 
     @property
     def title(self):
@@ -483,41 +483,19 @@ def read():
             continue
         content = path.read_text()
         m = constants.FRONTMATTER.match(content)
-        if m:
-            frontmatter = yaml.safe_load(m.group(1))
-            # Dates must be represented as strings, not datetime.date.
-            for key, value in frontmatter.items():
-                if isinstance(value, dt.date):
-                    frontmatter[key] = str(value)
-            text = content[m.start(2) :]
-        else:
-            frontmatter = {}
-            text = content
-
-        # Which type of item depends on the presence of a keyword in front matter.
-        if "href" in frontmatter:
-            item = Link(path)
-        elif "filename" in frontmatter:
-            mimetype = mimetypes.guess_type(frontmatter["filename"])[0]
-            if mimetype in constants.IMAGE_MIMETYPES:
-                item = Image(path)
-            elif mimetype == constants.SQLITE_MIMETYPE:
-                item = Database(path)
-            else:
-                item = File(path)
-        elif "graphic" in frontmatter:
-            item = Graphic(path)
-        elif "journal" in frontmatter or "doi" in frontmatter:
-            item = Article(path)
-        elif "isbn" in frontmatter:
-            item = Book(path)
-        else:
-            item = Note(path)
-
-        item.frontmatter = frontmatter
+        if not m:
+            continue
+        frontmatter = yaml.safe_load(m.group(1))
+        # Dates must be represented as strings, not datetime.date.
+        for key, value in frontmatter.items():
+            if isinstance(value, dt.date):
+                frontmatter[key] = str(value)
+        text = content[m.start(2) :]
+        item = TYPES[frontmatter["type"]](path)
+        item.frontmatter.update(frontmatter)
         item.text = text
-
         lookup[item.id] = item
+
     setup_xrefs()
 
 
@@ -539,7 +517,7 @@ def setup_xrefs():
 
 def get_items(type=None):
     "Get all items, or of a given type, sorted by modified time."
-    global TYPES, lookup
+    global lookup
     if type is None:
         result = list(lookup.values())
     else:
@@ -568,7 +546,7 @@ def get_all():
 def get_statistics():
     global TYPES
     result = dict(item=len(lookup))
-    result.update(dict([(type.lower(), 0) for type in TYPES]))
+    result.update(dict([(type, 0) for type in TYPES]))
     for item in lookup.values():
-        result[item.__class__.__name__.lower()] += 1
+        result[item.type] += 1
     return result

@@ -181,6 +181,7 @@ def get(article: items.Item):
             Div(
                 Div(article.modified_local),
                 Div(f"{article.size} bytes"),
+                Div(A("Source", href=f"/source/{article.id}"), cls="right"),
                 cls="grid",
             ),
             cls="container",

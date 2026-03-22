@@ -85,6 +85,7 @@ def get(note: items.Item):
             Div(
                 Div(note.modified_local),
                 Div(f"{note.size} bytes"),
+                Div(A("Source", href=f"/source/{note.id}"), cls="right"),
                 cls="grid",
             ),
             cls="container",

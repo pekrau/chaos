@@ -58,6 +58,9 @@ app, rt = components.get_app_rt(
 )
 
 items.read()
+for item in items.get_items():
+    with item.patch():
+        item.frontmatter["type"] = item.type
 
 
 @rt("/")

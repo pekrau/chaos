@@ -1,5 +1,6 @@
 "Item class, subclasses and helper functions."
 
+import contextlib
 import copy
 import datetime as dt
 import mimetypes
@@ -36,7 +37,7 @@ class Item:
 
     def __init__(self, path=None):
         self._path = path
-        self.frontmatter = {}
+        self.frontmatter = dict(type=self.__class__.__name__.lower())
         self.text = ""
         self.xrefs_from_self = set()
         self.xrefs_to_self = set()
@@ -160,6 +161,17 @@ class Item:
         return constants.SCORE_TITLE_WEIGHT * len(rx.findall(self.title)) + len(
             rx.findall(self.text)
         )
+
+    @contextlib.contextmanager
+    def patch(self):
+        "Allow patching of the item leaving the file timestamps unchanged."
+        stat = self.path.stat()
+        utime = (stat.st_atime, stat.st_mtime)
+        try:
+            yield self
+        finally:
+            self.write()
+            os.utime(self.path, times=utime)
 
 
 class Note(Item):
@@ -502,9 +514,10 @@ def read():
         else:
             item = Note(path)
 
-        lookup[item.id] = item
         item.frontmatter = frontmatter
         item.text = text
+
+        lookup[item.id] = item
     setup_xrefs()
 
 
@@ -524,15 +537,14 @@ def setup_xrefs():
                 other.xrefs_to_self.add(item.id)
 
 
-def get_items(cls=None):
+def get_items(type=None):
     "Get all items, or of a given type, sorted by modified time."
     global TYPES, lookup
-    if cls is None:
+    if type is None:
         result = list(lookup.values())
     else:
-        if cls in TYPES:
-            cls = eval(cls)
-        result = [e for e in lookup.values() if isinstance(e, cls)]
+        type = type.lower()
+        result = [e for e in lookup.values() if e.type == type]
     result.sort(key=lambda e: e.modified, reverse=True)
     return result
 

@@ -1,4 +1,4 @@
-"""chaos: Web-based personal repository of notes, links, images, files,
+"""chaos: Web-based personal repository of notes, tags, links, images, files,
 databases, graphics, books and articles.
 """
 
@@ -62,12 +62,12 @@ app, rt = components.get_app_rt(
 )
 
 items.read()
-theme = items.get("tema")
-for id in theme.xrefs_to_self:
-    item = items.get(id)
-    with item.patch():
-        item.frontmatter["type"] = "tag"
-items.read()
+for item in items.get_items():
+    for xref in item.xrefs_from_self:
+        if isinstance(items.get(xref), items.Tag):
+            if xref not in item.frontmatter.get("tags", []):
+                with item.patch():
+                    item.frontmatter.setdefault("tags", []).append(xref)
 
 
 @rt("/")
@@ -639,7 +639,7 @@ def get():
 def post():
     "Reread all items from disk."
     items.read()
-    return components.redirect("/system")
+    return components.redirect("/")
 
 
 @rt("/logout")

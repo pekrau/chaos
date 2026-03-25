@@ -76,6 +76,7 @@ def get(link: items.Item):
             Card(Strong(A(link.href, href=link.href, target="_blank"))),
             components.get_text_card(link),
             components.get_xrefs_card(link),
+            components.get_tags_card(link),
             cls="container",
         ),
         Footer(

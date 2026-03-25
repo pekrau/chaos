@@ -78,6 +78,7 @@ def get(tag: items.Item):
         Main(
             components.get_text_card(tag),
             components.get_xrefs_card(tag),
+            components.get_tags_card(tag),
             cls="container",
         ),
         Footer(

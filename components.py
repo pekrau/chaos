@@ -255,11 +255,31 @@ def get_xrefs_card(item):
     "Show the xrefs that other items make to this item."
     xrefs = sorted(
         [items.get(id) for id in item.xrefs_to_self],
-        key=lambda i: i.modified,
-        reverse=True,
+        key=lambda i: str(i).casefold()
     )
-    return Card(Header("Referred from"), get_items_list(xrefs))
+    if xrefs:
+        return Card(
+            Header("Referred from"),
+            *[Span(get_item_link(xref), cls="rmargin") for xref in xrefs]
+        )
+    else:
+        return ""
 
+
+def get_tags_card(item):
+    "Show the tags for this item."
+    tags = sorted(
+        [items.get(id) for id in item.frontmatter.get("tags", [])],
+        key=lambda i: str(i).casefold()
+    )
+    if tags:
+        return Card(
+            *[Span(get_item_link(tag), cls="rmargin") for tag in tags],
+            title="Tags",
+        )
+    else:
+        return ""
+    
 
 def get_items_list(items):
     if rows := get_items_list_rows(items):

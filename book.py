@@ -146,6 +146,7 @@ def get(book: items.Item):
             ),
             components.get_text_card(book),
             components.get_xrefs_card(book),
+            components.get_tags_card(book),
             cls="container",
         ),
         Footer(

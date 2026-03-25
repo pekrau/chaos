@@ -174,6 +174,7 @@ def get(article: items.Item):
             ),
             components.get_text_card(article),
             components.get_xrefs_card(article),
+            components.get_tags_card(article),
             cls="container",
         ),
         Footer(

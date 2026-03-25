@@ -22,12 +22,16 @@
 }
 
 .icon {
-    background-color: white;
-    margin: 2px 8px 2px 4px;
+    background-color: transparent;
+    margin: 2px 4px;
 }
 
 .nobr {
     white-space: nowrap;
+};
+
+.rmargin {
+    margin-right: 1em;
 };
 
 img.white {

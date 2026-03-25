@@ -26,9 +26,9 @@ class XrefRenderer:
         try:
             item = items.get(element.xref)
         except KeyError:
-            return f'<mark><a title="Create tag" href="/tag?title={element.xref}">{components.get_question_icon()}{element.xref}</a></mark>'
+            return f'<a title="Create tag" href="/tag?title={element.xref}">{components.get_question_icon()}{element.xref}</a>'
         else:
-            return f"<mark>{components.get_item_link(item)}</mark>"
+            return str(components.get_item_link(item))
 
 
 to_html = marko.Markdown(

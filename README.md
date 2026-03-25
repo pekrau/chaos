@@ -1,6 +1,7 @@
 # chaos
 
-Web-based personal repository of notes, links, images, files, graphics and databases.
+Web-based personal repository of notes, tags, links, images, files, 
+databases, graphics, books and articles.
 
 ## Software
 

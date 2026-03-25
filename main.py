@@ -2,6 +2,7 @@
 databases, graphics, books and articles.
 """
 
+# import itertools
 import os
 import shutil
 import sys
@@ -34,6 +35,7 @@ import constants
 import errors
 import items
 import note
+import tag
 import link
 import file
 import image
@@ -47,6 +49,7 @@ import utils
 app, rt = components.get_app_rt(
     routes=[
         Mount("/note", note.app),
+        Mount("/tag", tag.app),
         Mount("/link", link.app),
         Mount("/file", file.app),
         Mount("/image", image.app),
@@ -58,6 +61,12 @@ app, rt = components.get_app_rt(
     ]
 )
 
+items.read()
+theme = items.get("tema")
+for id in theme.xrefs_to_self:
+    item = items.get(id)
+    with item.patch():
+        item.frontmatter["type"] = "tag"
 items.read()
 
 
@@ -209,7 +218,11 @@ def get():
             ),
             cls="container",
         ),
-        Main(*forms, cls="container"),
+        # Main(*forms, cls="container"),
+        Main(
+            *[Div(*t, cls="grid") for t in itertools.batched(forms, 2)],
+            cls="container"
+        ),
     )
 
 

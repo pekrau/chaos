@@ -135,7 +135,7 @@ def get(image: items.Item, ext: str):
 def get(request, image: items.Item):
     "Form for editing the data for the image."
     assert isinstance(image, items.Image)
-    title = f"Edit {image.title}"
+    title = f"Edit '{image.title}'"
     return (
         Title(title),
         Header(
@@ -180,12 +180,7 @@ def get(request, image: items.Item):
 
 
 @rt("/{image:Item}/edit")
-async def post(
-    image: items.Item,
-    title: str,
-    upfile: UploadFile,
-    text: str,
-):
+async def post(image: items.Item, title: str, upfile: UploadFile, text: str):
     "Actually edit the image."
     assert isinstance(image, items.Image)
     if upfile.filename:

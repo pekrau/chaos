@@ -724,11 +724,7 @@ def get(request, database: items.Item):
 
 
 @rt("/{database:Item}/edit")
-async def post(
-    database: items.Item,
-    title: str,
-    text: str,
-):
+async def post(database: items.Item, title: str, text: str):
     "Actually edit the database."
     assert isinstance(database, items.Database)
     database.title = title.strip()

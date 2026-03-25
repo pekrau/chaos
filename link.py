@@ -96,7 +96,7 @@ def get(link: items.Item):
 def get(request, link: items.Item):
     "Form for editing a link."
     assert isinstance(link, items.Link)
-    title = f"Edit {link.title}"
+    title = f"Edit '{link.title}'"
     return (
         Title(title),
         Header(
@@ -130,12 +130,7 @@ def get(request, link: items.Item):
 
 
 @rt("/{link:Item}/edit")
-def post(
-    link: items.Item,
-    title: str,
-    href: str,
-    text: str,
-):
+def post(link: items.Item, title: str, href: str, text: str):
     "Actually edit the link."
     assert isinstance(link, items.Link)
     link.title = title.strip()

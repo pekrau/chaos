@@ -180,6 +180,12 @@ class Note(Item):
     pass
 
 
+class Tag(Item):
+    "Tag item class."
+
+    pass
+
+
 class Link(Item):
     "Link item class."
 

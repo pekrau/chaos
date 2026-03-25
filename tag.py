@@ -1,4 +1,4 @@
-"Note item pages."
+"Tag item pages."
 
 import urllib.parse
 
@@ -12,9 +12,9 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get():
-    "Form for adding a note."
-    title = "Add note"
+def get(form: dict):
+    "Form for adding a tag."
+    title = "Add tag"
     return (
         Title(title),
         Header(
@@ -28,10 +28,11 @@ def get():
         ),
         Main(
             Form(
-                components.get_title_input(),
+                components.get_title_input(form.get("title", "")),
                 components.get_text_input(),
-                Input(type="submit", value="Add note"),
-                action="/note/",
+                Input(type="hidden", name="id", value=form.get("title", "")),
+                Input(type="submit", value="Add tag"),
+                action="/tag/",
                 method="POST",
             ),
             components.get_cancel_form("/"),
@@ -42,49 +43,49 @@ def get():
 
 @rt("/")
 def post(title: str, text: str, id: str = ""):
-    "Actually add the note."
+    "Actually add the tag."
     if id:
-        note = items.Note(constants.DATA_DIR / f"{id}.md")
-        items.lookup[note.id] = note
+        tag = items.Tag(constants.DATA_DIR / f"{id}.md")
+        items.lookup[tag.id] = tag
     else:
-        note = items.Note()
-    note.title = title.strip() or "no title"
-    note.text = text.strip()
-    note.write()
-    return components.redirect(note.url)
+        tag = items.Tag()
+    tag.title = title.strip() or "no title"
+    tag.text = text.strip()
+    tag.write()
+    return components.redirect(tag.url)
 
 
-@rt("/{note:Item}")
-def get(note: items.Item):
-    "View the note."
-    assert isinstance(note, items.Note)
+@rt("/{tag:Item}")
+def get(tag: items.Item):
+    "View the tag."
+    assert isinstance(tag, items.Tag)
     return (
-        Title(note.title),
+        Title(tag.title),
         components.clipboard_script(),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(note)),
-                    Li(components.get_note_icon(), note.title),
-                    Li(components.to_clipboard(note)),
+                    Li(components.get_nav_menu(tag)),
+                    Li(components.get_tag_icon(), tag.title),
+                    Li(components.to_clipboard(tag)),
                 ),
                 Ul(
-                    Li(components.get_shortcuts_menu(note)),
+                    Li(components.get_shortcuts_menu(tag)),
                 ),
             ),
             cls="container",
         ),
         Main(
-            components.get_text_card(note),
-            components.get_xrefs_card(note),
+            components.get_text_card(tag),
+            components.get_xrefs_card(tag),
             cls="container",
         ),
         Footer(
             Hr(),
             Div(
-                Div(note.modified_local),
-                Div(f"{note.size} bytes"),
-                Div(A("Source", href=f"/source/{note.id}"), cls="right"),
+                Div(tag.modified_local),
+                Div(f"{tag.size} bytes"),
+                Div(A("Source", href=f"/source/{tag.id}"), cls="right"),
                 cls="grid",
             ),
             cls="container",
@@ -93,17 +94,17 @@ def get(note: items.Item):
     )
 
 
-@rt("/{note:Item}/edit")
-def get(request, note: items.Item):
-    "Form for editing a note."
-    assert isinstance(note, items.Note)
-    title = f"Edit '{note.title}'"
+@rt("/{tag:Item}/edit")
+def get(request, tag: items.Item):
+    "Form for editing a tag."
+    assert isinstance(tag, items.Tag)
+    title = f"Edit '{tag.title}'"
     return (
         Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(note)),
+                    Li(components.get_nav_menu(tag)),
                     Li(title),
                 ),
             ),
@@ -111,10 +112,10 @@ def get(request, note: items.Item):
         ),
         Main(
             Form(
-                components.get_title_input(note.title),
-                components.get_text_input(note.text),
+                components.get_title_input(tag.title),
+                components.get_text_input(tag.text),
                 Input(type="submit", value="Save"),
-                action=f"{note.url}/edit",
+                action=f"{tag.url}/edit",
                 method="POST",
             ),
             components.get_cancel_form(request.headers["Referer"]),
@@ -123,27 +124,27 @@ def get(request, note: items.Item):
     )
 
 
-@rt("/{note:Item}/edit")
-def post(note: items.Item, title: str, text: str):
-    "Actually edit the note."
-    assert isinstance(note, items.Note)
-    note.title = title.strip()
-    note.text = text.strip()
-    note.write()
-    return components.redirect(note.url)
+@rt("/{tag:Item}/edit")
+def post(tag: items.Item, title: str, text: str):
+    "Actually edit the tag."
+    assert isinstance(tag, items.Tag)
+    tag.title = title.strip()
+    tag.text = text.strip()
+    tag.write()
+    return components.redirect(tag.url)
 
 
-@rt("/{note:Item}/copy")
-def get(request, note: items.Item):
-    "Form for making a copy of the note."
-    assert isinstance(note, items.Note)
-    title = f"Copy '{note.title}'"
+@rt("/{tag:Item}/copy")
+def get(request, tag: items.Item):
+    "Form for making a copy of the tag."
+    assert isinstance(tag, items.Tag)
+    title = f"Copy '{tag.title}'"
     return (
         Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(note)),
+                    Li(components.get_nav_menu(tag)),
                     Li(title),
                 ),
             ),
@@ -154,12 +155,12 @@ def get(request, note: items.Item):
                 Input(
                     type="text",
                     name="title",
-                    value=note.title,
+                    value=tag.title,
                     placeholder="Title...",
                     required=True,
                 ),
-                Input(type="submit", value="Copy note"),
-                action=f"{note.url}/copy",
+                Input(type="submit", value="Copy tag"),
+                action=f"{tag.url}/copy",
                 method="POST",
             ),
             components.get_cancel_form(request.headers["Referer"]),
@@ -170,36 +171,36 @@ def get(request, note: items.Item):
 
 @rt("/{source:Item}/copy")
 def post(source: items.File, title: str):
-    "Actually copy the note."
-    assert isinstance(source, items.Note)
-    note = items.Note()
-    note.title = title.strip()
-    note.text = source.text
-    note.write()
-    return components.redirect(note.url)
+    "Actually copy the tag."
+    assert isinstance(source, items.Tag)
+    tag = items.Tag()
+    tag.title = title.strip()
+    tag.text = source.text
+    tag.write()
+    return components.redirect(tag.url)
 
 
-@rt("/{note:Item}/delete")
-def get(request, note: items.Item):
-    "Ask for confirmation to delete the note."
-    assert isinstance(note, items.Note)
+@rt("/{tag:Item}/delete")
+def get(request, tag: items.Item):
+    "Ask for confirmation to delete the tag."
+    assert isinstance(tag, items.Tag)
     redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/note/{note.id}":
+    if redirect == f"/tag/{tag.id}":
         redirect = "/"
-    title = f"Delete '{note.title}'"
+    title = f"Delete '{tag.title}'"
     return (
         Title(title),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(note)),
+                    Li(components.get_nav_menu(tag)),
                     Li(title),
                 ),
             ),
             cls="container",
         ),
         Main(
-            H3("Really delete the note? All data will be lost."),
+            H3("Really delete the tag? All data will be lost."),
             Form(
                 Input(
                     type="hidden",
@@ -207,7 +208,7 @@ def get(request, note: items.Item):
                     value=redirect,
                 ),
                 Input(type="submit", value="Yes, delete"),
-                action=f"{note.url}/delete",
+                action=f"{tag.url}/delete",
                 method="POST",
             ),
             components.get_cancel_form(request.headers["Referer"]),
@@ -216,9 +217,9 @@ def get(request, note: items.Item):
     )
 
 
-@rt("/{note:Item}/delete")
-def post(note: items.Item, redirect: str):
-    "Actually delete the note."
-    assert isinstance(note, items.Note)
-    note.delete()
+@rt("/{tag:Item}/delete")
+def post(tag: items.Item, redirect: str):
+    "Actually delete the tag."
+    assert isinstance(tag, items.Tag)
+    tag.delete()
     return components.redirect(redirect)

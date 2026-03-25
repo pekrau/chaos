@@ -159,12 +159,7 @@ def get(request, file: items.Item):
 
 
 @rt("/{file:Item}/edit")
-async def post(
-    file: items.Item,
-    title: str,
-    upfile: UploadFile,
-    text: str,
-):
+async def post(file: items.Item, title: str, upfile: UploadFile, text: str):
     "Actually edit the file."
     assert isinstance(file, items.File)
     if upfile.filename:

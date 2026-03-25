@@ -26,7 +26,7 @@ class XrefRenderer:
         try:
             item = items.get(element.xref)
         except KeyError:
-            return f'<mark><a title="Create note" href="/note?title={element.xref}">{components.get_question_icon()}{element.xref}</a></mark>'
+            return f'<mark><a title="Create tag" href="/tag?title={element.xref}">{components.get_question_icon()}{element.xref}</a></mark>'
         else:
             return f"<mark>{components.get_item_link(item)}</mark>"
 

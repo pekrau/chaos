@@ -124,6 +124,8 @@ def get_type_icon(type):
     match type:
         case "note":
             return get_note_icon()
+        case "tag":
+            return get_tag_icon()
         case "link":
             return get_link_icon()
         case "file":
@@ -144,6 +146,10 @@ def get_type_icon(type):
 
 def get_note_icon(title="Note"):
     return get_icon("card-text.svg", title=title)
+
+
+def get_tag_icon(title="Tag"):
+    return get_icon("tag.svg", title=title)
 
 
 def get_link_icon(title="Link"):
@@ -188,14 +194,14 @@ def get_article_icon(title="Article"):
 def get_nav_menu(item=None, copy=True):
     links = [A("Home", href="/")]
     if item:
-        links.append(A(f"Edit {item.type}", href=f"{item.url}/edit"))
+        links.append(A("Edit", href=f"{item.url}/edit"))
         if copy:
-            links.append(A(f"Copy {item.type}", href=f"{item.url}/copy"))
+            links.append(A("Copy", href=f"{item.url}/copy"))
         if item.pinned:
-            links.append(A(f"Unpin {item.type}", href=f"/unpin/{item.id}"))
+            links.append(A("Unpin", href=f"/unpin/{item.id}"))
         else:
-            links.append(A(f"Pin {item.type}", href=f"/pin/{item.id}"))
-        links.append(A(f"Delete {item.type}", href=f"{item.url}/delete"))
+            links.append(A("Pin", href=f"/pin/{item.id}"))
+        links.append(A("Delete", href=f"{item.url}/delete"))
     links.append(A("Search...", href="/search"))
     links.append(A("Add...", href="/add/"))
     links.append(A("System", href="/system"))
@@ -281,6 +287,8 @@ def get_item_link(item, full=True):
     match item.type:
         case "note":
             return A(get_note_icon(), item.title, href=item.url)
+        case "tag":
+            return A(get_tag_icon(), item.title, href=item.url)
         case "link":
             if full:
                 return Span(

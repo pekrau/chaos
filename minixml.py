@@ -168,11 +168,19 @@ class Element:
 
     def copy(self):
         """Make a copy of this element and its subelements (i.e. deepcopy).
-        The returned element has no superelement.
+        The returned element copy has no superelement.
         """
         result = copy.deepcopy(self)
         result.superelement = None
+        result._set_superelement()
         return result
+
+    def _set_superelement(self):
+        "Set the correct superelement for all subelements recursively."
+        for subelement in self:
+            if isinstance(subelement, Element):
+                subelement.superelement = self
+                subelement._set_superelement()
 
     def walk(self, test=None):
         """Walk over this element and all its subelements recursively,
@@ -247,7 +255,7 @@ class ContentHandler(xml.sax.ContentHandler):
 
 
 def read(filepath_or_stream):
-    """Read and parse the file given by its path, or an open file object.
+    """Read and parse the file given by its path, or the open file object.
     Returns the root XML element.
     """
     try:
@@ -259,5 +267,5 @@ def read(filepath_or_stream):
 
 
 def parse(content):
-    "Parse the given XML content. Return the root XML element."
+    "Parse the given XML content (string). Return the root XML element."
     return read(io.StringIO(content))

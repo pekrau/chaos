@@ -225,12 +225,7 @@ def get(request, graphic: items.Item):
 
 
 @rt("/{graphic:Item}/edit")
-def post(
-    graphic: items.Item,
-    title: str,
-    text: str,
-    specification: str,
-):
+def post(graphic: items.Item, title: str, text: str, specification: str):
     "Actually edit the graphic."
     assert isinstance(graphic, items.Graphic)
 

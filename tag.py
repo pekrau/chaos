@@ -58,7 +58,6 @@ def post(title: str, text: str, id: str = ""):
 def get(tag: items.Item):
     "View the tag."
     assert isinstance(tag, items.Tag)
-    ic(tag.tagged)
     return (
         Title(tag.title),
         components.clipboard_script(),

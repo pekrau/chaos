@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (1, 3, 1)
+VERSION = (1, 3, 2)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -24,7 +24,7 @@ STATE_FILE = DATA_DIR / ".state.yaml"
 FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 
 FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
-XREF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
+REF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
 
 DEFAULT_LOCALE = "sv_SE"
 DEFAULT_TIMEZONE = babel.dates.get_timezone("Europe/Stockholm")

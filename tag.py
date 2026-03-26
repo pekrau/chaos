@@ -12,7 +12,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(form: dict):
+def get():
     "Form for adding a tag."
     title = "Add tag"
     return (
@@ -28,9 +28,8 @@ def get(form: dict):
         ),
         Main(
             Form(
-                components.get_title_input(form.get("title", "")),
+                components.get_title_input(),
                 components.get_text_input(),
-                Input(type="hidden", name="id", value=form.get("title", "")),
                 Input(type="submit", value="Add tag"),
                 action="/tag/",
                 method="POST",
@@ -59,6 +58,7 @@ def post(title: str, text: str, id: str = ""):
 def get(tag: items.Item):
     "View the tag."
     assert isinstance(tag, items.Tag)
+    ic(tag.tagged)
     return (
         Title(tag.title),
         components.clipboard_script(),
@@ -77,7 +77,8 @@ def get(tag: items.Item):
         ),
         Main(
             components.get_text_card(tag),
-            components.get_xrefs_card(tag),
+            Card(Header("Used by"), components.get_items_list(tag.tagged)),
+            components.get_refs_card(tag),
             components.get_tags_card(tag),
             cls="container",
         ),

@@ -16,7 +16,7 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get(request):
     "Return a JSON dictionary of items {name: modified} for all items."
-    return items.get_all()
+    return items.get_all_files()
 
 
 @rt("/item/{item:Item}")

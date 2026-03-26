@@ -35,7 +35,7 @@ def update(url, password, target_dir):
 
     target_dir = Path(target_dir)
     items.read()
-    local_items = items.get_all()
+    local_items = items.get_all_files()
 
     # Download the set of files with different modified timestamps from the remote.
     download_items = set()

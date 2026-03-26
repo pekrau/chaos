@@ -91,8 +91,8 @@ def get(file: items.Item):
         Main(
             Card(Strong(A(file.filename, href=file.url_file))),
             components.get_text_card(file),
-            components.get_xrefs_card(file),
             components.get_tags_card(file),
+            components.get_refs_card(file),
             cls="container",
         ),
         Footer(

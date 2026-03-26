@@ -230,7 +230,7 @@ def get_shortcuts_menu(item=None):
 def to_clipboard(item):
     return get_icon(
         "markdown.svg",
-        title="Copy Markdown for xref to clipboard",
+        title="Copy Markdown for ref to clipboard",
         cls="icon to_clipboard",
         data_clipboard_text=f"[[{item.id}]]",
     )
@@ -251,35 +251,32 @@ def get_text_card(item):
         return Card(I("No text."))
 
 
-def get_xrefs_card(item):
-    "Show the xrefs that other items make to this item."
-    xrefs = sorted(
-        [items.get(id) for id in item.xrefs_to_self],
-        key=lambda i: str(i).casefold()
-    )
-    if xrefs:
-        return Card(
-            Header("Referred from"),
-            *[Span(get_item_link(xref), cls="rmargin") for xref in xrefs]
-        )
-    else:
-        return ""
-
-
 def get_tags_card(item):
     "Show the tags for this item."
-    tags = sorted(
-        [items.get(id) for id in item.frontmatter.get("tags", [])],
-        key=lambda i: str(i).casefold()
-    )
+    tags = list(item.tags)
     if tags:
         return Card(
-            *[Span(get_item_link(tag), cls="rmargin") for tag in tags],
+            Header("Tags"),
+            *[Span(get_item_link(tag), cls="rmargin") for tag in item.tags],
             title="Tags",
         )
     else:
         return ""
-    
+
+
+def get_refs_card(item):
+    "Show the refs that other items make to this item."
+    refs = sorted(
+        [items.get(id) for id in item.refs_to_self], key=lambda i: str(i).casefold()
+    )
+    if refs:
+        return Card(
+            Header("Referred from"),
+            *[Span(get_item_link(ref), cls="rmargin") for ref in refs],
+        )
+    else:
+        return ""
+
 
 def get_items_list(items):
     if rows := get_items_list_rows(items):
@@ -294,7 +291,7 @@ def get_items_list_rows(items):
         rows.append(
             Tr(
                 Td(get_item_link(item)),
-                Td(item.n_xrefs or ""),
+                Td(item.n_refs or ""),
                 Td(item.age, cls="nobr"),
                 Td(to_clipboard(item)),
             )

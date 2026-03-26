@@ -2,7 +2,7 @@
 databases, graphics, books and articles.
 """
 
-# import itertools
+import itertools
 import os
 import shutil
 import sys
@@ -63,11 +63,11 @@ app, rt = components.get_app_rt(
 
 items.read()
 for item in items.get_items():
-    for xref in item.xrefs_from_self:
-        if isinstance(items.get(xref), items.Tag):
-            if xref not in item.frontmatter.get("tags", []):
+    for ref in item.refs_from_self:
+        if isinstance(items.get(ref), items.Tag):
+            if ref not in item.frontmatter.get("tags", []):
                 with item.patch():
-                    item.frontmatter.setdefault("tags", []).append(xref)
+                    item.frontmatter.setdefault("tags", []).append(ref)
 
 
 @rt("/")
@@ -220,8 +220,7 @@ def get():
         ),
         # Main(*forms, cls="container"),
         Main(
-            *[Div(*t, cls="grid") for t in itertools.batched(forms, 2)],
-            cls="container"
+            *[Div(*t, cls="grid") for t in itertools.batched(forms, 2)], cls="container"
         ),
     )
 
@@ -358,10 +357,10 @@ def get(
             result.sort(key=lambda t: t[1].modified, reverse=True)
         case "age_desc":
             result.sort(key=lambda t: t[1].modified)
-        case "cnx_asc":
-            result.sort(key=lambda t: (-t[1].n_xrefs, t[1].modified), reverse=True)
-        case "cnx_desc":
-            result.sort(key=lambda t: (t[1].n_xrefs, t[1].modified), reverse=True)
+        case "ref_asc":
+            result.sort(key=lambda t: (-t[1].n_refs, t[1].modified), reverse=True)
+        case "ref_desc":
+            result.sort(key=lambda t: (t[1].n_refs, t[1].modified), reverse=True)
         case _:
             if term:
                 result.sort(key=lambda t: (t[0], t[1].modified), reverse=True)
@@ -463,14 +462,14 @@ def get(
                             selected=order == "age_desc",
                         ),
                         Option(
-                            "Connectivity, ascending",
-                            value="cnx_asc",
-                            selected=order == "cnx_asc",
+                            "References, ascending",
+                            value="ref_asc",
+                            selected=order == "ref_asc",
                         ),
                         Option(
-                            "Connectivity, descending",
-                            value="cnx_desc",
-                            selected=order == "cnx_desc",
+                            "References, descending",
+                            value="ref_desc",
+                            selected=order == "ref_desc",
                         ),
                         name="order",
                     ),

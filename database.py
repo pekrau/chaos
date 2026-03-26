@@ -161,8 +161,8 @@ def get(database: items.Item):
                     else I("No plots.")
                 ),
             ),
-            components.get_xrefs_card(database),
             components.get_tags_card(database),
+            components.get_refs_card(database),
             cls="container",
         ),
         Footer(

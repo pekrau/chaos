@@ -173,8 +173,8 @@ def get(article: items.Item):
                 Span(article.pages or "-", title="Pages"),
             ),
             components.get_text_card(article),
-            components.get_xrefs_card(article),
             components.get_tags_card(article),
+            components.get_refs_card(article),
             cls="container",
         ),
         Footer(

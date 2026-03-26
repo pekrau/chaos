@@ -39,8 +39,8 @@ class Item:
         self._path = path
         self.frontmatter = dict(type=self.__class__.__name__.lower())
         self.text = ""
-        self.xrefs_from_self = set()
-        self.xrefs_to_self = set()
+        self.refs_from_self = set()
+        self.refs_to_self = set()
 
     def __str__(self):
         return self.title
@@ -109,6 +109,13 @@ class Item:
         return self.id in state["pinned"]
 
     @property
+    def tags(self):
+        "Alphabetical list of tag items for the item."
+        result = [get(id) for id in self.frontmatter.get("tags", [])]
+        result.sort(key=lambda i: str(i).casefold())
+        return result
+
+    @property
     def age(self):
         "String representation of age; hh:mm:ss if less than 1 day, else days."
         age = dt.datetime.now() - dt.datetime.fromtimestamp(self.path.stat().st_mtime)
@@ -120,8 +127,8 @@ class Item:
             return f"{hours}:{minutes:02d}:{seconds:02d}"
 
     @property
-    def n_xrefs(self):
-        return len(self.xrefs_from_self) + len(self.xrefs_to_self)
+    def n_refs(self):
+        return len(self.refs_from_self) + len(self.refs_to_self)
 
     def pin(self):
         "Pin this item to the shortcuts menu."
@@ -132,26 +139,31 @@ class Item:
         write_state(unpin=self)
 
     def write(self):
-        "Write the item to file. Update xrefs."
+        "Write the item to file. Setup all refs again."
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = copy.deepcopy(self.frontmatter)
+                try:
+                    frontmatter["tags"] = list(frontmatter["tags"])
+                except KeyError:
+                    pass
                 outfile.write("---\n")
                 outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
                 outfile.write("---\n")
             if self.text:
                 outfile.write(self.text)
-        setup_xrefs()  # Inefficient, but defensive and safe.
+        setup_refs()  # Inefficient, but defensive and safe.
 
     def delete(self):
         """Delete the item from the file system.
         Remove from the lookup.
-        Setup all xrefs again.
+        Setup all refs and tagged again.
         """
         global lookup
         self.path.unlink()
         lookup.pop(self.id)
-        setup_xrefs()  # Inefficient, but defensive and safe.
+        setup_tagged()  # Inefficient, but defensive and safe.
+        setup_refs()  # Inefficient, but defensive and safe.
 
     def score(self, term):
         """Calculate the score for the term in the title or text of the item.
@@ -183,7 +195,16 @@ class Note(Item):
 class Tag(Item):
     "Tag item class."
 
-    pass
+    def __init__(self, path=None):
+        super().__init__(path=path)
+        self._tagged = set()  # Set of id's of items using this tag.
+
+    @property
+    def tagged(self):
+        "List of tagged items, sorted by modified time."
+        result = [get(id) for id in self._tagged]
+        result.sort(key=lambda i: i.modified, reverse=True)
+        return result
 
 
 class Link(Item):
@@ -472,7 +493,7 @@ def read():
     """Read all items from Markdowwn files in the data directory.
     Create the data directory if it does not exist.
     Read the current state; recent and pinned items.
-    Set up xrefs between all items.
+    Set up refs between all items.
     """
     global lookup, state
 
@@ -492,33 +513,49 @@ def read():
         if not m:
             continue
         frontmatter = yaml.safe_load(m.group(1))
-        # Dates must be represented as strings, not datetime.date.
+        # Date must be represented as string, not datetime.date.
         for key, value in frontmatter.items():
             if isinstance(value, dt.date):
                 frontmatter[key] = str(value)
+        # Tags are sets.
+        try:
+            frontmatter["tags"] = set(frontmatter["tags"])
+        except KeyError:
+            pass
         text = content[m.start(2) :]
         item = TYPES[frontmatter["type"]](path)
         item.frontmatter.update(frontmatter)
         item.text = text
         lookup[item.id] = item
 
-    setup_xrefs()
+    setup_tagged()
+    setup_refs()
 
 
-def setup_xrefs():
-    "Set the 'xrefs_from' and 'xrefs_to' for item xrefs."
+def setup_tagged():
+    "Set the 'tagged' for tag items."
     for item in lookup.values():
-        item.xrefs_from_self.clear()
-        item.xrefs_to_self.clear()
+        if isinstance(item, Tag):
+            item._tagged.clear()
     for item in lookup.values():
-        for m in constants.XREF.finditer(item.text):
+        for tag in item.tags:
+            tag._tagged.add(item.id)
+
+
+def setup_refs():
+    "Set the 'refs_from' and 'refs_to' for item refs."
+    for item in lookup.values():
+        item.refs_from_self.clear()
+        item.refs_to_self.clear()
+    for item in lookup.values():
+        for m in constants.REF.finditer(item.text):
             try:
                 other = get(m.group(1))
             except KeyError:
                 pass
             else:
-                item.xrefs_from_self.add(other.id)
-                other.xrefs_to_self.add(item.id)
+                item.refs_from_self.add(other.id)
+                other.refs_to_self.add(item.id)
 
 
 def get_items(type=None):
@@ -533,7 +570,7 @@ def get_items(type=None):
     return result
 
 
-def get_all():
+def get_all_files():
     "Get a map of item paths and filepaths with their modified timestamps."
     global lookup
     result = {

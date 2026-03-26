@@ -145,8 +145,8 @@ def get(book: items.Item):
                 cls="grid",
             ),
             components.get_text_card(book),
-            components.get_xrefs_card(book),
             components.get_tags_card(book),
+            components.get_refs_card(book),
             cls="container",
         ),
         Footer(

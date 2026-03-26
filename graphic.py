@@ -147,8 +147,8 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
                 Footer(graphic.frontmatter["graphic"]),
             ),
             components.get_text_card(graphic),
-            components.get_xrefs_card(graphic),
             components.get_tags_card(graphic),
+            components.get_refs_card(graphic),
             cls="container",
         ),
         Footer(

@@ -104,8 +104,8 @@ def get(image: items.Item):
                 )
             ),
             components.get_text_card(image),
-            components.get_xrefs_card(image),
             components.get_tags_card(image),
+            components.get_refs_card(image),
             cls="container",
         ),
         Footer(

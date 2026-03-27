@@ -181,7 +181,9 @@ def get(request, image: items.Item):
 
 
 @rt("/{image:Item}/edit")
-async def post(image: items.Item, title: str, upfile: UploadFile, text: str):
+async def post(
+    image: items.Item, title: str, upfile: UploadFile, text: str, tags: list[str] = None
+):
     "Actually edit the image."
     assert isinstance(image, items.Image)
     if upfile.filename:
@@ -197,6 +199,7 @@ async def post(image: items.Item, title: str, upfile: UploadFile, text: str):
             raise errors.Error(error)
     image.title = title.strip()
     image.text = text.strip()
+    image.tags = tags
     image.write()
     return components.redirect(image.url)
 

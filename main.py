@@ -11,18 +11,18 @@ import bibtexparser
 import bokeh
 import fasthtml
 from fasthtml.common import *
+import icecream
 import marko
 import numpy
 import psutil
 import yaml
 
+icecream.install()
+
 # This must be done before importing 'constants'.
 from dotenv import load_dotenv
 
 if os.environ.get("CHAOS_DEVELOPMENT"):
-    from icecream import install
-
-    install()
     with open(".env-development") as infile:
         load_dotenv(stream=infile)
 else:

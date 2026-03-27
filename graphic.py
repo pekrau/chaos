@@ -226,7 +226,13 @@ def get(request, graphic: items.Item):
 
 
 @rt("/{graphic:Item}/edit")
-def post(graphic: items.Item, title: str, text: str, specification: str):
+def post(
+    graphic: items.Item,
+    title: str,
+    text: str,
+    specification: str,
+    tags: list[str] = None,
+):
     "Actually edit the graphic."
     assert isinstance(graphic, items.Graphic)
 
@@ -254,6 +260,7 @@ def post(graphic: items.Item, title: str, text: str, specification: str):
     graphic.frontmatter["specification"] = specification
     graphic.title = title.strip()
     graphic.text = text.strip()
+    graphic.tags = tags
     graphic.write()
     return components.redirect(graphic.url)
 

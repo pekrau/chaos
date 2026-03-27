@@ -132,12 +132,13 @@ def get(request, link: items.Item):
 
 
 @rt("/{link:Item}/edit")
-def post(link: items.Item, title: str, href: str, text: str):
+def post(link: items.Item, title: str, href: str, text: str, tags: list[str] = None):
     "Actually edit the link."
     assert isinstance(link, items.Link)
     link.title = title.strip()
     link.href = href.strip() or "/"
     link.text = text.strip()
+    link.tags = tags
     link.write()
     return components.redirect(link.url)
 

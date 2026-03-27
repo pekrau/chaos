@@ -127,11 +127,12 @@ def get(request, tag: items.Item):
 
 
 @rt("/{tag:Item}/edit")
-def post(tag: items.Item, title: str, text: str):
+def post(tag: items.Item, title: str, text: str, tags: list[str] = None):
     "Actually edit the tag."
     assert isinstance(tag, items.Tag)
     tag.title = title.strip()
     tag.text = text.strip()
+    tag.tags = tags
     tag.write()
     return components.redirect(tag.url)
 

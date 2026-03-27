@@ -235,6 +235,7 @@ def post(
     published: str,
     language: str,
     text: str,
+    tags: list[str] = None,
 ):
     "Actually edit the book."
     assert isinstance(book, items.Book)
@@ -248,6 +249,7 @@ def post(
     book.frontmatter["published"] = published.strip() or book.frontmatter["year"]
     book.frontmatter["language"] = language.strip()
     book.text = text.strip()
+    book.tags = tags
     book.write()
     return components.redirect(book.url)
 

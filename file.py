@@ -160,7 +160,9 @@ def get(request, file: items.Item):
 
 
 @rt("/{file:Item}/edit")
-async def post(file: items.Item, title: str, upfile: UploadFile, text: str):
+async def post(
+    file: items.Item, title: str, upfile: UploadFile, text: str, tags: list[str] = None
+):
     "Actually edit the file."
     assert isinstance(file, items.File)
     if upfile.filename:
@@ -176,6 +178,7 @@ async def post(file: items.Item, title: str, upfile: UploadFile, text: str):
             raise errors.Error(error)
     file.title = title.strip()
     file.text = text.strip()
+    file.tags = tags
     file.write()
     return components.redirect(file.url)
 

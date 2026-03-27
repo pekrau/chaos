@@ -270,6 +270,7 @@ def post(
     pages: str,
     published: str,
     text: str,
+    tags: list[str] = None,
 ):
     "Actually edit the article."
     assert isinstance(article, items.Article)
@@ -285,6 +286,7 @@ def post(
     article.frontmatter["issue"] = issue.strip()
     article.frontmatter["pages"] = pages.strip()
     article.text = text.strip()
+    article.tags = tags
     article.write()
     return components.redirect(article.url)
 

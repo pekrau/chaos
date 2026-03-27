@@ -121,7 +121,9 @@ class Item:
         No need to update '_tagged' elsewhere, since the 'write' will update it.
         """
         if tags:
-            self.frontmatter["tags"] = set([t.id if isinstance(t, Item) else t for t in tags])
+            self.frontmatter["tags"] = set(
+                [t.id if isinstance(t, Item) else t for t in tags]
+            )
         else:
             self.frontmatter.pop("tags", None)
 

@@ -67,7 +67,7 @@ for item in items.get_items():
         if isinstance(items.get(ref), items.Tag):
             if ref not in item.frontmatter.get("tags", []):
                 with item.patch():
-                    item.frontmatter.setdefault("tags", []).append(ref)
+                    item.frontmatter.setdefault("tags", []).add(ref)
 
 
 @rt("/")

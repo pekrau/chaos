@@ -73,7 +73,7 @@ class Item:
 
     @title.setter
     def title(self, title):
-        "Set the title. If the path has not been set, set it to unique variant."
+        "Set the title. If the path has not been set, set it to a unique value."
         global lookup
         self.frontmatter["title"] = title or "no title"
         if self.path is None:
@@ -111,9 +111,19 @@ class Item:
     @property
     def tags(self):
         "Alphabetical list of tag items for the item."
-        result = [get(id) for id in self.frontmatter.get("tags", [])]
+        result = [get(id) for id in self.frontmatter.get("tags", set())]
         result.sort(key=lambda i: str(i).casefold())
         return result
+
+    @tags.setter
+    def tags(self, tags):
+        """Set the tags for the item, which are items or their identifiers.
+        No need to update '_tagged' elsewhere, since the 'write' will update it.
+        """
+        if tags:
+            self.frontmatter["tags"] = set([t.id if isinstance(t, Item) else t for t in tags])
+        else:
+            self.frontmatter.pop("tags", None)
 
     @property
     def age(self):
@@ -131,7 +141,7 @@ class Item:
         return len(self.refs_from_self) + len(self.refs_to_self)
 
     def pin(self):
-        "Pin this item to the shortcuts menu."
+        "Add this item to the shortcuts menu."
         write_state(pin=self)
 
     def unpin(self):
@@ -139,7 +149,9 @@ class Item:
         write_state(unpin=self)
 
     def write(self):
-        "Write the item to file. Setup all refs again."
+        """Write the item to file.
+        Setup all refs again; inefficient, but defensive and safe.
+        """
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = copy.deepcopy(self.frontmatter)
@@ -152,18 +164,18 @@ class Item:
                 outfile.write("---\n")
             if self.text:
                 outfile.write(self.text)
-        setup_refs()  # Inefficient, but defensive and safe.
+        setup_refs()
 
     def delete(self):
         """Delete the item from the file system.
         Remove from the lookup.
-        Setup all refs and tagged again.
+        Setup all refs and tagged again; inefficient, but defensive and safe.
         """
         global lookup
         self.path.unlink()
         lookup.pop(self.id)
-        setup_tagged()  # Inefficient, but defensive and safe.
-        setup_refs()  # Inefficient, but defensive and safe.
+        setup_tagged()
+        setup_refs()
 
     def score(self, term):
         """Calculate the score for the term in the title or text of the item.
@@ -517,7 +529,7 @@ def read():
         for key, value in frontmatter.items():
             if isinstance(value, dt.date):
                 frontmatter[key] = str(value)
-        # Tags are sets.
+        # Tags are sets of item identifiers.
         try:
             frontmatter["tags"] = set(frontmatter["tags"])
         except KeyError:
@@ -533,7 +545,7 @@ def read():
 
 
 def setup_tagged():
-    "Set the 'tagged' for tag items."
+    "For each tag item, record in '_tagged' those items using it."
     for item in lookup.values():
         if isinstance(item, Tag):
             item._tagged.clear()
@@ -543,7 +555,7 @@ def setup_tagged():
 
 
 def setup_refs():
-    "Set the 'refs_from' and 'refs_to' for item refs."
+    "Set the 'refs_from' and 'refs_to' for item references."
     for item in lookup.values():
         item.refs_from_self.clear()
         item.refs_to_self.clear()
@@ -559,14 +571,13 @@ def setup_refs():
 
 
 def get_items(type=None):
-    "Get all items, or of a given type, sorted by modified time."
+    "Get all items, or of a given type."
     global lookup
     if type is None:
         result = list(lookup.values())
     else:
         type = type.lower()
-        result = [e for e in lookup.values() if e.type == type]
-    result.sort(key=lambda e: e.modified, reverse=True)
+        result = [i for i in lookup.values() if i.type == type]
     return result
 
 

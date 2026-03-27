@@ -73,6 +73,7 @@ for item in items.get_items():
 @rt("/")
 def get(page: int = 1):
     result = items.get_items()
+    result.sort(key=lambda i: i.modified, reverse=True)
     total_items = len(result)
     page = min(max(1, page), utils.get_total_pages(total_items))
     start = (page - 1) * constants.MAX_PAGE_ITEMS
@@ -616,6 +617,9 @@ def get():
                 Ul(
                     Li(components.get_nav_menu()),
                     Li("System"),
+                ),
+                Ul(
+                    Li(components.get_shortcuts_menu()),
                 ),
                 cls="main",
             ),

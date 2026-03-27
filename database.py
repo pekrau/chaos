@@ -714,6 +714,7 @@ def get(request, database: items.Item):
             Form(
                 components.get_title_input(database.title),
                 components.get_text_input(database.text),
+                components.get_tags_input(database.tags),
                 Input(type="submit", value="Save"),
                 action=f"{database.url}/edit",
                 method="POST",

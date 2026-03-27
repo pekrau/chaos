@@ -115,6 +115,7 @@ def get(request, note: items.Item):
             Form(
                 components.get_title_input(note.title),
                 components.get_text_input(note.text),
+                components.get_tags_input(note.tags),
                 Input(type="submit", value="Save"),
                 action=f"{note.url}/edit",
                 method="POST",
@@ -126,11 +127,12 @@ def get(request, note: items.Item):
 
 
 @rt("/{note:Item}/edit")
-def post(note: items.Item, title: str, text: str):
+def post(note: items.Item, title: str, text: str, tags: list[str] = None):
     "Actually edit the note."
     assert isinstance(note, items.Note)
     note.title = title.strip()
     note.text = text.strip()
+    note.tags = tags
     note.write()
     return components.redirect(note.url)
 

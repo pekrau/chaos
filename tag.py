@@ -115,6 +115,7 @@ def get(request, tag: items.Item):
             Form(
                 components.get_title_input(tag.title),
                 components.get_text_input(tag.text),
+                components.get_tags_input(tag.tags, tag=tag),
                 Input(type="submit", value="Save"),
                 action=f"{tag.url}/edit",
                 method="POST",

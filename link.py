@@ -120,6 +120,7 @@ def get(request, link: items.Item):
                     required=True,
                 ),
                 components.get_text_input(link.text),
+                components.get_tags_input(link.tags),
                 Input(type="submit", value="Save"),
                 action=f"{link.url}/edit",
                 method="POST",

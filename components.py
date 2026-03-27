@@ -257,7 +257,7 @@ def get_tags_card(item):
     if tags:
         return Card(
             Header("Tags"),
-            *[Span(get_item_link(tag), cls="rmargin") for tag in item.tags],
+            *[get_item_link(tag, cls="rmargin") for tag in item.tags],
             title="Tags",
         )
     else:
@@ -272,7 +272,7 @@ def get_refs_card(item):
     if refs:
         return Card(
             Header("Referred from"),
-            *[Span(get_item_link(ref), cls="rmargin") for ref in refs],
+            *[get_item_link(ref, cls="rmargin") for ref in refs],
         )
     else:
         return ""
@@ -299,13 +299,13 @@ def get_items_list_rows(items):
     return rows
 
 
-def get_item_link(item, full=True):
-    "Get link to item. For link type, also provide link to external href."
+def get_item_link(item, full=True, cls=None):
+    "Get link to item. Optionally provide link to resource."
     match item.type:
         case "note":
-            return A(get_note_icon(), item.title, href=item.url)
+            return A(get_note_icon(), item.title, href=item.url, cls=cls)
         case "tag":
-            return A(get_tag_icon(), item.title, href=item.url)
+            return A(get_tag_icon(), item.title, href=item.url, cls=cls)
         case "link":
             if full:
                 return Span(
@@ -317,28 +317,43 @@ def get_item_link(item, full=True):
                         target="_blank",
                         cls="contrast",
                     ),
+                    cls=cls,
                 )
             else:
-                return A(get_link_icon(), item.title, href=item.url)
+                return A(get_link_icon(), item.title, href=item.url, cls=cls)
         case "image":
-            return A(get_image_icon(), item.title, href=item.url)
+            if full:
+                return Span(
+                    A(get_image_icon(), item.title, href=item.url),
+                    ", ",
+                    A(f"[{item.ext}]", href=item.url_file, cls="contrast"),
+                    cls=cls,
+                )
+            else:
+                return A(get_image_icon(), item.title, href=item.url, cls=cls)
         case "file":
             if full:
                 return Span(
                     A(get_file_icon(item.file_mimetype), item.title, href=item.url),
                     ", ",
                     A(f"[{item.ext}]", href=item.url_file, cls="contrast"),
+                    cls=cls,
                 )
             else:
-                return A(get_file_icon(item.file_mimetype), item.title, href=item.url)
+                return A(
+                    get_file_icon(item.file_mimetype),
+                    item.title,
+                    href=item.url,
+                    cls=cls,
+                )
         case "database":
-            return A(get_database_icon(), item.title, href=item.url)
+            return A(get_database_icon(), item.title, href=item.url, cls=cls)
         case "graphic":
-            return A(get_graphic_icon(), item.title, href=item.url)
+            return A(get_graphic_icon(), item.title, href=item.url, cls=cls)
         case "book":
-            return A(get_book_icon(), item.title, href=item.url)
+            return A(get_book_icon(), item.title, href=item.url, cls=cls)
         case "article":
-            return A(get_article_icon(), item.title, href=item.url)
+            return A(get_article_icon(), item.title, href=item.url, cls=cls)
         case _:
             raise NotImplementedError
 
@@ -400,6 +415,34 @@ def get_text_input(text=""):
             rows=10,
             placeholder="Text...",
         ),
+    )
+
+
+def get_tags_input(item_tags, tag=None):
+    if tag:
+        tags = [t for t in items.get_items("tag") if not t is tag]
+    else:
+        tags = items.get_items("tag")
+    tags.sort(key=lambda t: t.title.casefold())
+    return Details(
+        Summary("Tags..."),
+        Ul(
+            *[
+                Li(
+                    Label(
+                        Input(
+                            type="checkbox",
+                            name="tags",
+                            value=t.id,
+                            checked=t in item_tags,
+                        ),
+                        t.title,
+                    )
+                )
+                for t in tags
+            ]
+        ),
+        cls="dropdown",
     )
 
 

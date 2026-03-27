@@ -30,10 +30,6 @@
     white-space: nowrap;
 };
 
-.rmargin {
-    margin-right: 1em;
-};
-
 img.white {
     background-color: white;
     padding: 1px;
@@ -55,6 +51,10 @@ img.norescale {
 
 a.nomargin {
     margin: 0px;
+}
+
+a.rmargin {
+    margin-right: 2em;
 }
 
 a.button {

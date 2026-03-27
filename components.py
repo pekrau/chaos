@@ -204,6 +204,7 @@ def get_nav_menu(item=None, copy=True):
         links.append(A("Delete", href=f"{item.url}/delete"))
     links.append(A("Search...", href="/search"))
     links.append(A("Add...", href="/add/"))
+    links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("System", href="/system"))
     links.append(A("Logout", href="/logout"))
     return Details(

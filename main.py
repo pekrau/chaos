@@ -216,6 +216,9 @@ def get():
                     Li(components.get_nav_menu()),
                     Li("Add item..."),
                 ),
+                Ul(
+                    Li(components.get_shortcuts_menu()),
+                ),
             ),
             cls="container",
         ),

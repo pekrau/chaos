@@ -149,6 +149,7 @@ def get(request, file: items.Item):
                     cls="grid",
                 ),
                 components.get_text_input(file.text),
+                components.get_tags_input(file.tags),
                 Input(type="submit", value="Save"),
                 action=f"{file.url}/edit",
                 method="POST",

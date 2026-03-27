@@ -215,6 +215,7 @@ def get(request, graphic: items.Item):
                     cls="specification",
                 ),
                 components.get_text_input(graphic.text),
+                components.get_tags_input(graphic.tags),
                 Input(type="submit", value="Save"),
                 action=f"{graphic.url}/edit",
                 method="POST",

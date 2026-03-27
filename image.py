@@ -170,6 +170,7 @@ def get(request, image: items.Item):
                     cls="grid",
                 ),
                 components.get_text_input(image.text),
+                components.get_tags_input(image.tags),
                 Input(type="submit", value="Save"),
                 action=f"{image.url}/edit",
                 method="POST",

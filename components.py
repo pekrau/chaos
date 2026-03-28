@@ -272,7 +272,7 @@ def get_refs_card(item):
     )
     if refs:
         return Card(
-            Header("Referred from"),
+            Header("Referred by items..."),
             *[get_item_link(ref, cls="rmargin") for ref in refs],
         )
     else:
@@ -419,7 +419,7 @@ def get_text_input(text=""):
     )
 
 
-def get_tags_input(item_tags, tag=None):
+def get_tags_input(item_tags=frozenset(), tag=None):
     if tag:
         tags = [t for t in items.get_items("tag") if not t is tag]
     else:

@@ -42,6 +42,7 @@ def get():
                 ),
                 Small("Image file: PNG, JPEG, SVG, WEBP or GIF.", id="file-helper"),
                 components.get_text_input(),
+                components.get_tags_input(),
                 Input(type="submit", value="Add image"),
                 action="/image/",
                 method="POST",
@@ -53,7 +54,7 @@ def get():
 
 
 @rt("/")
-async def post(title: str, upfile: UploadFile, text: str):
+async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None):
     "Actually add the image."
     filename = pathlib.Path(upfile.filename)
     if upfile.content_type not in constants.IMAGE_MIMETYPES:
@@ -63,7 +64,6 @@ async def post(title: str, upfile: UploadFile, text: str):
         raise errors.Error("Upload of Markdown file is disallowed.")
     image = items.Image()
     image.title = title.strip() or filename.stem
-    image.text = text.strip()
     filecontent = await upfile.read()
     filename = image.id + ext
     image.frontmatter["filename"] = filename
@@ -72,6 +72,8 @@ async def post(title: str, upfile: UploadFile, text: str):
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
+    image.text = text.strip()
+    image.tags = tags
     image.write()
     return components.redirect(image.url)
 

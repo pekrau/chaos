@@ -33,6 +33,7 @@ def get():
                 components.get_title_input(),
                 Input(type="file", name="upfile", required=True),
                 components.get_text_input(),
+                components.get_tags_input(),
                 Input(type="submit", value="Add file"),
                 action="/file/",
                 method="POST",
@@ -44,7 +45,7 @@ def get():
 
 
 @rt("/")
-async def post(title: str, upfile: UploadFile, text: str):
+async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None):
     "Actually add the file."
     filename = pathlib.Path(upfile.filename)
     ext = filename.suffix
@@ -52,7 +53,6 @@ async def post(title: str, upfile: UploadFile, text: str):
         raise errors.Error("Upload of Markdown file is disallowed.")
     file = items.File()
     file.title = title.strip() or filename.stem
-    file.text = text.strip()
     filecontent = await upfile.read()
     filename = file.id + ext
     file.frontmatter["filename"] = filename
@@ -61,6 +61,8 @@ async def post(title: str, upfile: UploadFile, text: str):
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
+    file.text = text.strip()
+    file.tags = tags
     file.write()
     return components.redirect(file.url)
 

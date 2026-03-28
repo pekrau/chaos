@@ -63,6 +63,10 @@ a.button {
     margin: 6px;
 }
 
+span.rmargin {
+    margin-right: 2em;
+}
+
 table.compressed > tbody > tr > td {
     padding-top: 2px;
     padding-bottom: 0px;

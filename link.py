@@ -31,6 +31,7 @@ def get():
                 components.get_title_input(),
                 Input(type="href", name="href", placeholder="Href...", required=True),
                 components.get_text_input(),
+                components.get_tags_input(),
                 Input(type="submit", value="Add link"),
                 action="/link/",
                 method="POST",
@@ -42,12 +43,13 @@ def get():
 
 
 @rt("/")
-def post(title: str, href: str, text: str):
+def post(title: str, href: str, text: str, tags: list[str] = None):
     "Actually add the link."
     link = items.Link()
     link.title = title.strip() or "no title"
     link.href = href.strip() or "/"
     link.text = text.strip()
+    link.tags = tags
     link.write()
     return components.redirect(link.url)
 

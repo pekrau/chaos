@@ -72,6 +72,7 @@ def get(request):
                     cls="grid",
                 ),
                 components.get_text_input(),
+                components.get_tags_input(),
                 Input(type="submit", value="Add article"),
                 action="/article/",
                 method="POST",
@@ -95,6 +96,7 @@ def post(
     issue: str,
     pages: str,
     text: str,
+    tags: list[str] = None,
 ):
     "Actually add the article."
     id = utils.normalize(id.strip())
@@ -115,6 +117,7 @@ def post(
     article.frontmatter["issue"] = issue.strip()
     article.frontmatter["pages"] = pages.strip()
     article.text = text.strip()
+    article.tags = tags
     article.write()
     return components.redirect(article.url)
 

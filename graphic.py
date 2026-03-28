@@ -47,6 +47,7 @@ def get():
                     cls="specification",
                 ),
                 components.get_text_input(),
+                components.get_tags_input(),
                 Input(type="submit", value="Add graphic"),
                 action="/graphic/",
                 method="POST",
@@ -58,11 +59,12 @@ def get():
 
 
 @rt("/")
-def post(title: str, text: str, graphic_type: str, specification: str):
+def post(
+    title: str, text: str, graphic_type: str, specification: str, tags: list[str] = None
+):
     "Actually add the graphic."
     graphic = items.Graphic()
     graphic.title = title.strip() or "no title"
-    graphic.text = text.strip()
 
     match graphic_type:
 
@@ -87,6 +89,8 @@ def post(title: str, text: str, graphic_type: str, specification: str):
 
     graphic.frontmatter["graphic"] = graphic_type
     graphic.frontmatter["specification"] = specification
+    graphic.text = text.strip()
+    graphic.tags = tags
     graphic.write()
     return components.redirect(graphic.url)
 

@@ -55,6 +55,7 @@ def get():
                     ),
                 ),
                 components.get_text_input(),
+                components.get_tags_input(),
                 Input(type="submit", value="Add database"),
                 action="/database/",
                 method="POST",
@@ -66,11 +67,12 @@ def get():
 
 
 @rt("/")
-async def post(title: str, text: str, upfile: UploadFile = None):
+async def post(
+    title: str, text: str, upfile: UploadFile = None, tags: list[str] = None
+):
     "Actually create the database."
     database = items.Database()
     database.title = title.strip()
-    database.text = text.strip()
     database.frontmatter["filename"] = database.id + ".sqlite"
     if upfile.filename:
         try:
@@ -85,6 +87,8 @@ async def post(title: str, text: str, upfile: UploadFile = None):
         database.filepath.unlink()
         raise errors.Error(error)
     cnx.close()
+    database.text = text.strip()
+    database.tags = tags
     database.write()
     return components.redirect(database.url)
 

@@ -60,13 +60,16 @@ def get(request):
                     ),
                     Select(
                         Option("Language", selected=True, disabled=True, value=""),
-                        Option("English", value="en"),
-                        Option("Svenska", value="se"),
+                        *[
+                            Option(lang[1], value=lang[0])
+                            for lang in constants.LANGUAGES.items()
+                        ],
                         name="language",
                     ),
                     cls="grid",
                 ),
                 components.get_text_input(),
+                components.get_tags_input(),
                 Input(type="submit", value="Add book"),
                 action="/book/",
                 method="POST",
@@ -88,6 +91,7 @@ def post(
     published: str,
     language: str,
     text: str,
+    tags: list[str] = None,
 ):
     "Actually add the book."
     id = utils.normalize(id.strip())
@@ -106,6 +110,7 @@ def post(
     book.frontmatter["published"] = published.strip() or book.frontmatter["year"]
     book.frontmatter["language"] = language.strip()
     book.text = text.strip()
+    book.tags = tags
     book.write()
     return components.redirect(book.url)
 
@@ -202,12 +207,14 @@ def get(request, book: items.Item):
                         "Language",
                         Select(
                             Option("", disabled=True, value=""),
-                            Option(
-                                "English", value="en", selected=book.language == "en"
-                            ),
-                            Option(
-                                "Svenska", value="se", selected=book.language == "se"
-                            ),
+                            *[
+                                Option(
+                                    lang[1],
+                                    value=lang[0],
+                                    selected=book.language == lang[0],
+                                )
+                                for lang in constants.LANGUAGES.items()
+                            ],
                             name="language",
                         ),
                     ),

@@ -30,6 +30,7 @@ def get(form: dict):
             Form(
                 components.get_title_input(form.get("title", "")),
                 components.get_text_input(),
+                components.get_tags_input(),
                 Input(type="hidden", name="id", value=form.get("title", "")),
                 Input(type="submit", value="Add note"),
                 action="/note/",
@@ -42,7 +43,7 @@ def get(form: dict):
 
 
 @rt("/")
-def post(title: str, text: str, id: str = ""):
+def post(title: str, text: str, id: str = "", tags: list[str] = None):
     "Actually add the note."
     if id:
         note = items.Note(constants.DATA_DIR / f"{id}.md")
@@ -51,6 +52,7 @@ def post(title: str, text: str, id: str = ""):
         note = items.Note()
     note.title = title.strip() or "no title"
     note.text = text.strip()
+    note.tags = tags
     note.write()
     return components.redirect(note.url)
 

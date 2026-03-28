@@ -30,6 +30,7 @@ def get():
             Form(
                 components.get_title_input(),
                 components.get_text_input(),
+                components.get_tags_input(),
                 Input(type="submit", value="Add tag"),
                 action="/tag/",
                 method="POST",
@@ -41,7 +42,7 @@ def get():
 
 
 @rt("/")
-def post(title: str, text: str, id: str = ""):
+def post(title: str, text: str, id: str = "", tags: list[str] = None):
     "Actually add the tag."
     if id:
         tag = items.Tag(constants.DATA_DIR / f"{id}.md")
@@ -50,6 +51,7 @@ def post(title: str, text: str, id: str = ""):
         tag = items.Tag()
     tag.title = title.strip() or "no title"
     tag.text = text.strip()
+    tag.tags = tags
     tag.write()
     return components.redirect(tag.url)
 
@@ -76,7 +78,7 @@ def get(tag: items.Item):
         ),
         Main(
             components.get_text_card(tag),
-            Card(Header("Used by"), components.get_items_list(tag.tagged)),
+            Card(Header("Tagged items..."), components.get_items_list(tag.tagged)),
             components.get_refs_card(tag),
             components.get_tags_card(tag),
             cls="container",

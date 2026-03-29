@@ -62,12 +62,6 @@ app, rt = components.get_app_rt(
 )
 
 items.read()
-for item in items.get_items():
-    for ref in item.refs_from_self:
-        if isinstance(items.get(ref), items.Tag):
-            if ref not in item.frontmatter.get("tags", []):
-                with item.patch():
-                    item.frontmatter.setdefault("tags", []).add(ref)
 
 
 @rt("/")
@@ -320,16 +314,8 @@ def get(
     page: int = 1,
 ):
     "Search the items."
-    # If the term evaluates to an item identifier, then display it.
-    try:
-        return components.redirect(items.lookup[term].url)
-    except KeyError:
-        pass
-
     # Filter by type.
-    if type not in items.TYPES:
-        type = ""
-    if type:
+    if type in items.TYPES:
         # Items with a non-zero score.
         if term:
             result = []
@@ -339,6 +325,18 @@ def get(
         # All items of the type.
         else:
             result = [(0, i) for i in items.get_items(type)]
+
+    # Explicitly any type.
+    elif type == "any":
+        # Items with a non-zero score.
+        if term:
+            result = []
+            for item in items.get_items():
+                if score := item.score(term):
+                    result.append((score, item))
+        # All items.
+        else:
+            result = [(0, i) for i in items.get_items()]
 
     # Items with a non-zero score.
     elif term:
@@ -361,10 +359,6 @@ def get(
             result.sort(key=lambda t: t[1].modified, reverse=True)
         case "age_desc":
             result.sort(key=lambda t: t[1].modified)
-        case "ref_asc":
-            result.sort(key=lambda t: (-t[1].n_refs, t[1].modified), reverse=True)
-        case "ref_desc":
-            result.sort(key=lambda t: (t[1].n_refs, t[1].modified), reverse=True)
         case _:
             if term:
                 result.sort(key=lambda t: (t[0], t[1].modified), reverse=True)
@@ -438,7 +432,7 @@ def get(
                         Option("Filter by type...", disabled=True, selected=True),
                         *[
                             Option(t.capitalize(), value=t, selected=t == type)
-                            for t in ["Any"] + list(items.TYPES)
+                            for t in ["any"] + list(items.TYPES)
                         ],
                         name="type",
                     ),
@@ -464,16 +458,6 @@ def get(
                             "Age, descending",
                             value="age_desc",
                             selected=order == "age_desc",
-                        ),
-                        Option(
-                            "References, ascending",
-                            value="ref_asc",
-                            selected=order == "ref_asc",
-                        ),
-                        Option(
-                            "References, descending",
-                            value="ref_desc",
-                            selected=order == "ref_desc",
                         ),
                         name="order",
                     ),

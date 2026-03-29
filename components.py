@@ -292,9 +292,8 @@ def get_items_list_rows(items):
         rows.append(
             Tr(
                 Td(get_item_link(item)),
-                Td(item.n_refs or ""),
+                Td(Small(*[get_item_link(tag, cls="rmargin") for tag in item.tags])),
                 Td(item.age, cls="nobr"),
-                Td(to_clipboard(item)),
             )
         )
     return rows

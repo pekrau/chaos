@@ -39,7 +39,6 @@ class Item:
         self._path = path
         self.frontmatter = dict(type=self.__class__.__name__.lower())
         self.text = ""
-        self.refs_from_self = set()
         self.refs_to_self = set()
 
     def __str__(self):
@@ -137,10 +136,6 @@ class Item:
             return f"{age.days} d"
         else:
             return f"{hours}:{minutes:02d}:{seconds:02d}"
-
-    @property
-    def n_refs(self):
-        return len(self.refs_from_self) + len(self.refs_to_self)
 
     def pin(self):
         "Add this item to the shortcuts menu."
@@ -557,9 +552,8 @@ def setup_tagged():
 
 
 def setup_refs():
-    "Set the 'refs_from' and 'refs_to' for item references."
+    "Set the 'refs_to_self' for item references."
     for item in lookup.values():
-        item.refs_from_self.clear()
         item.refs_to_self.clear()
     for item in lookup.values():
         for m in constants.REF.finditer(item.text):
@@ -568,7 +562,6 @@ def setup_refs():
             except KeyError:
                 pass
             else:
-                item.refs_from_self.add(other.id)
                 other.refs_to_self.add(item.id)
 
 

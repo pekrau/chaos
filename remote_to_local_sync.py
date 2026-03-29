@@ -95,7 +95,10 @@ if __name__ == "__main__":
     try:
         result = update(url, os.environ["CHAOS_PASSWORD"], target_dir)
         if result:
+            print()
             print(f"{timer.now}, instance {url}, target {target_dir}")
             print(", ".join([f"{k}={v}" for k, v in result.items()]))
     except IOError as error:
+        print()
+        print(f"{timer.now}, instance {url}, target {target_dir}")
         print(str(error))

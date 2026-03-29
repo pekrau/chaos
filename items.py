@@ -147,7 +147,7 @@ class Item:
 
     def write(self):
         """Write the item to file.
-        Setup all refs again; inefficient, but defensive and safe.
+        Setup pointers between items again; inefficient, but defensive and safe.
         """
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
@@ -161,18 +161,17 @@ class Item:
                 outfile.write("---\n")
             if self.text:
                 outfile.write(self.text)
-        setup_refs()
+        setup_pointers()
 
     def delete(self):
         """Delete the item from the file system.
         Remove from the lookup.
-        Setup all refs and tagged again; inefficient, but defensive and safe.
+        Setup pointers between items again; inefficient, but defensive and safe.
         """
         global lookup
         self.path.unlink()
         lookup.pop(self.id)
-        setup_tagged()
-        setup_refs()
+        setup_pointers()
 
     def score(self, term):
         """Calculate the score for the term in the title or text of the item.
@@ -502,7 +501,7 @@ def read():
     """Read all items from Markdowwn files in the data directory.
     Create the data directory if it does not exist.
     Read the current state; recent and pinned items.
-    Set up refs between all items.
+    Set up pointers between items.
     """
     global lookup, state
 
@@ -537,25 +536,20 @@ def read():
         item.text = text
         lookup[item.id] = item
 
-    setup_tagged()
-    setup_refs()
+    setup_pointers()
 
 
-def setup_tagged():
-    "For each tag item, record in '_tagged' those items using it."
+def setup_pointers():
+    """For each tag item, record in '_tagged' those items using it.
+    Set the 'refs_to_self' for item references."
+    """
     for item in lookup.values():
         if isinstance(item, Tag):
             item._tagged.clear()
+        item.refs_to_self.clear()
     for item in lookup.values():
         for tag in item.tags:
             tag._tagged.add(item.id)
-
-
-def setup_refs():
-    "Set the 'refs_to_self' for item references."
-    for item in lookup.values():
-        item.refs_to_self.clear()
-    for item in lookup.values():
         for m in constants.REF.finditer(item.text):
             try:
                 other = get(m.group(1))

@@ -63,19 +63,7 @@ def get(tag: items.Item):
     return (
         Title(tag.title),
         components.clipboard_script(),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(tag)),
-                    Li(components.get_tag_icon(), tag.title),
-                    Li(components.to_clipboard(tag)),
-                ),
-                Ul(
-                    Li(components.get_shortcuts_menu(tag)),
-                ),
-            ),
-            cls="container",
-        ),
+        components.get_header_item_view(tag),
         Main(
             components.get_text_card(tag),
             Card(Header("Tagged items..."), components.get_items_list(tag.tagged)),
@@ -83,16 +71,7 @@ def get(tag: items.Item):
             components.get_tags_card(tag),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(tag.modified_local),
-                Div(f"{tag.size} bytes"),
-                Div(A("Source", href=f"/source/{tag.id}"), cls="right"),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer_item_view(tag),
         components.clipboard_activate(),
     )
 
@@ -101,18 +80,8 @@ def get(tag: items.Item):
 def get(request, tag: items.Item):
     "Form for editing a tag."
     assert isinstance(tag, items.Tag)
-    title = f"Edit '{tag.title}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(tag)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_edit(tag),
         Main(
             Form(
                 components.get_title_input(tag.title),

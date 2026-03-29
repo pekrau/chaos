@@ -129,19 +129,7 @@ def get(article: items.Item):
     return (
         Title(article.title),
         components.clipboard_script(),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(article, copy=False)),
-                    Li(components.get_article_icon(), article.title),
-                    Li(components.to_clipboard(article)),
-                ),
-                Ul(
-                    Li(components.get_shortcuts_menu(article)),
-                ),
-            ),
-            cls="container",
-        ),
+        components.get_header_item_view(article, copy=False),
         Main(
             Card("; ".join(article.authors)),
             Card(
@@ -180,16 +168,7 @@ def get(article: items.Item):
             components.get_refs_card(article),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(article.modified_local),
-                Div(f"{article.size} bytes"),
-                Div(A("Source", href=f"/source/{article.id}"), cls="right"),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer_item_view(article),
         components.clipboard_activate(),
     )
 
@@ -198,18 +177,8 @@ def get(article: items.Item):
 def get(request, article: items.Item):
     "Form for editing a article."
     assert isinstance(article, items.Article)
-    title = f"Edit '{article.title}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(article, copy=False)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_edit(article),
         Main(
             Form(
                 components.get_title_input(article.title),

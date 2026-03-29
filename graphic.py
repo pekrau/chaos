@@ -132,19 +132,7 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
         Title(graphic.title),
         components.clipboard_script(),
         *header_scripts,
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(graphic)),
-                    Li(components.get_graphic_icon(), graphic.title),
-                    Li(components.to_clipboard(graphic)),
-                ),
-                Ul(
-                    Li(components.get_shortcuts_menu(graphic)),
-                ),
-            ),
-            cls="container",
-        ),
+        components.get_header_item_view(graphic),
         Main(
             Card(
                 display,
@@ -155,16 +143,7 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
             components.get_refs_card(graphic),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(graphic.modified_local),
-                Div(f"{graphic.size} bytes"),
-                Div(A("Source", href=f"/source/{graphic.id}"), cls="right"),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer_item_view(graphic),
         components.clipboard_activate(),
         *footer_scripts,
     )
@@ -174,7 +153,6 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
 def get(request, graphic: items.Item):
     "Form for editing a graphic."
     assert isinstance(graphic, items.Graphic)
-    title = f"Edit '{graphic.title}'"
 
     # Make the specification presentable.
     match graphic.frontmatter["graphic"]:
@@ -193,16 +171,7 @@ def get(request, graphic: items.Item):
             raise NotImplementedError
 
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(graphic)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_edit(graphic),
         Main(
             Form(
                 components.get_title_input(graphic.title),

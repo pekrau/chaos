@@ -117,7 +117,7 @@ def get_question_icon():
 
 
 def get_item_icon(item):
-    return get_type_icon(item.__class__.__name__)
+    return get_type_icon(item.type)
 
 
 def get_type_icon(type):
@@ -243,6 +243,37 @@ def clipboard_script():
 
 def clipboard_activate():
     return Script("new ClipboardJS('.to_clipboard');", type="text/javascript")
+
+
+def get_header_item_view(item, copy=True):
+    "Standard header for item view page."
+    return Header(
+        Nav(
+            Ul(
+                Li(get_nav_menu(item, copy=copy)),
+                Li(get_item_icon(item), item.title),
+                Li(to_clipboard(item)),
+            ),
+            Ul(
+                Li(get_shortcuts_menu(item)),
+            ),
+        ),
+        cls="container",
+    )
+
+
+def get_footer_item_view(item, size=None):
+    "Standard footer for item view page."
+    return Footer(
+        Hr(),
+        Div(
+            Div(item.modified_local),
+            Div(size or f"{item.size} bytes"),
+            Div(A("Source", href=f"/source/{item.id}"), cls="right"),
+            cls="grid",
+        ),
+        cls="container",
+    )
 
 
 def get_text_card(item):
@@ -395,6 +426,23 @@ def get_items_display_pager(current_page, total_items):
             buttons.append(Input(type="submit", name="page", value=str(page)))
         prev_page = page
     return Div(*[Div(b) for b in buttons], cls="grid")
+
+
+def get_header_item_edit(item):
+    "Tuple of standard title and header for item edit page."
+    title = f"Edit '{item.title}'"
+    return (
+        Title(title),
+        Header(
+            Nav(
+                Ul(
+                    Li(get_nav_menu(item)),
+                    Li(title),
+                ),
+            ),
+            cls="container",
+        ),
+    )
 
 
 def get_title_input(title=""):

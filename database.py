@@ -114,19 +114,7 @@ def get(database: items.Item):
     return (
         Title(database.title),
         components.clipboard_script(),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(database)),
-                    Li(components.get_database_icon(), database.title),
-                    Li(components.to_clipboard(database)),
-                ),
-                Ul(
-                    Li(components.get_shortcuts_menu(database)),
-                ),
-            ),
-            cls="container",
-        ),
+        components.get_header_item_view(database),
         Main(
             components.get_text_card(database),
             get_overview(database),
@@ -169,15 +157,8 @@ def get(database: items.Item):
             components.get_refs_card(database),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(database.modified_local),
-                Div(f"{database.size:,d} + {database.file_size:,d} bytes"),
-                Div(A("Source", href=f"/source/{database.id}"), cls="right"),
-                cls="grid",
-            ),
-            cls="container",
+        components.get_footer_item_view(
+            database, size=f"{database.size:,d} + {database.file_size:,d} bytes"
         ),
         components.clipboard_activate(),
     )
@@ -702,18 +683,8 @@ def post(database: items.Item, sql: str, ext: str):
 def get(request, database: items.Item):
     "Form for editing the data for the database."
     assert isinstance(database, items.Database)
-    title = f"Edit '{database.title}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(database)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_edit(database),
         Main(
             Form(
                 components.get_title_input(database.title),

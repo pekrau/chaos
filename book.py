@@ -122,19 +122,7 @@ def get(book: items.Item):
     return (
         Title(book.title),
         components.clipboard_script(),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(book, copy=False)),
-                    Li(components.get_book_icon(), book.title),
-                    Li(components.to_clipboard(book)),
-                ),
-                Ul(
-                    Li(components.get_shortcuts_menu(book)),
-                ),
-            ),
-            cls="container",
-        ),
+        components.get_header_item_view(book, copy=False),
         Main(
             Card("; ".join(book.authors)),
             Card(
@@ -154,16 +142,7 @@ def get(book: items.Item):
             components.get_refs_card(book),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(book.modified_local),
-                Div(f"{book.size} bytes"),
-                Div(A("Source", href=f"/source/{book.id}"), cls="right"),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer_item_view(book),
         components.clipboard_activate(),
     )
 
@@ -172,18 +151,8 @@ def get(book: items.Item):
 def get(request, book: items.Item):
     "Form for editing a book."
     assert isinstance(book, items.Book)
-    title = f"Edit '{book.title}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(book, copy=False)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_edit(book),
         Main(
             Form(
                 components.get_title_input(book.title),

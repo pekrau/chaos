@@ -61,19 +61,7 @@ def get(link: items.Item):
     return (
         Title(link.title),
         components.clipboard_script(),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(link)),
-                    Li(components.get_link_icon(), link.title),
-                    Li(components.to_clipboard(link)),
-                ),
-                Ul(
-                    Li(components.get_shortcuts_menu(link)),
-                ),
-            ),
-            cls="container",
-        ),
+        components.get_header_item_view(link),
         Main(
             Card(Strong(A(link.href, href=link.href, target="_blank"))),
             components.get_text_card(link),
@@ -81,16 +69,7 @@ def get(link: items.Item):
             components.get_refs_card(link),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(link.modified_local),
-                Div(f"{link.size} bytes"),
-                Div(A("Source", href=f"/source/{link.id}"), cls="right"),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer_item_view(link),
         components.clipboard_activate(),
     )
 
@@ -99,18 +78,8 @@ def get(link: items.Item):
 def get(request, link: items.Item):
     "Form for editing a link."
     assert isinstance(link, items.Link)
-    title = f"Edit '{link.title}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(link)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_edit(link),
         Main(
             Form(
                 components.get_title_input(link.title),

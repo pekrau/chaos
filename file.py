@@ -74,6 +74,7 @@ def get(file: items.Item):
     return (
         Title(file.title),
         components.clipboard_script(),
+        # Non-standard header.
         Header(
             Nav(
                 Ul(
@@ -97,15 +98,8 @@ def get(file: items.Item):
             components.get_refs_card(file),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(file.modified_local),
-                Div(f"{file.size:,d} + {file.file_size:,d} bytes"),
-                Div(A("Source", href=f"/source/{file.id}"), cls="right"),
-                cls="grid",
-            ),
-            cls="container",
+        components.get_footer_item_view(
+            file, size=f"{file.size:,d} + {file.file_size:,d} bytes"
         ),
         components.clipboard_activate(),
     )
@@ -125,18 +119,8 @@ def get(file: items.Item, ext: str):
 def get(request, file: items.Item):
     "Form for editing the data for the file."
     assert isinstance(file, items.File)
-    title = f"Edit '{file.title}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(file)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_edit(file),
         Main(
             Form(
                 components.get_title_input(file.title),

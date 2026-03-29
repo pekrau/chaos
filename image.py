@@ -85,19 +85,7 @@ def get(image: items.Item):
     return (
         Title(image.title),
         components.clipboard_script(),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(image)),
-                    Li(components.get_image_icon(), image.title),
-                    Li(components.to_clipboard(image)),
-                ),
-                Ul(
-                    Li(components.get_shortcuts_menu(image)),
-                ),
-            ),
-            cls="container",
-        ),
+        components.get_header_item_view(image),
         Main(
             Card(
                 A(
@@ -110,15 +98,8 @@ def get(image: items.Item):
             components.get_refs_card(image),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(image.modified_local),
-                Div(f"{image.size:,d} + {image.file_size:,d} bytes"),
-                Div(A("Source", href=f"/source/{image.id}"), cls="right"),
-                cls="grid",
-            ),
-            cls="container",
+        components.get_footer_item_view(
+            image, size=f"{image.size:,d} + {image.file_size:,d} bytes"
         ),
         components.clipboard_activate(),
     )
@@ -138,18 +119,8 @@ def get(image: items.Item, ext: str):
 def get(request, image: items.Item):
     "Form for editing the data for the image."
     assert isinstance(image, items.Image)
-    title = f"Edit '{image.title}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(image)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_edit(image),
         Main(
             Form(
                 components.get_title_input(image.title),

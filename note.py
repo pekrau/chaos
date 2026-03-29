@@ -64,35 +64,14 @@ def get(note: items.Item):
     return (
         Title(note.title),
         components.clipboard_script(),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(note)),
-                    Li(components.get_note_icon(), note.title),
-                    Li(components.to_clipboard(note)),
-                ),
-                Ul(
-                    Li(components.get_shortcuts_menu(note)),
-                ),
-            ),
-            cls="container",
-        ),
+        components.get_header_item_view(note),
         Main(
             components.get_text_card(note),
             components.get_tags_card(note),
             components.get_refs_card(note),
             cls="container",
         ),
-        Footer(
-            Hr(),
-            Div(
-                Div(note.modified_local),
-                Div(f"{note.size} bytes"),
-                Div(A("Source", href=f"/source/{note.id}"), cls="right"),
-                cls="grid",
-            ),
-            cls="container",
-        ),
+        components.get_footer_item_view(note),
         components.clipboard_activate(),
     )
 
@@ -101,18 +80,8 @@ def get(note: items.Item):
 def get(request, note: items.Item):
     "Form for editing a note."
     assert isinstance(note, items.Note)
-    title = f"Edit '{note.title}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(note)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_edit(note),
         Main(
             Form(
                 components.get_title_input(note.title),

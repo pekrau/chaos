@@ -54,7 +54,7 @@ a.nomargin {
 }
 
 a.rmargin {
-    margin-right: 2em;
+    margin-right: 1em;
 }
 
 a.button {
@@ -64,7 +64,7 @@ a.button {
 }
 
 span.rmargin {
-    margin-right: 2em;
+    margin-right: 1em;
 }
 
 table.compressed > tbody > tr > td {

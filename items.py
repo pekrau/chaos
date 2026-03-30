@@ -108,9 +108,13 @@ class Item:
         return self.id in state["pinned"]
 
     @property
+    def tag_ids(self):
+        return self.frontmatter.get("tags", set())
+
+    @property
     def tags(self):
         "Alphabetical list of tag items for the item."
-        result = [get(id) for id in self.frontmatter.get("tags", set())]
+        result = [get(id) for id in self.tag_ids]
         result.sort(key=lambda i: str(i).casefold())
         return result
 
@@ -559,7 +563,7 @@ def setup_pointers():
                 other.refs_to_self.add(item.id)
 
 
-def get_items(type=None):
+def get_items(type=None, key=None):
     "Get all items, or of a given type."
     global lookup
     if type is None:
@@ -567,6 +571,8 @@ def get_items(type=None):
     else:
         type = type.lower()
         result = [i for i in lookup.values() if i.type == type]
+    if key:
+        result.sort(key=key)
     return result
 
 

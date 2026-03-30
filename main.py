@@ -309,45 +309,43 @@ def post(id: str, data: str, text: str):
 def get(
     term: str = None,
     type: str = "",
+    tags: list[str] = None,
     display: str = "",
     order: str = "",
     page: int = 1,
 ):
-    "Search the items."
-    # Filter by type.
+    "Search among the items."
+    # Filter by item type.
     if type in items.TYPES:
-        # Items with a non-zero score.
-        if term:
-            result = []
-            for item in items.get_items(type):
-                if score := item.score(term):
-                    result.append((score, item))
-        # All items of the type.
+        # Filter by tags.
+        if tags:
+            candidates = (
+                i
+                for i in items.lookup.values()
+                if i.type == type and i.tag_ids.intersection(tags)
+            )
         else:
-            result = [(0, i) for i in items.get_items(type)]
+            candidates = (i for i in items.lookup.values() if i.type == type)
 
-    # Explicitly any type.
-    elif type == "any":
-        # Items with a non-zero score.
-        if term:
-            result = []
-            for item in items.get_items():
-                if score := item.score(term):
-                    result.append((score, item))
-        # All items.
-        else:
-            result = [(0, i) for i in items.get_items()]
+    # Filter by tags.
+    elif tags:
+        candidates = (i for i in items.lookup.values() if i.tag_ids.intersection(tags))
+    # No filter.
+    else:
+        candidates = None
 
-    # Items with a non-zero score.
-    elif term:
-        result = []
-        for item in items.get_items():
+    result = []
+    # Search by term.
+    if term:
+        if candidates is None:
+            candidates = items.lookup.values()
+        for item in candidates:
             if score := item.score(term):
                 result.append((score, item))
 
-    # Neither type nor term specified; no result.
-    else:
-        result = []
+    # No term; all filtered items.
+    elif candidates is not None:
+        result = [(0, i) for i in candidates]
 
     match order:
         case "term_desc":
@@ -396,8 +394,10 @@ def get(
             while len(row) < constants.N_GALLERY_ROW_ITEMS:
                 row.append(Div())
             rows.append(Div(*row, cls="bottom grid", style="margin-bottom: 1em;"))
-    else:
+    elif display == "list" or not display:
         rows = components.get_items_list_rows(result)
+    else:
+        raise NotImplementedError
 
     if rows:
         items_display = Table(Tbody(*rows), cls="compressed")
@@ -428,38 +428,115 @@ def get(
                     value=term or "",
                 ),
                 Fieldset(
-                    Select(
-                        Option("Filter by type...", disabled=True, selected=True),
-                        *[
-                            Option(t.capitalize(), value=t, selected=t == type)
-                            for t in ["any"] + list(items.TYPES)
-                        ],
-                        name="type",
+                    Details(
+                        Summary("Filter by type..."),
+                        Ul(
+                            *[
+                                Li(
+                                    Label(
+                                        Input(
+                                            type="radio",
+                                            name="type",
+                                            value=t,
+                                            checked=t == type
+                                            or (t == "Any" and not type),
+                                        ),
+                                        t.capitalize(),
+                                    )
+                                )
+                                for t in ["Any"] + list(items.TYPES)
+                            ]
+                        ),
+                        cls="dropdown",
                     ),
-                    Select(
-                        Option("Display...", disabled=True, selected=True),
-                        Option("List", selected=display == "list"),
-                        Option("Gallery", selected=display == "gallery"),
-                        name="display",
+                    Details(
+                        Summary("Filter by tags..."),
+                        Ul(
+                            *[
+                                Li(
+                                    Label(
+                                        Input(
+                                            type="checkbox",
+                                            name="tags",
+                                            value=t.id,
+                                            checked=t.id in tags,
+                                        ),
+                                        t.title,
+                                    )
+                                )
+                                for t in items.get_items(
+                                    type="tag", key=lambda t: t.title.casefold()
+                                )
+                            ]
+                        ),
+                        cls="dropdown",
                     ),
-                    Select(
-                        Option("Order by...", disabled=True, selected=True),
-                        Option(
-                            "Term score, descending",
-                            value="term_desc",
-                            selected=order == "term_desc",
+                    Details(
+                        Summary("Display..."),
+                        Ul(
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="display",
+                                        value="list",
+                                        checked=display == "list" or not display,
+                                    ),
+                                    "List",
+                                )
+                            ),
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="display",
+                                        value="gallery",
+                                        checked=display == "gallery",
+                                    ),
+                                    "Gallery",
+                                )
+                            ),
                         ),
-                        Option(
-                            "Age, ascending",
-                            value="age_asc",
-                            selected=order == "age_asc",
+                        cls="dropdown",
+                    ),
+                    Details(
+                        Summary("Order by..."),
+                        Ul(
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="order",
+                                        value="term_desc",
+                                        checked=order == "term_desc" or not order,
+                                    ),
+                                    "Term score, descending",
+                                )
+                            ),
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="order",
+                                        value="age_asc",
+                                        checked=order == "age_asc",
+                                    ),
+                                    "Age, ascending",
+                                )
+                            ),
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="order",
+                                        value="age_desc",
+                                        checked=order == "age_desc",
+                                    ),
+                                    "Age, descending",
+                                )
+                            ),
                         ),
-                        Option(
-                            "Age, descending",
-                            value="age_desc",
-                            selected=order == "age_desc",
-                        ),
-                        name="order",
+                        cls="dropdown",
                     ),
                     Input(type="submit", value="Search"),
                     cls="grid",

@@ -288,8 +288,8 @@ def get_tags_card(item):
     tags = list(item.tags)
     if tags:
         return Card(
-            Header("Tags"),
-            *[get_item_link(tag, cls="rmargin") for tag in item.tags],
+            Header(get_tag_icon(), "Tags"),
+            *[A(tag.title, href=tag.url, cls="rmargin") for tag in item.tags],
             title="Tags",
         )
     else:
@@ -323,7 +323,14 @@ def get_items_list_rows(items):
         rows.append(
             Tr(
                 Td(get_item_link(item)),
-                Td(Small(*[get_item_link(tag, cls="rmargin") for tag in item.tags])),
+                Td(
+                    Small(
+                        *[
+                            A(tag.title, href=tag.url, cls="rmargin")
+                            for tag in item.tags
+                        ]
+                    )
+                ),
                 Td(item.age, cls="nobr"),
             )
         )
@@ -469,6 +476,7 @@ def get_text_input(text=""):
 def get_tags_input(item_tags=frozenset(), tag=None):
     if tag:
         tags = [t for t in items.get_items("tag") if not t is tag]
+
     else:
         tags = items.get_items("tag")
     tags.sort(key=lambda t: t.title.casefold())

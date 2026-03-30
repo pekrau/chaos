@@ -66,7 +66,12 @@ def get(tag: items.Item):
         components.get_header_item_view(tag),
         Main(
             components.get_text_card(tag),
-            Card(Header("Tagged items..."), components.get_items_list(tag.tagged)),
+            Card(
+                Header("Tagged items..."),
+                components.get_items_list(
+                    sorted(tag.tagged, key=lambda i: i.modified, reverse=True)
+                ),
+            ),
             components.get_refs_card(tag),
             components.get_tags_card(tag),
             cls="container",

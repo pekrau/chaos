@@ -47,6 +47,9 @@ class Item:
     def __repr__(self):
         return self.url
 
+    def __hash__(self):
+        return hash(self.id)
+
     @property
     def type(self):
         return self.frontmatter["type"]
@@ -103,9 +106,15 @@ class Item:
         return utils.timestamp_local(self.path.stat().st_mtime)
 
     @property
-    def pinned(self):
-        global state
-        return self.id in state["pinned"]
+    def age(self):
+        "String representation of age; hh:mm:ss if less than 1 day, else days."
+        age = dt.datetime.now() - dt.datetime.fromtimestamp(self.path.stat().st_mtime)
+        hours, seconds = divmod(age.seconds, 3600)
+        minutes, seconds = divmod(seconds, 60)
+        if age.days > 0:
+            return f"{age.days} d"
+        else:
+            return f"{hours}:{minutes:02d}:{seconds:02d}"
 
     @property
     def tag_ids(self):
@@ -131,15 +140,22 @@ class Item:
             self.frontmatter.pop("tags", None)
 
     @property
-    def age(self):
-        "String representation of age; hh:mm:ss if less than 1 day, else days."
-        age = dt.datetime.now() - dt.datetime.fromtimestamp(self.path.stat().st_mtime)
-        hours, seconds = divmod(age.seconds, 3600)
-        minutes, seconds = divmod(seconds, 60)
-        if age.days > 0:
-            return f"{age.days} d"
-        else:
-            return f"{hours}:{minutes:02d}:{seconds:02d}"
+    def similar(self):
+        "Return a list of items similar to this. Currently based on tags."
+        result = set()
+        for tag in self.tags:
+            result.update(tag.tagged)
+        tags = self.tag_ids
+        return sorted(
+            result,
+            key=lambda i: (len(tags.intersection(i.tag_ids)), i.modified),
+            reverse=True,
+        )
+
+    @property
+    def pinned(self):
+        global state
+        return self.id in state["pinned"]
 
     def pin(self):
         "Add this item to the shortcuts menu."
@@ -213,10 +229,8 @@ class Tag(Item):
 
     @property
     def tagged(self):
-        "List of tagged items, sorted by modified time."
-        result = [get(id) for id in self._tagged]
-        result.sort(key=lambda i: i.modified, reverse=True)
-        return result
+        "List of tagged items."
+        return [get(id) for id in self._tagged]
 
 
 class Link(Item):

@@ -288,9 +288,11 @@ def get_tags_card(item):
     tags = list(item.tags)
     if tags:
         return Card(
-            Header(get_tag_icon(), "Tags"),
-            *[A(tag.title, href=tag.url, cls="rmargin") for tag in item.tags],
-            title="Tags",
+            Header(
+                get_tag_icon(),
+                *[A(tag.title, href=tag.url, cls="rmargin") for tag in item.tags],
+            ),
+            get_items_list(item.similar),
         )
     else:
         return ""
@@ -299,12 +301,14 @@ def get_tags_card(item):
 def get_refs_card(item):
     "Show the refs that other items make to this item."
     refs = sorted(
-        [items.get(id) for id in item.refs_to_self], key=lambda i: str(i).casefold()
+        [items.get(id) for id in item.refs_to_self],
+        key=lambda i: i.modified,
+        reverse=True,
     )
     if refs:
         return Card(
             Header("Referred by items..."),
-            *[get_item_link(ref, cls="rmargin") for ref in refs],
+            get_items_list(refs),
         )
     else:
         return ""

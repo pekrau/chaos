@@ -634,33 +634,41 @@ def get():
     software = Table(
         Thead(
             Tr(
-                Th(A("chaos", href=constants.GITHUB_URL)),
+                Th(A("chaos", href=constants.GITHUB_URL, target="_blank")),
                 Th(constants.__version__, cls="right"),
             ),
         ),
         Tbody(
             Tr(
-                Td(A("Python", href="https://www.python.org/")),
+                Td(A("Python", href="https://www.python.org/", target="_blank")),
                 Td(f"{'.'.join([str(v) for v in sys.version_info[0:3]])}", cls="right"),
             ),
             Tr(
-                Td(A("fastHTML", href="https://fastht.ml/")),
+                Td(A("fastHTML", href="https://fastht.ml/", target="_blank")),
                 Td(fasthtml.__version__, cls="right"),
             ),
             Tr(
-                Td(A("Marko", href="https://marko-py.readthedocs.io/")),
+                Td(
+                    A("Marko", href="https://marko-py.readthedocs.io/", target="_blank")
+                ),
                 Td(marko.__version__, cls="right"),
             ),
             Tr(
-                Td(A("PyYAML", href="https://pypi.org/project/PyYAML/")),
+                Td(
+                    A(
+                        "PyYAML",
+                        href="https://pypi.org/project/PyYAML/",
+                        target="_blank",
+                    )
+                ),
                 Td(yaml.__version__, cls="right"),
             ),
             Tr(
-                Td(A("bokeh", href="https://bokeh.org/")),
+                Td(A("bokeh", href="https://bokeh.org/", target="_blank")),
                 Td(bokeh.__version__, cls="right"),
             ),
             Tr(
-                Td(A("NumPy", href="https://numpy.org/")),
+                Td(A("NumPy", href="https://numpy.org/", target="_blank")),
                 Td(numpy.__version__, cls="right"),
             ),
             Tr(
@@ -668,9 +676,14 @@ def get():
                     A(
                         "BibtexParser",
                         href="https://bibtexparser.readthedocs.io/en/main/",
+                        target="_blank",
                     )
                 ),
                 Td(bibtexparser.__version__, cls="right"),
+            ),
+            Tr(
+                Td(A("Tabulator", href="https://tabulator.info/", target="_blank")),
+                Td(constants.TABULATOR_VERSION, cls="right"),
             ),
         ),
     )

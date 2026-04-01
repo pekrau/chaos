@@ -7,13 +7,15 @@ import string
 
 import babel.dates
 
-VERSION = (1, 3, 12)
+VERSION = (1, 4, 0)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
 ISBN_URL = "https://isbnsearch.org/isbn/{isbn}"
 DOI_URL = "https://doi.org/{doi}"
 PUBMED_URL = "https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
+
+TABULATOR_VERSION = "6.4.0"
 
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
 if not DATA_DIR.exists():
@@ -35,9 +37,6 @@ LANGUAGES = dict(
     en="English",
     se="Svenska",
 )
-
-SCRYPT_DATALENGTH = 64
-SCRYPT_MAXTIME = 0.1
 
 TEXT_MIMETYPE = "text/plain"
 BINARY_MIMETYPE = "application/octet-stream"

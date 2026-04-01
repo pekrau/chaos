@@ -125,7 +125,7 @@ def get(database: items.Item):
                     method="POST",
                 ),
                 Details(
-                    Summary("Operations"),
+                    Summary("Operations..."),
                     Ul(
                         Li(A("Add plot", href=f"{database.url}/plot")),
                         Li(A("Create table from CSV file", href=f"{database.url}.csv")),
@@ -300,11 +300,10 @@ def get(database: items.Item, relname: str):
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     title = f"{schema[relname]['type'].capitalize()} {relname}"
-    with database.connect(readonly=True) as cnx:
-        rows = cnx.execute(f"SELECT * FROM {relname}").fetchall()
-    column_headers = Tr(*[Th(name) for name in schema[relname]["columns"]])
+    # column_headers = Tr(*[Th(name) for name in schema[relname]["columns"]])
     return (
         Title(title),
+        components.tabulator_style(),
         Header(
             Nav(
                 Ul(
@@ -324,13 +323,7 @@ def get(database: items.Item, relname: str):
                     Strong(f"{schema[relname]['count']} rows"),
                     cls="grid",
                 ),
-                Table(
-                    Thead(column_headers),
-                    Tbody(*[Tr(*[Td(i) for i in row]) for row in rows]),
-                    Tfoot(column_headers),
-                    cls="compressed",
-                    id="rows",
-                ),
+                Div(id="table"),
             ),
             cls="container",
         ),
@@ -342,6 +335,16 @@ def get(database: items.Item, relname: str):
                 cls="grid",
             ),
             cls="container",
+        ),
+        components.tabulator_lib(),
+        Script(
+            f"""var table = new Tabulator("#table", {{
+height: 600,
+autoColumns: true,
+ajaxURL: "{database.url}/rows/{relname}.json",
+ajaxResponse: function(url, params, response) {{return response.data}},
+}});""",
+            type="text/javascript",
         ),
     )
 
@@ -1342,7 +1345,6 @@ def get_overview(database, display=False):
     "Get an overview of the basic structure of the database."
     rows = []
     for relname, relation in database.get_schema().items():
-        operations = []
         spec = [
             Li(
                 f"{column_name} {column['type']} {not column['null'] and 'NOT NULL' or ''} {column['primary'] and 'PRIMARY KEY' or ''}"
@@ -1350,13 +1352,12 @@ def get_overview(database, display=False):
             for column_name, column in relation["columns"].items()
         ]
         spec.append(Li(relation["sql"]))
+        operations = []
         if relation["type"] == "table":
             operations.append(Li(A("Add row", href=f"{database.url}/row/{relname}")))
             operations.append(
                 Li(A("Add CSV file", href=f"{database.url}/rows/{relname}/csv"))
             )
-
-        operations.append(Li(A("View rows", href=f"{database.url}/rows/{relname}")))
         operations.append(
             Li(A("Download CSV", href=f"{database.url}/rows/{relname}.csv"))
         )
@@ -1375,10 +1376,22 @@ def get_overview(database, display=False):
                     Ul(*spec),
                     open=display,
                 ),
-                Details(
-                    Summary(f"{relation['count']} rows", role="button", cls="outline"),
-                    Ul(*operations),
-                    cls="dropdown",
+                Div(
+                    Form(
+                        Input(
+                            type="submit",
+                            value=f"{relation['count']} rows",
+                            cls="outline",
+                        ),
+                        action=f"{database.url}/rows/{relname}",
+                        method="GET",
+                    ),
+                    Details(
+                        Summary("Operations..."),
+                        Ul(*operations),
+                        cls="dropdown",
+                    ),
+                    cls="grid",
                 ),
                 cls="grid",
             )

@@ -28,7 +28,11 @@
 
 .nobr {
     white-space: nowrap;
-};
+}
+
+.rmargin {
+    margin-right: 1em;
+}
 
 img.white {
     background-color: white;
@@ -43,28 +47,20 @@ img.display {
 img.autoscale {
     max-width: 100%;
     height: auto;
-};
+}
 
 img.norescale {
     max-width: none;
-};
+}
 
 a.nomargin {
     margin: 0px;
-}
-
-a.rmargin {
-    margin-right: 1em;
 }
 
 a.button {
     border: 1px solid #ddd;
     padding: 2px 8px;
     margin: 6px;
-}
-
-span.rmargin {
-    margin-right: 1em;
 }
 
 table.compressed > tbody > tr > td {

@@ -145,6 +145,7 @@ class Item:
         result = set()
         for tag in self.tags:
             result.update(tag.tagged)
+        result.remove(self)
         tags = self.tag_ids
         return sorted(
             result,

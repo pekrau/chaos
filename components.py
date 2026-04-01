@@ -148,8 +148,8 @@ def get_note_icon(title="Note"):
     return get_icon("card-text.svg", title=title)
 
 
-def get_tag_icon(title="Tag"):
-    return get_icon("tag.svg", title=title)
+def get_tag_icon(title="Tag", cls=None):
+    return get_icon("tag.svg", title=title, cls=cls)
 
 
 def get_link_icon(title="Link"):
@@ -238,11 +238,25 @@ def to_clipboard(item):
 
 
 def clipboard_script():
-    return Script(src="/static/clipboard.min.js")
+    return Script(src="/static/clipboard.min.js")  # No explicit version for this lib.
 
 
 def clipboard_activate():
     return Script("new ClipboardJS('.to_clipboard');", type="text/javascript")
+
+
+def tabulator_style():
+    return Link(
+        href=f"/static/tabulator_simple.{constants.TABULATOR_VERSION}.min.css",
+        rel="stylesheet",
+    )
+
+
+def tabulator_lib():
+    return Script(
+        type="text/javascript",
+        src=f"/static/tabulator.{constants.TABULATOR_VERSION}.min.js",
+    )
 
 
 def get_header_item_view(item, copy=True):
@@ -289,7 +303,7 @@ def get_tags_card(item):
     if tags:
         return Card(
             Header(
-                get_tag_icon(),
+                get_tag_icon(cls="rmargin"),
                 *[A(tag.title, href=tag.url, cls="rmargin") for tag in item.tags],
             ),
             get_items_list(item.similar),

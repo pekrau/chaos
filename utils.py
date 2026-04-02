@@ -66,8 +66,6 @@ def to_name_color(color):
     return color
 
 
-def get_total_pages(total_items=None):
+def get_total_pages(total_items):
     "Return the total number of table pages for the given number of items."
-    if total_items is None:
-        total_items = total()
     return (total_items - 1) // constants.MAX_PAGE_ITEMS + 1

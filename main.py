@@ -71,7 +71,7 @@ def get(page: int = 1):
     total_items = len(result)
     page = min(max(1, page), utils.get_total_pages(total_items))
     start = (page - 1) * constants.MAX_PAGE_ITEMS
-    end = page * constants.MAX_PAGE_ITEMS
+    end = min(page * constants.MAX_PAGE_ITEMS, total_items)
     result = result[start:end]
     title = "chaos"
     return (
@@ -90,11 +90,11 @@ def get(page: int = 1):
             cls="container",
         ),
         Main(
-            components.get_items_list(result),
+            components.get_items_list(result, start, end),
             Form(
-                components.get_items_display_pager(page, total_items),
-                method="GET",
+                components.get_items_list_pager(page, total_items),
                 action="/",
+                method="GET",
             ),
             cls="container",
         ),
@@ -366,7 +366,7 @@ def get(
     total_items = len(result)
     page = min(max(1, page), utils.get_total_pages(total_items))
     start = (page - 1) * constants.MAX_PAGE_ITEMS
-    end = page * constants.MAX_PAGE_ITEMS
+    end = min(page * constants.MAX_PAGE_ITEMS, total_items)
     result = [i for s, i in result[start:end]]
 
     display = display.lower()
@@ -400,7 +400,9 @@ def get(
         raise NotImplementedError
 
     if rows:
-        items_display = Table(Tbody(*rows), cls="compressed")
+        items_display = Table(
+            Thead(Tr(Th(f"{start+1}-{end}", colspan=3))), Tbody(*rows), cls="compressed"
+        )
     else:
         items_display = I("No items.")
 
@@ -542,7 +544,7 @@ def get(
                     cls="grid",
                 ),
                 items_display,
-                components.get_items_display_pager(page, total_items),
+                components.get_items_list_pager(page, total_items),
                 action="/search",
                 method="GET",
             ),

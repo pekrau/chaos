@@ -339,7 +339,7 @@ def get(database: items.Item, relname: str):
         components.tabulator_lib(),
         Script(
             f"""var table = new Tabulator("#table", {{
-height: 600,
+height: 500,
 autoColumns: true,
 ajaxURL: "{database.url}/rows/{relname}.json",
 ajaxResponse: function(url, params, response) {{return response.data}},

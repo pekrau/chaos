@@ -328,9 +328,16 @@ def get_refs_card(item):
         return ""
 
 
-def get_items_list(items):
+def get_items_list(items, start=None, end=None):
     if rows := get_items_list_rows(items):
-        return Table(Tbody(*rows), cls="compressed")
+        if start is not None and end is not None:
+            return Table(
+                Thead(Tr(Th(f"Items {start+1}-{end}", cls="center", colspan=3))),
+                Tbody(*rows),
+                cls="compressed",
+            )
+        else:
+            return Table(Tbody(*rows), cls="compressed")
     else:
         return I("No items.")
 
@@ -414,43 +421,61 @@ def get_item_link(item, full=True, cls=None):
             raise NotImplementedError
 
 
-def get_items_display_pager(current_page, total_items):
+def get_items_list_pager(current_page, total_items):
     "Return pager buttons given current page."
     if total_items <= constants.MAX_PAGE_ITEMS:
         return ""
-    pages = [1]
     total_pages = utils.get_total_pages(total_items)
-    for page in range(2, total_pages):
-        if abs(current_page - page) < 2:
-            pages.append(page)
-    if pages[-1] != total_pages:
-        pages.append(total_pages)
     buttons = []
-    prev_page = 1
-    for page in pages:
-        if prev_page + 1 < page:
-            buttons.append(
-                Input(
-                    type="submit",
-                    value="...",
-                    disabled=True,
-                    cls="outline secondary",
-                )
+    if current_page != 1:
+        buttons.append(
+            Input(
+                type="submit",
+                name="page",
+                value="1",
+                cls="outline",
             )
-        if page == current_page:
-            buttons.append(
-                Input(
-                    type="submit",
-                    name="page",
-                    value=str(page),
-                    disabled=True,
-                    cls="secondary",
-                )
+        )
+    if current_page - 2 > 1:
+        buttons.append(Div("...", cls="center"))
+    if current_page - 1 > 1:
+        buttons.append(
+            Input(
+                type="submit",
+                name="page",
+                value=current_page - 1,
+                cls="outline",
             )
-        else:
-            buttons.append(Input(type="submit", name="page", value=str(page)))
-        prev_page = page
-    return Div(*[Div(b) for b in buttons], cls="grid")
+        )
+    buttons.append(
+        Input(
+            type="submit",
+            value=current_page,
+            cls="secondary outline",
+            disabled=True,
+        )
+    )
+    if current_page + 1 < total_pages:
+        buttons.append(
+            Input(
+                type="submit",
+                name="page",
+                value=current_page + 1,
+                cls="outline",
+            )
+        )
+    if current_page + 2 < total_pages:
+        buttons.append(Div("...", cls="center"))
+    if current_page != total_pages:
+        buttons.append(
+            Input(
+                type="submit",
+                name="page",
+                value=total_pages,
+                cls="outline",
+            )
+        )
+    return Fieldset(*buttons, cls="grid")
 
 
 def get_header_item_edit(item):

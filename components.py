@@ -453,7 +453,7 @@ def get_items_page_buttons(page, total_pages, name="page"):
                 Input(
                     type="submit",
                     value="...",
-                    cls="outline",
+                    cls="secondary outline",
                     disabled=True,
                 ),
             ]
@@ -489,7 +489,7 @@ def get_items_page_buttons(page, total_pages, name="page"):
                     Input(
                         type="submit",
                         value="...",
-                        cls="outline",
+                        cls="secondary outline",
                         disabled=True,
                     ),
                     Input(

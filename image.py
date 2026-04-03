@@ -79,7 +79,7 @@ async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None
 
 
 @rt("/{image:Item}")
-def get(image: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
+def get(image: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the data for the image."
     assert isinstance(image, items.Image)
     return (

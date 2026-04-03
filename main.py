@@ -77,7 +77,7 @@ def get(page: int = 1):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li(Strong(title)),
                 ),
                 Ul(
                     Li(components.get_shortcuts_menu()),

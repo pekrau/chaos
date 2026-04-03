@@ -94,7 +94,7 @@ async def post(
 
 
 @rt("/{database:Item}")
-def get(database: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
+def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the data and the list of plots for the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()

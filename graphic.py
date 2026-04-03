@@ -96,7 +96,7 @@ def post(
 
 
 @rt("/{graphic:Item}")
-def get(graphic: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
+def get(graphic: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the graphic."
     assert isinstance(graphic, items.Graphic)
 

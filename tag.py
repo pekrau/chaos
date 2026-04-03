@@ -57,7 +57,7 @@ def post(title: str, text: str, id: str = "", tags: list[str] = None):
 
 
 @rt("/{tag:Item}")
-def get(tag: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
+def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the tag."
     assert isinstance(tag, items.Tag)
     items_list = tag.tagged

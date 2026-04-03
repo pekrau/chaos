@@ -58,7 +58,7 @@ def post(title: str, text: str, id: str = "", tags: list[str] = None):
 
 
 @rt("/{note:Item}")
-def get(note: items.Item, tags_page: int = 1, refs_page: int = 1):
+def get(note: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the note."
     assert isinstance(note, items.Note)
     return (

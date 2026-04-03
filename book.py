@@ -116,7 +116,7 @@ def post(
 
 
 @rt("/{book:Item}")
-def get(book: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
+def get(book: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the book."
     assert isinstance(book, items.Book)
     return (

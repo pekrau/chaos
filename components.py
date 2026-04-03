@@ -450,7 +450,12 @@ def get_items_page_buttons(page, total_pages, name="page"):
                     value=1,
                     cls="outline",
                 ),
-                Div("...", cls="center"),
+                Input(
+                    type="submit",
+                    value="...",
+                    cls="outline",
+                    disabled=True,
+                ),
             ]
         if (page > 4) and (page < total_pages - 3):
             buttons.extend(
@@ -481,7 +486,12 @@ def get_items_page_buttons(page, total_pages, name="page"):
         else:
             buttons.extend(
                 [
-                    Div("...", cls="center"),
+                    Input(
+                        type="submit",
+                        value="...",
+                        cls="outline",
+                        disabled=True,
+                    ),
                     Input(
                         type="submit",
                         name=name,
@@ -490,7 +500,7 @@ def get_items_page_buttons(page, total_pages, name="page"):
                     ),
                 ]
             )
-    return Fieldset(*buttons, cls="grid")
+    return Fieldset(*buttons, role="group")
 
 
 def get_item_link(item, full=True, cls=None):

@@ -66,13 +66,9 @@ items.read()
 
 @rt("/")
 def get(page: int = 1):
+    "Display all items; paged."
     result = items.get_items()
     result.sort(key=lambda i: i.modified, reverse=True)
-    total_items = len(result)
-    page = min(max(1, page), utils.get_total_pages(total_items))
-    start = (page - 1) * constants.MAX_PAGE_ITEMS
-    end = min(page * constants.MAX_PAGE_ITEMS, total_items)
-    result = result[start:end]
     title = "chaos"
     return (
         Title(title),
@@ -90,11 +86,9 @@ def get(page: int = 1):
             cls="container",
         ),
         Main(
-            components.get_items_list(result, start, end),
             Form(
-                components.get_items_list_pager(page, total_items),
+                components.get_items_display(result, page=page),
                 action="/",
-                method="GET",
             ),
             cls="container",
         ),
@@ -185,7 +179,6 @@ def get():
                 type="submit",
                 cls="outline",
             ),
-            method="GET",
             action=f"/{type.lower()}",
         )
         for type in items.TYPES
@@ -198,7 +191,6 @@ def get():
                 type="submit",
                 cls="outline",
             ),
-            method="GET",
             action="/bibtex",
         )
     )
@@ -341,70 +333,31 @@ def get(
             candidates = items.lookup.values()
         for item in candidates:
             if score := item.score(term):
-                result.append((score, item))
+                item._score = score
+                result.append(item)
 
     # No term; all filtered items.
     elif candidates is not None:
-        result = [(0, i) for i in candidates]
+        result = list(candidates)
+        for item in result:
+            item._score = 0
 
+    # Sort the resulting items.
     match order:
         case "term_desc":
             if term:
-                result.sort(key=lambda t: (t[0], t[1].modified), reverse=True)
+                result.sort(key=lambda i: (i._score, i.modified), reverse=True)
             else:
-                result.sort(key=lambda t: t[1].modified, reverse=True)
+                result.sort(key=lambda i: item.modified, reverse=True)
         case "age_asc":
-            result.sort(key=lambda t: t[1].modified, reverse=True)
+            result.sort(key=lambda i: i.modified, reverse=True)
         case "age_desc":
-            result.sort(key=lambda t: t[1].modified)
+            result.sort(key=lambda i: i.modified)
         case _:
             if term:
-                result.sort(key=lambda t: (t[0], t[1].modified), reverse=True)
+                result.sort(key=lambda i: (i._score, i.modified), reverse=True)
             else:
-                result.sort(key=lambda t: t[1].modified, reverse=True)
-
-    total_items = len(result)
-    page = min(max(1, page), utils.get_total_pages(total_items))
-    start = (page - 1) * constants.MAX_PAGE_ITEMS
-    end = min(page * constants.MAX_PAGE_ITEMS, total_items)
-    result = [i for s, i in result[start:end]]
-
-    display = display.lower()
-    if display == "gallery":
-        rows = []
-        for chunk in [
-            result[i : i + constants.N_GALLERY_ROW_ITEMS]
-            for i in range(0, len(result), constants.N_GALLERY_ROW_ITEMS)
-        ]:
-            row = []
-            for item in chunk:
-                if item.type == "image":
-                    row.append(
-                        Div(
-                            A(
-                                components.get_image_icon(),
-                                item.title,
-                                Img(src=item.url_file, cls="autoscale display"),
-                                href=str(item.url),
-                            ),
-                        )
-                    )
-                else:
-                    row.append(Div(components.get_item_link(item)))
-            while len(row) < constants.N_GALLERY_ROW_ITEMS:
-                row.append(Div())
-            rows.append(Div(*row, cls="bottom grid", style="margin-bottom: 1em;"))
-    elif display == "list" or not display:
-        rows = components.get_items_list_rows(result)
-    else:
-        raise NotImplementedError
-
-    if rows:
-        items_display = Table(
-            Thead(Tr(Th(f"{start+1}-{end}", colspan=3))), Tbody(*rows), cls="compressed"
-        )
-    else:
-        items_display = I("No items.")
+                result.sort(key=lambda i: i.modified, reverse=True)
 
     return (
         Title("Search"),
@@ -543,10 +496,10 @@ def get(
                     Input(type="submit", value="Search"),
                     cls="grid",
                 ),
-                items_display,
-                components.get_items_list_pager(page, total_items),
+                components.get_items_display(
+                    result, page=page, gallery=display.lower() == "gallery"
+                ),
                 action="/search",
-                method="GET",
             ),
             cls="container",
         ),

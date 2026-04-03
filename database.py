@@ -94,7 +94,7 @@ async def post(
 
 
 @rt("/{database:Item}")
-def get(database: items.Item):
+def get(database: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
     "View the data and the list of plots for the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
@@ -153,8 +153,11 @@ def get(database: items.Item):
                     else I("No plots.")
                 ),
             ),
-            components.get_tags_card(database),
-            components.get_refs_card(database),
+            Form(
+                components.get_tags_card(database, tags_page),
+                components.get_refs_card(database, refs_page),
+                action=database.url,
+            ),
             cls="container",
         ),
         components.get_footer_item_view(
@@ -581,7 +584,6 @@ def post(database: items.Item, sql: str = None):
                 Form(
                     Input(type="hidden", name="sql", value=sql),
                     Input(type="submit", value="Create view"),
-                    method="GET",
                     action=f"{database.url}/view",
                 ),
                 Form(
@@ -1384,7 +1386,6 @@ def get_overview(database, display=False):
                             cls="outline",
                         ),
                         action=f"{database.url}/rows/{relname}",
-                        method="GET",
                     ),
                     Details(
                         Summary("Operations..."),

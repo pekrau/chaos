@@ -116,7 +116,7 @@ def post(
 
 
 @rt("/{book:Item}")
-def get(book: items.Item):
+def get(book: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
     "View the book."
     assert isinstance(book, items.Book)
     return (
@@ -138,8 +138,11 @@ def get(book: items.Item):
                 cls="grid",
             ),
             components.get_text_card(book),
-            components.get_tags_card(book),
-            components.get_refs_card(book),
+            Form(
+                components.get_tags_card(book, tags_page),
+                components.get_refs_card(book, refs_page),
+                action=book.url,
+            ),
             cls="container",
         ),
         components.get_footer_item_view(book),

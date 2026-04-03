@@ -96,7 +96,7 @@ def post(
 
 
 @rt("/{graphic:Item}")
-def get(graphic: items.Item):
+def get(graphic: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
     "View the graphic."
     assert isinstance(graphic, items.Graphic)
 
@@ -139,8 +139,11 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
                 Footer(graphic.frontmatter["graphic"]),
             ),
             components.get_text_card(graphic),
-            components.get_tags_card(graphic),
-            components.get_refs_card(graphic),
+            Form(
+                components.get_tags_card(graphic, tags_page),
+                components.get_refs_card(graphic, refs_page),
+                action=graphic.url,
+            ),
             cls="container",
         ),
         components.get_footer_item_view(graphic),

@@ -58,7 +58,7 @@ def post(title: str, text: str, id: str = "", tags: list[str] = None):
 
 
 @rt("/{note:Item}")
-def get(note: items.Item):
+def get(note: items.Item, tags_page: int = 1, refs_page: int = 1):
     "View the note."
     assert isinstance(note, items.Note)
     return (
@@ -67,8 +67,11 @@ def get(note: items.Item):
         components.get_header_item_view(note),
         Main(
             components.get_text_card(note),
-            components.get_tags_card(note),
-            components.get_refs_card(note),
+            Form(
+                components.get_tags_card(note, tags_page),
+                components.get_refs_card(note, refs_page),
+                action=note.url,
+            ),
             cls="container",
         ),
         components.get_footer_item_view(note),

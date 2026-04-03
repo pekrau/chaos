@@ -79,7 +79,7 @@ async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None
 
 
 @rt("/{image:Item}")
-def get(image: items.Item):
+def get(image: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
     "View the data for the image."
     assert isinstance(image, items.Image)
     return (
@@ -94,8 +94,11 @@ def get(image: items.Item):
                 )
             ),
             components.get_text_card(image),
-            components.get_tags_card(image),
-            components.get_refs_card(image),
+            Form(
+                components.get_tags_card(image, tags_page),
+                components.get_refs_card(image, refs_page),
+                action=image.url,
+            ),
             cls="container",
         ),
         components.get_footer_item_view(

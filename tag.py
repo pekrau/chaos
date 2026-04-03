@@ -57,23 +57,26 @@ def post(title: str, text: str, id: str = "", tags: list[str] = None):
 
 
 @rt("/{tag:Item}")
-def get(tag: items.Item):
+def get(tag: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
     "View the tag."
     assert isinstance(tag, items.Tag)
+    items_list = tag.tagged
+    items_list.sort(key=lambda i: i.modified, reverse=True)
     return (
         Title(tag.title),
         components.clipboard_script(),
         components.get_header_item_view(tag),
         Main(
             components.get_text_card(tag),
-            Card(
-                Header("Tagged items..."),
-                components.get_items_list(
-                    sorted(tag.tagged, key=lambda i: i.modified, reverse=True)
+            Form(
+                Card(
+                    Header("Tagged..."),
+                    components.get_items_display(items_list, page=page),
                 ),
+                components.get_tags_card(tag, tags_page),
+                components.get_refs_card(tag, refs_page),
+                action=tag.url,
             ),
-            components.get_refs_card(tag),
-            components.get_tags_card(tag),
             cls="container",
         ),
         components.get_footer_item_view(tag),

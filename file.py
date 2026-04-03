@@ -68,7 +68,7 @@ async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None
 
 
 @rt("/{file:Item}")
-def get(file: items.Item):
+def get(file: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
     "View the data for the file."
     assert isinstance(file, items.File)
     return (
@@ -94,8 +94,11 @@ def get(file: items.Item):
         Main(
             Card(Strong(A(file.filename, href=file.url_file))),
             components.get_text_card(file),
-            components.get_tags_card(file),
-            components.get_refs_card(file),
+            Form(
+                components.get_tags_card(file, tags_page),
+                components.get_refs_card(file, refs_page),
+                action=file.url,
+            ),
             cls="container",
         ),
         components.get_footer_item_view(

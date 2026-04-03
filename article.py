@@ -123,7 +123,7 @@ def post(
 
 
 @rt("/{article:Item}")
-def get(article: items.Item):
+def get(article: items.Item, page: str = 1, tags_page: int = 1, refs_page: int = 1):
     "View the article."
     assert isinstance(article, items.Article)
     return (
@@ -164,8 +164,11 @@ def get(article: items.Item):
                 Span(article.pages or "-", title="Pages"),
             ),
             components.get_text_card(article),
-            components.get_tags_card(article),
-            components.get_refs_card(article),
+            Form(
+                components.get_tags_card(article, tags_page),
+                components.get_refs_card(article, refs_page),
+                action=article.url,
+            ),
             cls="container",
         ),
         components.get_footer_item_view(article),

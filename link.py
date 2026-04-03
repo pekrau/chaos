@@ -55,7 +55,7 @@ def post(title: str, href: str, text: str, tags: list[str] = None):
 
 
 @rt("/{link:Item}")
-def get(link: items.Item):
+def get(link: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the data for the link."
     assert isinstance(link, items.Link)
     return (
@@ -65,8 +65,11 @@ def get(link: items.Item):
         Main(
             Card(Strong(A(link.href, href=link.href, target="_blank"))),
             components.get_text_card(link),
-            components.get_tags_card(link),
-            components.get_refs_card(link),
+            Form(
+                components.get_tags_card(link, tags_page),
+                components.get_refs_card(link, refs_page),
+                action=link.url,
+            ),
             cls="container",
         ),
         components.get_footer_item_view(link),

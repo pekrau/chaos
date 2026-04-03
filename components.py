@@ -297,22 +297,22 @@ def get_text_card(item):
         return Card(I("No text."))
 
 
-def get_tags_card(item):
+def get_tags_card(item, page=None):
     "Show the tags for this item."
     tags = list(item.tags)
     if tags:
         return Card(
             Header(
-                get_tag_icon(cls="rmargin"),
+                Span("Tags:", cls="rmargin"),
                 *[A(tag.title, href=tag.url, cls="rmargin") for tag in item.tags],
             ),
-            get_items_list(item.similar),
+            get_items_display(item.similar, page=page, name="tags_page"),
         )
     else:
         return ""
 
 
-def get_refs_card(item):
+def get_refs_card(item, page=None):
     "Show the refs that other items make to this item."
     refs = sorted(
         [items.get(id) for id in item.refs_to_self],
@@ -321,45 +321,176 @@ def get_refs_card(item):
     )
     if refs:
         return Card(
-            Header("Referred by items..."),
-            get_items_list(refs),
+            Header("Referred by..."),
+            get_items_display(refs, page=page, name="refs_page"),
         )
     else:
         return ""
 
 
-def get_items_list(items, start=None, end=None):
-    if rows := get_items_list_rows(items):
-        if start is not None and end is not None:
-            return Table(
-                Thead(Tr(Th(f"Items {start+1}-{end}", cls="center", colspan=3))),
-                Tbody(*rows),
-                cls="compressed",
-            )
-        else:
-            return Table(Tbody(*rows), cls="compressed")
-    else:
+def get_items_display(items, page=None, gallery=False, name="page"):
+    "Get a display of the items. Paged if 'page' is defined."
+    total_items = len(items)
+    if total_items == 0:
         return I("No items.")
 
+    # All items in one single page.
+    if page is None:
+        total_pages = 1
+        title = f"{total_items} items"
 
-def get_items_list_rows(items):
-    rows = []
-    for item in items:
-        rows.append(
-            Tr(
-                Td(get_item_link(item)),
-                Td(
-                    Small(
-                        *[
-                            A(tag.title, href=tag.url, cls="rmargin")
-                            for tag in item.tags
-                        ]
+    else:
+        total_pages = (total_items - 1) // constants.MAX_PAGE_ITEMS + 1
+        # One single page is sufficient.
+        if total_pages == 1:
+            title = f"{total_items} items"
+        # Paged display
+        else:
+            page = min(max(1, page), total_pages)
+            start = (page - 1) * constants.MAX_PAGE_ITEMS
+            end = min(page * constants.MAX_PAGE_ITEMS, total_items)
+            title = f"Items {start+1}-{end} of {total_items}"
+            items = items[start:end]
+
+    # Display items in a gallery.
+    if gallery:
+        rows = []
+        for chunk in [
+            items[i : i + constants.N_GALLERY_ROW_ITEMS]
+            for i in range(0, len(items), constants.N_GALLERY_ROW_ITEMS)
+        ]:
+            row = []
+            for item in chunk:
+                if item.type == "image":
+                    row.append(
+                        Div(
+                            A(
+                                get_image_icon(),
+                                item.title,
+                                Img(src=item.url_file, cls="autoscale display"),
+                                href=str(item.url),
+                            ),
+                        )
                     )
-                ),
-                Td(item.age, cls="nobr"),
-            )
+                else:
+                    row.append(Div(get_item_link(item)))
+            while len(row) < constants.N_GALLERY_ROW_ITEMS:
+                row.append(Div())
+            rows.append(Div(*row, cls="bottom grid", style="margin-bottom: 1em;"))
+        table = Table(Tbody(*[Tr(Td(r)) for r in rows]))
+
+    # Display items in a list.
+    else:
+        table = Table(
+            Thead(Tr(Th(title, cls="center", colspan=3))),
+            Tbody(
+                *[
+                    Tr(
+                        Td(get_item_link(item)),
+                        Td(
+                            Small(
+                                *[
+                                    A(tag.title, href=tag.url, cls="rmargin")
+                                    for tag in item.tags
+                                ]
+                            )
+                        ),
+                        Td(item.age, cls="nobr"),
+                    )
+                    for item in items
+                ]
+            ),
+            cls="compressed",
         )
-    return rows
+
+    return Div(table, get_items_page_buttons(page, total_pages, name=name))
+
+
+def get_items_page_buttons(page, total_pages, name="page"):
+    "Get the buttons for paging through the display of items."
+
+    # No page defined; no buttons.
+    if page is None:
+        return ""
+
+    # One single page sufficient for all items.
+    if total_pages == 1:
+        return ""
+
+    # All buttons shown when 7 pages or less.
+    if total_pages <= 7:
+        buttons = [
+            Input(
+                type="submit",
+                name=name,
+                value=pos,
+                cls="secondary" if page == pos else "outline",
+                disabled=page == pos,
+            )
+            for pos in range(1, total_pages + 1)
+        ]
+    # One or more buttons must be elided when 8 or more.
+    else:
+        if page <= 4:
+            buttons = [
+                Input(
+                    type="submit",
+                    name=name,
+                    value=pos,
+                    cls="secondary" if page == pos else "outline",
+                    disabled=page == pos,
+                )
+                for pos in range(1, 6)
+            ]
+        else:
+            buttons = [
+                Input(
+                    type="submit",
+                    name=name,
+                    value=1,
+                    cls="outline",
+                ),
+                Div("...", cls="center"),
+            ]
+        if (page > 4) and (page < total_pages - 3):
+            buttons.extend(
+                [
+                    Input(
+                        type="submit",
+                        name=name,
+                        value=pos,
+                        cls="secondary" if page == pos else "outline",
+                        disabled=page == pos,
+                    )
+                    for pos in [page - 1, page, page + 1]
+                ]
+            )
+        if page >= total_pages - 3:
+            buttons.extend(
+                [
+                    Input(
+                        type="submit",
+                        name=name,
+                        value=pos,
+                        cls="secondary" if page == pos else "outline",
+                        disabled=page == pos,
+                    )
+                    for pos in range(total_pages - 4, total_pages + 1)
+                ]
+            )
+        else:
+            buttons.extend(
+                [
+                    Div("...", cls="center"),
+                    Input(
+                        type="submit",
+                        name=name,
+                        value=total_pages,
+                        cls="outline",
+                    ),
+                ]
+            )
+    return Fieldset(*buttons, cls="grid")
 
 
 def get_item_link(item, full=True, cls=None):
@@ -419,63 +550,6 @@ def get_item_link(item, full=True, cls=None):
             return A(get_article_icon(), item.title, href=item.url, cls=cls)
         case _:
             raise NotImplementedError
-
-
-def get_items_list_pager(current_page, total_items):
-    "Return pager buttons given current page."
-    if total_items <= constants.MAX_PAGE_ITEMS:
-        return ""
-    total_pages = utils.get_total_pages(total_items)
-    buttons = []
-    if current_page != 1:
-        buttons.append(
-            Input(
-                type="submit",
-                name="page",
-                value="1",
-                cls="outline",
-            )
-        )
-    if current_page - 2 > 1:
-        buttons.append(Div("...", cls="center"))
-    if current_page - 1 > 1:
-        buttons.append(
-            Input(
-                type="submit",
-                name="page",
-                value=current_page - 1,
-                cls="outline",
-            )
-        )
-    buttons.append(
-        Input(
-            type="submit",
-            value=current_page,
-            cls="secondary outline",
-            disabled=True,
-        )
-    )
-    if current_page + 1 < total_pages:
-        buttons.append(
-            Input(
-                type="submit",
-                name="page",
-                value=current_page + 1,
-                cls="outline",
-            )
-        )
-    if current_page + 2 < total_pages:
-        buttons.append(Div("...", cls="center"))
-    if current_page != total_pages:
-        buttons.append(
-            Input(
-                type="submit",
-                name="page",
-                value=total_pages,
-                cls="outline",
-            )
-        )
-    return Fieldset(*buttons, cls="grid")
 
 
 def get_header_item_edit(item):
@@ -553,5 +627,4 @@ def get_cancel_form(href):
             cls="secondary",
         ),
         action=href,
-        method="GET",
     )

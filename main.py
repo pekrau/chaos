@@ -353,6 +353,10 @@ def get(
             result.sort(key=lambda i: i.modified, reverse=True)
         case "age_desc":
             result.sort(key=lambda i: i.modified)
+        case "lex_asc":
+            result.sort(key=lambda i: i.title.casefold())
+        case "lex_desc":
+            result.sort(key=lambda i: i.title.casefold(), reverse=True)
         case _:
             if term:
                 result.sort(key=lambda i: (i._score, i.modified), reverse=True)
@@ -488,6 +492,28 @@ def get(
                                         checked=order == "age_desc",
                                     ),
                                     "Age, descending",
+                                )
+                            ),
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="order",
+                                        value="lex_asc",
+                                        checked=order == "lex_asc",
+                                    ),
+                                    "Lexicographically, ascending",
+                                )
+                            ),
+                            Li(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="order",
+                                        value="lex_desc",
+                                        checked=order == "lex_desc",
+                                    ),
+                                    "Lexicographically, descending",
                                 )
                             ),
                         ),

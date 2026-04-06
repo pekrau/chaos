@@ -191,11 +191,11 @@ def get(request, article: items.Item):
                     "\n".join(article.authors),
                     name="authors",
                     rows=4,
-                    aria_describedby="authors-helper"
+                    aria_describedby="authors-helper",
                 ),
                 Small(
                     "Authors: 'Family name, first names' separated by newlines.",
-                    id="authors-helper"
+                    id="authors-helper",
                 ),
                 Div(
                     Label(

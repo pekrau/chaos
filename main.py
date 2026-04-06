@@ -690,7 +690,7 @@ def get():
                     action="/logout",
                     method="POST",
                 ),
-                cls="grid"
+                cls="grid",
             ),
             cls="container",
         ),

@@ -95,20 +95,16 @@ def redirect(href):
     return RedirectResponse(href, status_code=HTTP.SEE_OTHER)
 
 
-def get_icon(filename, title="", **kwargs):
-    defaults = dict(cls="icon")
-    defaults.update(kwargs)
-    return Img(
-        src=f"/static/{filename}", title=title, width="24", height="24", **defaults
-    )
+def get_icon(filename, title=""):
+    return Img(src=f"/static/{filename}", title=title, cls="icon", width=24, height=24)
 
 
 def get_chaos_icon():
     return Img(
         src="/static/chaos.png",
+        cls="white",
         width=24,
         height=24,
-        cls="white",
     )
 
 
@@ -148,8 +144,8 @@ def get_note_icon(title="Note"):
     return get_icon("card-text.svg", title=title)
 
 
-def get_tag_icon(title="Tag", cls=None):
-    return get_icon("tag.svg", title=title, cls=cls)
+def get_tag_icon(title="Tag"):
+    return get_icon("tag.svg", title=title)
 
 
 def get_link_icon(title="Link"):
@@ -216,11 +212,13 @@ def get_nav_menu(item=None, copy=True):
 
 
 def get_to_clipboard(item):
-    return get_icon(
-        "markdown.svg",
+    return Img(
+        src="/static/markdown.svg",
         title="Copy Markdown for ref to clipboard",
         cls="icon to_clipboard",
         data_clipboard_text=f"[[{item.id}]]",
+        width=24,
+        height=24,
     )
 
 
@@ -234,8 +232,14 @@ def get_clipboard_activate():
 
 def get_search():
     return Form(
-        Input(type="search", name="term", placeholder="Search...", aria_label="Search"),
-        action="/search"
+        Input(
+            type="search",
+            name="term",
+            placeholder="Search...",
+            aria_label="Search",
+            cls="search",
+        ),
+        action="/search",
     )
 
 
@@ -251,8 +255,8 @@ def get_header_item_view(item, copy=True):
                 Li(get_to_clipboard(item)),
                 Li(
                     A(get_icon("pin-fill.svg"), href=f"/unpin/{item.id}", title="Unpin")
-                    if item.pinned else
-                    A(get_icon("pin.svg"), href=f"/pin/{item.id}", title="Pin")
+                    if item.pinned
+                    else A(get_icon("pin.svg"), href=f"/pin/{item.id}", title="Pin")
                 ),
                 Li(get_search()),
             ),

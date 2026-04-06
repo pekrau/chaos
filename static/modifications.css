@@ -21,17 +21,18 @@
     margin: 2px;
 }
 
-.icon {
-    background-color: transparent;
-    margin: 2px 4px;
-}
-
 .nobr {
     white-space: nowrap;
 }
 
 .rmargin {
     margin-right: 1em;
+}
+
+img.icon {
+    background-color: transparent;
+    margin: 2px 4px;
+    min-width: 24px;
 }
 
 img.white {
@@ -77,4 +78,8 @@ select.slim {
 
 textarea.specification {
     font-family: Courier;
+}
+
+input.search {
+    min-width: 100px;
 }

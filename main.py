@@ -72,7 +72,7 @@ def get(page: int = 1):
     title = "chaos"
     return (
         Title(title),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -80,7 +80,7 @@ def get(page: int = 1):
                     Li(Strong(title)),
                 ),
                 Ul(
-                    Li(components.get_shortcuts_menu()),
+                    Li(components.get_search()),
                 ),
             ),
             cls="container",
@@ -92,7 +92,7 @@ def get(page: int = 1):
             ),
             cls="container",
         ),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
     )
 
 
@@ -202,13 +202,9 @@ def get():
                     Li(components.get_nav_menu()),
                     Li("Add item..."),
                 ),
-                Ul(
-                    Li(components.get_shortcuts_menu()),
-                ),
             ),
             cls="container",
         ),
-        # Main(*forms, cls="container"),
         Main(
             *[Div(*t, cls="grid") for t in itertools.batched(forms, 2)], cls="container"
         ),
@@ -365,15 +361,12 @@ def get(
 
     return (
         Title("Search"),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
                     Li("Search"),
-                ),
-                Ul(
-                    Li(components.get_shortcuts_menu()),
                 ),
             ),
             cls="container",
@@ -529,7 +522,7 @@ def get(
             ),
             cls="container",
         ),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
     )
 
 
@@ -677,7 +670,7 @@ def get():
                     Li("System"),
                 ),
                 Ul(
-                    Li(components.get_shortcuts_menu()),
+                    Li(components.get_search()),
                 ),
                 cls="main",
             ),
@@ -685,12 +678,20 @@ def get():
         ),
         Main(
             usage,
-            Form(
-                Input(type="submit", value="Reread items"),
-                action="/system/reread",
-                method="POST",
-            ),
             software,
+            Div(
+                Form(
+                    Input(type="submit", value="Reread items"),
+                    action="/system/reread",
+                    method="POST",
+                ),
+                Form(
+                    Input(type="submit", value="Logout"),
+                    action="/logout",
+                    method="POST",
+                ),
+                cls="grid"
+            ),
             cls="container",
         ),
     )
@@ -704,7 +705,7 @@ def post():
 
 
 @rt("/logout")
-def get(session):
+def post(session):
     session.pop("auth", None)
     return components.redirect("/")
 

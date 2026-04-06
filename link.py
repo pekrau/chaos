@@ -60,7 +60,7 @@ def get(link: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
     assert isinstance(link, items.Link)
     return (
         Title(link.title),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         components.get_header_item_view(link),
         Main(
             Card(Strong(A(link.href, href=link.href, target="_blank"))),
@@ -73,7 +73,7 @@ def get(link: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
             cls="container",
         ),
         components.get_footer_item_view(link),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
     )
 
 

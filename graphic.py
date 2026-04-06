@@ -130,7 +130,7 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
 
     return (
         Title(graphic.title),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         *header_scripts,
         components.get_header_item_view(graphic),
         Main(
@@ -147,7 +147,7 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
             cls="container",
         ),
         components.get_footer_item_view(graphic),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
         *footer_scripts,
     )
 

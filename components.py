@@ -194,41 +194,28 @@ def get_article_icon(title="Article"):
 def get_nav_menu(item=None, copy=True):
     links = [A("Home", href="/")]
     if item:
-        links.append(A("Edit", href=f"{item.url}/edit"))
+        links.append(A(Strong("Edit"), href=f"{item.url}/edit"))
         if copy:
-            links.append(A("Copy", href=f"{item.url}/copy"))
-        if item.pinned:
-            links.append(A("Unpin", href=f"/unpin/{item.id}"))
-        else:
-            links.append(A("Pin", href=f"/pin/{item.id}"))
-        links.append(A("Delete", href=f"{item.url}/delete"))
-    links.append(A("Search...", href="/search"))
+            links.append(A(Strong("Copy"), href=f"{item.url}/copy"))
+        links.append(A(Strong("Delete"), href=f"{item.url}/delete"))
     links.append(A("Add...", href="/add/"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("System", href="/system"))
-    links.append(A("Logout", href="/logout"))
+    links.extend([get_item_link(i, full=False) for i in items.get_pinned()])
+    links.extend([get_item_link(i, full=False) for i in items.get_recent(item)])
+    if item:
+        icon = get_item_icon(item)
+    else:
+        icon = get_chaos_icon()
     return Details(
-        Summary(get_chaos_icon()),
+        Summary(icon),
         Ul(*[Li(l) for l in links]),
         title="chaos: Web-based repository of items with no intrinsic order.",
         cls="dropdown",
     )
 
 
-def get_shortcuts_menu(item=None):
-    entries = [Li(Strong(get_item_link(i, full=False))) for i in items.get_pinned()]
-    entries.extend([Li(get_item_link(i, full=False)) for i in items.get_recent(item)])
-    result = Details(
-        Summary("Shortcuts..."),
-        Ul(*entries),
-        cls="dropdown",
-    )
-    if item:
-        items.write_state(recent=item)
-    return result
-
-
-def to_clipboard(item):
+def get_to_clipboard(item):
     return get_icon(
         "markdown.svg",
         title="Copy Markdown for ref to clipboard",
@@ -237,25 +224,18 @@ def to_clipboard(item):
     )
 
 
-def clipboard_script():
-    return Script(src="/static/clipboard.min.js")  # No explicit version for this lib.
+def get_clipboard_script():
+    return Script(src="/static/clipboard.min.js")  # This lib has no explicit version.
 
 
-def clipboard_activate():
+def get_clipboard_activate():
     return Script("new ClipboardJS('.to_clipboard');", type="text/javascript")
 
 
-def tabulator_style():
-    return Link(
-        href=f"/static/tabulator_simple.{constants.TABULATOR_VERSION}.min.css",
-        rel="stylesheet",
-    )
-
-
-def tabulator_lib():
-    return Script(
-        type="text/javascript",
-        src=f"/static/tabulator.{constants.TABULATOR_VERSION}.min.js",
+def get_search():
+    return Form(
+        Input(type="search", name="term", placeholder="Search...", aria_label="Search"),
+        action="/search"
     )
 
 
@@ -265,11 +245,16 @@ def get_header_item_view(item, copy=True):
         Nav(
             Ul(
                 Li(get_nav_menu(item, copy=copy)),
-                Li(get_item_icon(item), item.title),
-                Li(to_clipboard(item)),
+                Li(item.title),
             ),
             Ul(
-                Li(get_shortcuts_menu(item)),
+                Li(get_to_clipboard(item)),
+                Li(
+                    A(get_icon("pin-fill.svg"), href=f"/unpin/{item.id}", title="Unpin")
+                    if item.pinned else
+                    A(get_icon("pin.svg"), href=f"/pin/{item.id}", title="Pin")
+                ),
+                Li(get_search()),
             ),
         ),
         cls="container",

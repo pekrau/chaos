@@ -84,7 +84,7 @@ def get(image: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
     assert isinstance(image, items.Image)
     return (
         Title(image.title),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         components.get_header_item_view(image),
         Main(
             Card(
@@ -104,7 +104,7 @@ def get(image: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
         components.get_footer_item_view(
             image, size=f"{image.size:,d} + {image.file_size:,d} bytes"
         ),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
     )
 
 

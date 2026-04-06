@@ -128,10 +128,10 @@ def get(article: items.Item, page: int = 1, tags_page: int = 1, refs_page: int =
     assert isinstance(article, items.Article)
     return (
         Title(article.title),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         components.get_header_item_view(article, copy=False),
         Main(
-            Card("; ".join(article.authors)),
+            Card("; ".join(article.authors), title="Authors"),
             Card(
                 Div(article.published, title="Published"),
                 (
@@ -139,6 +139,7 @@ def get(article: items.Item, page: int = 1, tags_page: int = 1, refs_page: int =
                         article.doi,
                         href=constants.DOI_URL.format(doi=article.doi),
                         target="_blank",
+                        title="DOI",
                     )
                     if article.doi
                     else ""
@@ -148,6 +149,7 @@ def get(article: items.Item, page: int = 1, tags_page: int = 1, refs_page: int =
                         f"PubMed {article.pmid}",
                         href=constants.PUBMED_URL.format(pmid=article.pmid),
                         target="_blank",
+                        title="PubMed",
                     )
                     if article.pmid
                     else ""
@@ -172,7 +174,7 @@ def get(article: items.Item, page: int = 1, tags_page: int = 1, refs_page: int =
             cls="container",
         ),
         components.get_footer_item_view(article),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
     )
 
 
@@ -189,6 +191,11 @@ def get(request, article: items.Item):
                     "\n".join(article.authors),
                     name="authors",
                     rows=4,
+                    aria_describedby="authors-helper"
+                ),
+                Small(
+                    "Authors: 'Family name, first names' separated by newlines.",
+                    id="authors-helper"
                 ),
                 Div(
                     Label(

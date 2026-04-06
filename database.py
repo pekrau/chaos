@@ -113,7 +113,7 @@ def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int 
 
     return (
         Title(database.title),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         components.get_header_item_view(database),
         Main(
             components.get_text_card(database),
@@ -163,7 +163,7 @@ def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int 
         components.get_footer_item_view(
             database, size=f"{database.size:,d} + {database.file_size:,d} bytes"
         ),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
     )
 
 
@@ -306,7 +306,10 @@ def get(database: items.Item, relname: str):
     # column_headers = Tr(*[Th(name) for name in schema[relname]["columns"]])
     return (
         Title(title),
-        components.tabulator_style(),
+        Link(
+            href=f"/static/tabulator_simple.{constants.TABULATOR_VERSION}.min.css",
+            rel="stylesheet",
+        ),
         Header(
             Nav(
                 Ul(
@@ -339,7 +342,10 @@ def get(database: items.Item, relname: str):
             ),
             cls="container",
         ),
-        components.tabulator_lib(),
+        Script(
+            type="text/javascript",
+            src=f"/static/tabulator.{constants.TABULATOR_VERSION}.min.js",
+        ),
         Script(
             f"""var table = new Tabulator("#table", {{
 height: 500,

@@ -64,7 +64,7 @@ def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     items_list.sort(key=lambda i: i.modified, reverse=True)
     return (
         Title(tag.title),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         components.get_header_item_view(tag),
         Main(
             components.get_text_card(tag),
@@ -80,7 +80,7 @@ def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
             cls="container",
         ),
         components.get_footer_item_view(tag),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
     )
 
 

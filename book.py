@@ -121,7 +121,7 @@ def get(book: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
     assert isinstance(book, items.Book)
     return (
         Title(book.title),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         components.get_header_item_view(book, copy=False),
         Main(
             Card("; ".join(book.authors)),
@@ -146,7 +146,7 @@ def get(book: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
             cls="container",
         ),
         components.get_footer_item_view(book),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
     )
 
 

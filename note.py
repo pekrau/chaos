@@ -63,7 +63,7 @@ def get(note: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
     assert isinstance(note, items.Note)
     return (
         Title(note.title),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         components.get_header_item_view(note),
         Main(
             components.get_text_card(note),
@@ -75,7 +75,7 @@ def get(note: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
             cls="container",
         ),
         components.get_footer_item_view(note),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
     )
 
 

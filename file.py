@@ -73,7 +73,7 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
     assert isinstance(file, items.File)
     return (
         Title(file.title),
-        components.clipboard_script(),
+        components.get_clipboard_script(),
         # Non-standard header.
         Header(
             Nav(
@@ -83,10 +83,10 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
                         components.get_file_icon(file.file_mimetype, title="File"),
                         file.title,
                     ),
-                    Li(components.to_clipboard(file)),
+                    Li(components.get_to_clipboard(file)),
                 ),
                 Ul(
-                    Li(components.get_shortcuts_menu(file)),
+                    Li(components.get_search(file)),
                 ),
             ),
             cls="container",
@@ -104,7 +104,7 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
         components.get_footer_item_view(
             file, size=f"{file.size:,d} + {file.file_size:,d} bytes"
         ),
-        components.clipboard_activate(),
+        components.get_clipboard_activate(),
     )
 
 

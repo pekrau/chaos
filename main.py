@@ -529,14 +529,14 @@ def get(
 @rt("/pin/{item:Item}")
 def get(item: items.Item):
     "Pin this item to the shortcuts menu."
-    item.pin()
+    items.write_state(pin=item)
     return components.redirect(item.url)
 
 
 @rt("/unpin/{item:Item}")
 def get(item: items.Item):
     "Remove this item from the shortcuts menu."
-    item.unpin()
+    items.write_state(unpin=item)
     return components.redirect(item.url)
 
 

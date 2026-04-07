@@ -197,8 +197,7 @@ def get_nav_menu(item=None, copy=True):
     links.append(A("Add...", href="/add/"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("System", href="/system"))
-    links.extend([get_item_link(i, full=False) for i in items.get_pinned()])
-    links.extend([get_item_link(i, full=False) for i in items.get_recent(item)])
+    links.extend([get_item_link(i, full=False) for i in items.get_shortcuts(item)])
     if item:
         icon = get_item_icon(item)
     else:

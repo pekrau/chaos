@@ -158,14 +158,6 @@ class Item:
         global state
         return self.id in state["pinned"]
 
-    def pin(self):
-        "Add this item to the shortcuts menu."
-        write_state(pin=self)
-
-    def unpin(self):
-        "Remove this item from the shortcuts menu."
-        write_state(unpin=self)
-
     def write(self):
         """Write the item to file.
         Setup pointers between items again; inefficient, but defensive and safe.
@@ -187,11 +179,21 @@ class Item:
     def delete(self):
         """Delete the item from the file system.
         Remove from the lookup.
+        Remove from pinned and recent, if present.
         Setup pointers between items again; inefficient, but defensive and safe.
         """
-        global lookup
+        global lookup, state
         self.path.unlink()
         lookup.pop(self.id)
+        try:
+            state["pinned"].remove(self.id)
+        except ValueError:
+            pass
+        try:
+            state["recent"].remove(self.id)
+        except ValueError:
+            pass
+        write_state()
         setup_pointers()
 
     def score(self, term):
@@ -490,30 +492,21 @@ def write_state(recent=None, pin=None, unpin=None):
     constants.STATE_FILE.write_text(yaml.safe_dump(state, allow_unicode=True))
 
 
-def get_pinned():
+def get_shortcuts(item=None):
+    """Get the pinned and recent items for display in the nav menu.
+    If item is provided, update the recent items.
+    """
     global state
-    result = []
-    for id in state["pinned"]:
+    recent = list(state["recent"])
+    if item:
         try:
-            result.append(get(id))
-        except KeyError:
+            recent.remove(item.id)
+        except ValueError:
             pass
-    return result
-
-
-def get_recent(item=None):
-    global state
-    result = []
-    for id in state["recent"]:
-        if item and item.id == id:
-            continue
-        if id in state["pinned"]:
-            continue
-        try:
-            result.append(get(id))
-        except KeyError:
-            pass
-    return list(result[: constants.MAX_RECENT_ITEMS])
+        write_state(recent=item)
+    pinned = list(state["pinned"])
+    recent = [id for id in recent if id not in pinned]
+    return [get(id) for id in (pinned + recent)]
 
 
 def read():

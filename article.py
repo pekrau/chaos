@@ -32,6 +32,11 @@ def get(request):
                 Input(
                     name="id",
                     placeholder="Identifier...",
+                    required=True,
+                    aria_describedby="id-helper",
+                ),
+                Small(
+                    "The identifier must have the form 'lastname-year'.", id="id-helper"
                 ),
                 components.get_title_input(),
                 Textarea(
@@ -105,7 +110,9 @@ def post(
         raise KeyError("no identifier provided")
     if id in items.lookup:
         raise KeyError(f"item '{id}' already exists")
+    # Special handling, since 'id' is defined by the user, not the 'title'.
     article = items.Article(constants.DATA_DIR / f"{id}.md")
+    items.lookup[article.id] = article
     article.title = title.strip() or "no title"
     article.frontmatter["authors"] = list(
         filter(None, [a.strip() for a in authors.strip().split("\n")])

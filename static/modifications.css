@@ -29,6 +29,11 @@
     margin-right: 1em;
 }
 
+*:required {
+    border-color: red;
+    border-width: 2px;
+}
+
 img.icon {
     background-color: transparent;
     margin: 2px 4px;

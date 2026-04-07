@@ -13,7 +13,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(request):
+def get():
     "Form for adding a book reference."
     title = "Add book"
     return (
@@ -158,7 +158,7 @@ def get(book: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
 
 
 @rt("/{book:Item}/edit")
-def get(request, book: items.Item):
+def get(book: items.Item):
     "Form for editing a book."
     assert isinstance(book, items.Book)
     return (
@@ -205,7 +205,7 @@ def get(request, book: items.Item):
                 action=f"{book.url}/edit",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(book.url),
             cls="container",
         ),
     )
@@ -242,12 +242,9 @@ def post(
 
 
 @rt("/{book:Item}/delete")
-def get(request, book: items.Item):
+def get(book: items.Item):
     "Ask for confirmation to delete the book."
     assert isinstance(book, items.Book)
-    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/book/{book.id}":
-        redirect = "/"
     title = f"Delete '{book.title}'"
     return (
         Title(title),
@@ -263,24 +260,19 @@ def get(request, book: items.Item):
         Main(
             H3("Really delete the book? All data will be lost."),
             Form(
-                Input(
-                    type="hidden",
-                    name="redirect",
-                    value=redirect,
-                ),
                 Input(type="submit", value="Yes, delete"),
                 action=f"{book.url}/delete",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(book.url),
             cls="container",
         ),
     )
 
 
 @rt("/{book:Item}/delete")
-def post(book: items.Item, redirect: str):
+def post(book: items.Item):
     "Actually delete the book."
     assert isinstance(book, items.Book)
     book.delete()
-    return components.redirect(redirect)
+    return components.redirect()

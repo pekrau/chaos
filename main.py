@@ -258,7 +258,7 @@ def post(id: str, data: str, text: str):
     entries = list(bibtex.parse(data))
     if len(entries) == 0:
         add_toast(session, "No entry in the BibTex data.", "error")
-        return components.redirect("/")
+        return components.redirect()
 
     entry = entries[0]
     if entry["type"] == "article":
@@ -701,13 +701,13 @@ def get():
 def post():
     "Reread all items from disk."
     items.read()
-    return components.redirect("/")
+    return components.redirect()
 
 
 @rt("/logout")
 def post(session):
     session.pop("auth", None)
-    return components.redirect("/")
+    return components.redirect()
 
 
 serve(port=5002)

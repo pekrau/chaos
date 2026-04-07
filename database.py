@@ -491,7 +491,7 @@ async def post(database: items.Item, tablename: str, upfile: UploadFile):
 
 
 @rt("/{database:Item}/csv")
-def get(request, database: items.Item):
+def get(database: items.Item):
     "Create table from CSV file upload."
     assert isinstance(database, items.Database)
     title = "Upload CSV file"
@@ -536,7 +536,7 @@ def get(request, database: items.Item):
                 action=f"{database.url}/csv",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(database.url),
             cls="container",
         ),
     )
@@ -691,7 +691,7 @@ def post(database: items.Item, sql: str, ext: str):
 
 
 @rt("/{database:Item}/edit")
-def get(request, database: items.Item):
+def get(database: items.Item):
     "Form for editing the data for the database."
     assert isinstance(database, items.Database)
     return (
@@ -705,7 +705,7 @@ def get(request, database: items.Item):
                 action=f"{database.url}/edit",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(database.url),
             cls="container",
         ),
     )
@@ -723,7 +723,7 @@ async def post(database: items.Item, title: str, text: str, tags: list[str] = No
 
 
 @rt("/{database:Item}/copy")
-def get(request, database: items.Item):
+def get(database: items.Item):
     "Form for making a copy of the database."
     assert isinstance(database, items.Database)
     title = f"Copy '{database.title}'"
@@ -751,7 +751,7 @@ def get(request, database: items.Item):
                 action=f"{database.url}/copy",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(database.url),
             cls="container",
         ),
     )
@@ -832,12 +832,9 @@ def post(database: items.Item, sql: str, view: str):
 
 
 @rt("/{database:Item}/delete")
-def get(request, database: items.Item):
+def get(database: items.Item):
     "Ask for confirmation to delete the database."
     assert isinstance(database, items.Database)
-    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == database.url:
-        redirect = "/"
     title = f"Delete '{database.title}'"
     return (
         Title(title),
@@ -853,27 +850,22 @@ def get(request, database: items.Item):
         Main(
             H3("Really delete the database? All data will be lost."),
             Form(
-                Input(
-                    type="hidden",
-                    name="redirect",
-                    value=redirect,
-                ),
                 Input(type="submit", value="Yes, delete"),
                 action=f"{database.url}/delete",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(database.url),
             cls="container",
         ),
     )
 
 
 @rt("/{database:Item}/delete")
-def post(database: items.Item, redirect: str):
+def post(database: items.Item):
     "Actually delete the database."
     assert isinstance(database, items.Database)
     database.delete()
-    return components.redirect(redirect)
+    return components.redirect()
 
 
 @rt("/{database:Item}/plot")

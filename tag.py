@@ -85,7 +85,7 @@ def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
 
 
 @rt("/{tag:Item}/edit")
-def get(request, tag: items.Item):
+def get(tag: items.Item):
     "Form for editing a tag."
     assert isinstance(tag, items.Tag)
     return (
@@ -99,7 +99,7 @@ def get(request, tag: items.Item):
                 action=f"{tag.url}/edit",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(tag.url),
             cls="container",
         ),
     )
@@ -117,7 +117,7 @@ def post(tag: items.Item, title: str, text: str, tags: list[str] = None):
 
 
 @rt("/{tag:Item}/copy")
-def get(request, tag: items.Item):
+def get(tag: items.Item):
     "Form for making a copy of the tag."
     assert isinstance(tag, items.Tag)
     title = f"Copy '{tag.title}'"
@@ -145,7 +145,7 @@ def get(request, tag: items.Item):
                 action=f"{tag.url}/copy",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(tag.url),
             cls="container",
         ),
     )
@@ -163,12 +163,9 @@ def post(source: items.File, title: str):
 
 
 @rt("/{tag:Item}/delete")
-def get(request, tag: items.Item):
+def get(tag: items.Item):
     "Ask for confirmation to delete the tag."
     assert isinstance(tag, items.Tag)
-    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/tag/{tag.id}":
-        redirect = "/"
     title = f"Delete '{tag.title}'"
     return (
         Title(title),
@@ -184,24 +181,19 @@ def get(request, tag: items.Item):
         Main(
             H3("Really delete the tag? All data will be lost."),
             Form(
-                Input(
-                    type="hidden",
-                    name="redirect",
-                    value=redirect,
-                ),
                 Input(type="submit", value="Yes, delete"),
                 action=f"{tag.url}/delete",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(tag.url),
             cls="container",
         ),
     )
 
 
 @rt("/{tag:Item}/delete")
-def post(tag: items.Item, redirect: str):
+def post(tag: items.Item):
     "Actually delete the tag."
     assert isinstance(tag, items.Tag)
     tag.delete()
-    return components.redirect(redirect)
+    return components.redirect()

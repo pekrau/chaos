@@ -78,7 +78,7 @@ def get(link: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
 
 
 @rt("/{link:Item}/edit")
-def get(request, link: items.Item):
+def get(link: items.Item):
     "Form for editing a link."
     assert isinstance(link, items.Link)
     return (
@@ -99,7 +99,7 @@ def get(request, link: items.Item):
                 action=f"{link.url}/edit",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(link.url),
             cls="container",
         ),
     )
@@ -118,7 +118,7 @@ def post(link: items.Item, title: str, href: str, text: str, tags: list[str] = N
 
 
 @rt("/{link:Item}/copy")
-def get(request, link: items.Item):
+def get(link: items.Item):
     "Form for making a copy of the link."
     assert isinstance(link, items.Link)
     title = f"Copy '{link.title}'"
@@ -146,7 +146,7 @@ def get(request, link: items.Item):
                 action=f"{link.url}/copy",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(link.url),
             cls="container",
         ),
     )
@@ -165,12 +165,9 @@ def post(source: items.File, title: str):
 
 
 @rt("/{link:Item}/delete")
-def get(request, link: items.Item):
+def get(link: items.Item):
     "Ask for confirmation to delete the link."
     assert isinstance(link, items.Link)
-    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/link/{link.id}":
-        redirect = "/"
     title = f"Delete {link.title}"
     return (
         Title(title),
@@ -186,11 +183,6 @@ def get(request, link: items.Item):
         Main(
             H3("Really delete the link? All data will be lost."),
             Form(
-                Input(
-                    type="hidden",
-                    name="redirect",
-                    value=redirect,
-                ),
                 Input(type="submit", value="Yes, delete"),
                 action=f"{link.url}/delete",
                 method="POST",
@@ -202,8 +194,8 @@ def get(request, link: items.Item):
 
 
 @rt("/{link:Item}/delete")
-def post(link: items.Item, redirect: str):
+def post(link: items.Item):
     "Actually delete the link."
     assert isinstance(link, items.Link)
     link.delete()
-    return components.redirect(redirect)
+    return components.redirect()

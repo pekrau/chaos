@@ -80,7 +80,7 @@ def get(note: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
 
 
 @rt("/{note:Item}/edit")
-def get(request, note: items.Item):
+def get(note: items.Item):
     "Form for editing a note."
     assert isinstance(note, items.Note)
     return (
@@ -94,7 +94,7 @@ def get(request, note: items.Item):
                 action=f"{note.url}/edit",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(note.url),
             cls="container",
         ),
     )
@@ -112,7 +112,7 @@ def post(note: items.Item, title: str, text: str, tags: list[str] = None):
 
 
 @rt("/{note:Item}/copy")
-def get(request, note: items.Item):
+def get(note: items.Item):
     "Form for making a copy of the note."
     assert isinstance(note, items.Note)
     title = f"Copy '{note.title}'"
@@ -140,7 +140,7 @@ def get(request, note: items.Item):
                 action=f"{note.url}/copy",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(note.url),
             cls="container",
         ),
     )
@@ -158,12 +158,9 @@ def post(source: items.File, title: str):
 
 
 @rt("/{note:Item}/delete")
-def get(request, note: items.Item):
+def get(note: items.Item):
     "Ask for confirmation to delete the note."
     assert isinstance(note, items.Note)
-    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/note/{note.id}":
-        redirect = "/"
     title = f"Delete '{note.title}'"
     return (
         Title(title),
@@ -179,24 +176,19 @@ def get(request, note: items.Item):
         Main(
             H3("Really delete the note? All data will be lost."),
             Form(
-                Input(
-                    type="hidden",
-                    name="redirect",
-                    value=redirect,
-                ),
                 Input(type="submit", value="Yes, delete"),
                 action=f"{note.url}/delete",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(note.url),
             cls="container",
         ),
     )
 
 
 @rt("/{note:Item}/delete")
-def post(note: items.Item, redirect: str):
+def post(note: items.Item):
     "Actually delete the note."
     assert isinstance(note, items.Note)
     note.delete()
-    return components.redirect(redirect)
+    return components.redirect()

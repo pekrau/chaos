@@ -153,7 +153,7 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
 
 
 @rt("/{graphic:Item}/edit")
-def get(request, graphic: items.Item):
+def get(graphic: items.Item):
     "Form for editing a graphic."
     assert isinstance(graphic, items.Graphic)
 
@@ -196,7 +196,7 @@ def get(request, graphic: items.Item):
                 action=f"{graphic.url}/edit",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(graphic.url),
             cls="container",
         ),
     )
@@ -243,7 +243,7 @@ def post(
 
 
 @rt("/{graphic:Item}/copy")
-def get(request, graphic: items.Item):
+def get(graphic: items.Item):
     "Form for making a copy of the graphic."
     assert isinstance(graphic, items.Graphic)
     title = f"Copy '{graphic.title}'"
@@ -271,7 +271,7 @@ def get(request, graphic: items.Item):
                 action=f"{graphic.url}/copy",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(graphic.url),
             cls="container",
         ),
     )
@@ -291,12 +291,9 @@ def post(source: items.File, title: str):
 
 
 @rt("/{graphic:Item}/delete")
-def get(request, graphic: items.Item):
+def get(graphic: items.Item):
     "Ask for confirmation to delete the graphic."
     assert isinstance(graphic, items.Graphic)
-    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/graphic/{graphic.id}":
-        redirect = "/"
     title = f"Delete '{graphic.title}'"
     return (
         Title(title),
@@ -312,24 +309,19 @@ def get(request, graphic: items.Item):
         Main(
             H3("Really delete the graphic? All data will be lost."),
             Form(
-                Input(
-                    type="hidden",
-                    name="redirect",
-                    value=redirect,
-                ),
                 Input(type="submit", value="Yes, delete"),
                 action=f"{graphic.url}/delete",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(graphic.url),
             cls="container",
         ),
     )
 
 
 @rt("/{graphic:Item}/delete")
-def post(graphic: items.Item, redirect: str):
+def post(graphic: items.Item):
     "Actually delete the graphic."
     assert isinstance(graphic, items.Graphic)
     graphic.delete()
-    return components.redirect(redirect)
+    return components.redirect()

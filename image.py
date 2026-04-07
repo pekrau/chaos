@@ -119,7 +119,7 @@ def get(image: items.Item, ext: str):
 
 
 @rt("/{image:Item}/edit")
-def get(request, image: items.Item):
+def get(image: items.Item):
     "Form for editing the data for the image."
     assert isinstance(image, items.Image)
     return (
@@ -151,7 +151,7 @@ def get(request, image: items.Item):
                 action=f"{image.url}/edit",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(image.url),
             cls="container",
         ),
     )
@@ -182,7 +182,7 @@ async def post(
 
 
 @rt("/{image:Item}/copy")
-def get(request, image: items.Item):
+def get(image: items.Item):
     "Form for making a copy of the image."
     assert isinstance(image, items.Image)
     title = f"Copy '{image.title}'"
@@ -210,7 +210,7 @@ def get(request, image: items.Item):
                 action=f"{image.url}/copy",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(image.url),
             cls="container",
         ),
     )
@@ -238,12 +238,9 @@ def post(source: items.File, title: str):
 
 
 @rt("/{image:Item}/delete")
-def get(request, image: items.Item):
+def get(image: items.Item):
     "Ask for confirmation to delete the file image."
     assert isinstance(image, items.Image)
-    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/image/{image.id}":
-        redirect = "/"
     title = f"Delete '{image.title}'"
     return (
         Title(title),
@@ -259,24 +256,19 @@ def get(request, image: items.Item):
         Main(
             H3("Really delete the image? All data will be lost."),
             Form(
-                Input(
-                    type="hidden",
-                    name="redirect",
-                    value=redirect,
-                ),
                 Input(type="submit", value="Yes, delete"),
                 action=f"{image.url}/delete",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(image.url),
             cls="container",
         ),
     )
 
 
 @rt("/{image:Item}/delete")
-def post(image: items.Item, redirect: str):
+def post(image: items.Item):
     "Actually delete the image."
     assert isinstance(image, items.Image)
     image.delete()
-    return components.redirect(redirect)
+    return components.redirect()

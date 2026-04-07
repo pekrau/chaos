@@ -119,7 +119,7 @@ def get(file: items.Item, ext: str):
 
 
 @rt("/{file:Item}/edit")
-def get(request, file: items.Item):
+def get(file: items.Item):
     "Form for editing the data for the file."
     assert isinstance(file, items.File)
     return (
@@ -143,7 +143,7 @@ def get(request, file: items.Item):
                 action=f"{file.url}/edit",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(file.url),
             cls="container",
         ),
     )
@@ -174,7 +174,7 @@ async def post(
 
 
 @rt("/{file:Item}/copy")
-def get(request, file: items.Item):
+def get(file: items.Item):
     "Form for making a copy of the file."
     assert isinstance(file, items.File)
     title = f"Copy '{file.title}'"
@@ -202,7 +202,7 @@ def get(request, file: items.Item):
                 action=f"{file.url}/copy",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(file.url),
             cls="container",
         ),
     )
@@ -230,12 +230,9 @@ def post(source: items.File, title: str):
 
 
 @rt("/{file:Item}/delete")
-def get(request, file: items.Item):
+def get(file: items.Item):
     "Ask for confirmation to delete the file."
     assert isinstance(file, items.File)
-    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/file/{file.id}":
-        redirect = "/"
     title = f"Delete '{file.title}'"
     return (
         Title(title),
@@ -251,11 +248,6 @@ def get(request, file: items.Item):
         Main(
             H3("Really delete the file? All data will be lost."),
             Form(
-                Input(
-                    type="hidden",
-                    name="redirect",
-                    value=redirect,
-                ),
                 Input(type="submit", value="Yes, delete"),
                 action=f"{file.url}/delete",
                 method="POST",
@@ -267,8 +259,8 @@ def get(request, file: items.Item):
 
 
 @rt("/{file:Item}/delete")
-def post(file: items.Item, redirect: str):
+def post(file: items.Item):
     "Actually delete the file."
     assert isinstance(file, items.File)
     file.delete()
-    return components.redirect(redirect)
+    return components.redirect()

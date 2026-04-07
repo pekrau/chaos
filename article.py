@@ -13,7 +13,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(request):
+def get():
     "Form for adding a article reference."
     title = "Add article"
     return (
@@ -187,7 +187,7 @@ def get(article: items.Item, page: int = 1, tags_page: int = 1, refs_page: int =
 
 
 @rt("/{article:Item}/edit")
-def get(request, article: items.Item):
+def get(article: items.Item):
     "Form for editing a article."
     assert isinstance(article, items.Article)
     return (
@@ -242,7 +242,7 @@ def get(request, article: items.Item):
                 action=f"{article.url}/edit",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(article.url),
             cls="container",
         ),
     )
@@ -283,12 +283,9 @@ def post(
 
 
 @rt("/{article:Item}/delete")
-def get(request, article: items.Item):
+def get(article: items.Item):
     "Ask for confirmation to delete the article."
     assert isinstance(article, items.Article)
-    redirect = urllib.parse.urlsplit(request.headers["Referer"]).path
-    if redirect == f"/article/{article.id}":
-        redirect = "/"
     title = f"Delete '{article.title}'"
     return (
         Title(title),
@@ -304,24 +301,19 @@ def get(request, article: items.Item):
         Main(
             H3("Really delete the article? All data will be lost."),
             Form(
-                Input(
-                    type="hidden",
-                    name="redirect",
-                    value=redirect,
-                ),
                 Input(type="submit", value="Yes, delete"),
                 action=f"{article.url}/delete",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(article.url),
             cls="container",
         ),
     )
 
 
 @rt("/{article:Item}/delete")
-def post(article: items.Item, redirect: str):
+def post(article: items.Item):
     "Actually delete the article."
     assert isinstance(article, items.Article)
     article.delete()
-    return components.redirect(redirect)
+    return components.redirect()

@@ -90,7 +90,7 @@ def check_auth_before(request, session):
     return redirect("/login")
 
 
-def redirect(href):
+def redirect(href="/"):
     "Redirect with the 303 status code, which is usually more appropriate."
     return RedirectResponse(href, status_code=HTTP.SEE_OTHER)
 

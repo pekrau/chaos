@@ -7,6 +7,7 @@ from fasthtml.common import *
 import components
 import constants
 import items
+import utils
 
 app, rt = components.get_app_rt()
 

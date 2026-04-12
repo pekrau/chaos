@@ -282,7 +282,7 @@ def get_text_card(item):
     if text := item.text:
         return Card(NotStr(markdown.to_html(text)))
     else:
-        return Card(I("No text."))
+        return ""
 
 
 def get_tags_card(item, page=None):

@@ -128,7 +128,7 @@ def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int 
                     Summary("Operations..."),
                     Ul(
                         Li(A("Add plot", href=f"{database.url}/plot")),
-                        Li(A("Create table from CSV file", href=f"{database.url}.csv")),
+                        Li(A("Create table from CSV file", href=f"{database.url}/csv")),
                         Li(A("Download Sqlite", href=database.url_file)),
                         Li(A("Download SQL", href=database.url_sql)),
                     ),
@@ -554,8 +554,8 @@ async def post(database: items.Item, tablename: str, upfile: UploadFile):
             with database.connect() as cnx:
                 sql = ", ".join([c["sql"] for c in columns])
                 cnx.execute(f"CREATE TABLE {tablename} ({sql})")
-                columns = ",".join([c["name"] for c in columns])
                 values = ",".join(["?"] * len(columns))
+                columns = ",".join([c["name"] for c in columns])
                 sql = f"INSERT INTO {tablename} ({columns}) VALUES ({values})"
                 cnx.executemany(sql, rows)
     except sqlite3.Error as error:

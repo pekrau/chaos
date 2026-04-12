@@ -144,10 +144,9 @@ def get(article: items.Item, page: int = 1, tags_page: int = 1, refs_page: int =
                 Div(article.published, title="Published"),
                 (
                     A(
-                        article.doi,
+                        f"DOI {article.doi}",
                         href=constants.DOI_URL.format(doi=article.doi),
                         target="_blank",
-                        title="DOI",
                     )
                     if article.doi
                     else ""
@@ -157,7 +156,6 @@ def get(article: items.Item, page: int = 1, tags_page: int = 1, refs_page: int =
                         f"PubMed {article.pmid}",
                         href=constants.PUBMED_URL.format(pmid=article.pmid),
                         target="_blank",
-                        title="PubMed",
                     )
                     if article.pmid
                     else ""

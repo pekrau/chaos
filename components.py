@@ -5,7 +5,6 @@ import os
 from urllib.parse import urlsplit
 
 from fasthtml.common import *
-import marko
 
 import constants
 import errors
@@ -187,13 +186,15 @@ def get_article_icon(title="Article"):
     return get_icon("journal-text.svg", title=title)
 
 
-def get_nav_menu(item=None, copy=True):
+def get_nav_menu(item=None, copy=True, operations=None):
     links = [A("Home", href="/")]
     if item:
-        links.append(A(Strong("Edit"), href=f"{item.url}/edit"))
+        links.append(A(Strong(f"Edit {item.type}..."), href=f"{item.url}/edit"))
         if copy:
-            links.append(A(Strong("Copy"), href=f"{item.url}/copy"))
-        links.append(A(Strong("Delete"), href=f"{item.url}/delete"))
+            links.append(A(Strong(f"Copy {item.type}..."), href=f"{item.url}/copy"))
+        links.append(A(Strong(f"Delete {item.type}..."), href=f"{item.url}/delete"))
+    if operations:
+        links.extend(operations)
     links.append(A("Add...", href="/add/"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("System", href="/system"))
@@ -242,12 +243,12 @@ def get_search():
     )
 
 
-def get_header_item_view(item, copy=True):
+def get_header_item_view(item, copy=True, operations=None):
     "Standard header for item view page."
     return Header(
         Nav(
             Ul(
-                Li(get_nav_menu(item, copy=copy)),
+                Li(get_nav_menu(item, copy=copy, operations=operations)),
                 Li(item.title),
             ),
             Ul(
@@ -383,7 +384,7 @@ def get_items_display(items, page=None, gallery=False, name="page"):
                                 ]
                             )
                         ),
-                        Td(item.age, cls="nobr"),
+                        Td(item.age, cls="nobr right"),
                     )
                     for item in items
                 ]

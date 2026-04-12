@@ -22,6 +22,7 @@ import components
 import constants
 import errors
 import items
+import markdown
 from timer import Timer
 import utils
 
@@ -114,28 +115,15 @@ def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int 
     return (
         Title(database.title),
         components.get_clipboard_script(),
-        components.get_header_item_view(database),
+        components.get_header_item_view(database, operations=[
+            A("Add plot...", href=f"{database.url}/plot"),
+            A("Create table from CSV file...", href=f"{database.url}/csv"),
+            A("Download Sqlite", href=database.url_file),
+            A("Download SQL", href=database.url_sql),
+        ]),
         Main(
             components.get_text_card(database),
             get_overview(database),
-            Card(
-                Form(
-                    Input(type="submit", value="SQL command", cls="outline"),
-                    action=f"{database.url}/execute",
-                    method="POST",
-                ),
-                Details(
-                    Summary("Operations..."),
-                    Ul(
-                        Li(A("Add plot", href=f"{database.url}/plot")),
-                        Li(A("Create table from CSV file", href=f"{database.url}/csv")),
-                        Li(A("Download Sqlite", href=database.url_file)),
-                        Li(A("Download SQL", href=database.url_sql)),
-                    ),
-                    cls="dropdown",
-                ),
-                cls="grid",
-            ),
             Card(
                 Header("Plots"),
                 (
@@ -151,6 +139,17 @@ def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int 
                     )
                     if plot_rows
                     else I("No plots.")
+                ),
+            ),
+            Card(
+                Form(
+                    Fieldset(
+                        Input(type="text", name="sql", placeholder="SQL command"),
+                        Input(type="submit", value="Execute"),
+                        role="group",
+                    ),
+                    action=f"{database.url}/execute",
+                    method="POST",
                 ),
             ),
             Form(
@@ -614,7 +613,7 @@ def post(database: items.Item, sql: str = None):
             ),
         )
     else:
-        result_card = ""
+        result_card = Card(I("No result."))
     title = "SQL command"
     return (
         Title(title),
@@ -632,16 +631,17 @@ def post(database: items.Item, sql: str = None):
                 components.get_database_icon(),
                 A(database.title, href=database.url),
             ),
-            get_overview(database, display=True),
+            get_overview(database),
             Card(
                 Form(
-                    Label("SQL command"),
-                    Input(type="text", name="sql", value=sql or ""),
-                    Input(type="submit", value="Execute"),
+                    Fieldset(
+                        Input(type="text", name="sql", value=sql or "", placeholder="SQL command"),
+                        Input(type="submit", value="Execute"),
+                        role="group",
+                    ),
                     action=f"{database.url}/execute",
                     method="POST",
                 ),
-                components.get_cancel_form(database.url),
             ),
             error_card,
             result_card,
@@ -1008,16 +1008,21 @@ def get(database: items.Item, plotname: str):
                     raise NotImplementedError
         script, div = bokeh.embed.components(figure)
     if descr := plot.get("description"):
-        decription = Card(NotStr(marko.convert(descr)))
+        description = Card(NotStr(markdown.to_html(descr)))
     else:
-        description = Card(I("No description."))
+        description = ""
     return (
         Title(plot["title"]),
         NotStr(bokeh.resources.CDN.render()),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(database)),
+                    Li(components.get_nav_menu(database, operations=[
+                        A("Edit plot", href=f"{database.url}/plot/{plotname}/edit"),
+                        A("Copy plot", href=f"{database.url}/plot/{plotname}/copy"),
+                        A("Delete plot", href=f"{database.url}/plot/{plotname}/delete"),
+                        
+                    ])),
                     Li(plot["title"]),
                 ),
             ),
@@ -1030,17 +1035,6 @@ def get(database: items.Item, plotname: str):
             ),
             Card(NotStr(div)),
             description,
-            Card(
-                Details(
-                    Summary("Operations"),
-                    Ul(
-                        Li(A("Edit", href=f"{database.url}/plot/{plotname}/edit")),
-                        Li(A("Copy", href=f"{database.url}/plot/{plotname}/copy")),
-                        Li(A("Delete", href=f"{database.url}/plot/{plotname}/delete")),
-                    ),
-                    cls="dropdown",
-                ),
-            ),
             cls="container",
         ),
         NotStr(script),
@@ -1341,7 +1335,7 @@ def post(database: items.Item, plotname: str):
     return components.redirect(database.url)
 
 
-def get_overview(database, display=False):
+def get_overview(database):
     "Get an overview of the basic structure of the database."
     rows = []
     for relname, relation in database.get_schema().items():
@@ -1374,7 +1368,6 @@ def get_overview(database, display=False):
                         cls="outline",
                     ),
                     Ul(*spec),
-                    open=display,
                 ),
                 Div(
                     Form(

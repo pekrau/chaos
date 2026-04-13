@@ -302,7 +302,6 @@ def get(database: items.Item, relname: str):
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     title = f"{schema[relname]['type'].capitalize()} {relname}"
-    # column_headers = Tr(*[Th(name) for name in schema[relname]["columns"]])
     return (
         Title(title),
         Link(
@@ -404,7 +403,7 @@ def get(database: items.Item, tablename: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(databse)),
+                    Li(components.get_nav_menu(database)),
                     Li(title),
                 ),
             ),
@@ -1346,11 +1345,11 @@ def get_overview(database):
             for column_name, column in relation["columns"].items()
         ]
         spec.append(Li(relation["sql"]))
-        operations = []
+        operations = [Li(A("View rows", href=f"{database.url}/rows/{relname}"))]
         if relation["type"] == "table":
-            operations.append(Li(A("Add row", href=f"{database.url}/row/{relname}")))
+            operations.append(Li(A("Add row...", href=f"{database.url}/row/{relname}")))
             operations.append(
-                Li(A("Add CSV file", href=f"{database.url}/rows/{relname}/csv"))
+                Li(A("Add CSV file...", href=f"{database.url}/rows/{relname}/csv"))
             )
         operations.append(
             Li(A("Download CSV", href=f"{database.url}/rows/{relname}.csv"))
@@ -1369,21 +1368,12 @@ def get_overview(database):
                     ),
                     Ul(*spec),
                 ),
-                Div(
-                    Form(
-                        Input(
-                            type="submit",
-                            value=f"{relation['count']} rows",
-                            cls="outline",
-                        ),
-                        action=f"{database.url}/rows/{relname}",
+                Details(
+                    Summary(
+                        f"{relation['count']} rows",
                     ),
-                    Details(
-                        Summary("Operations..."),
-                        Ul(*operations),
-                        cls="dropdown",
-                    ),
-                    cls="grid",
+                    Ul(*operations),
+                    cls="dropdown",
                 ),
                 cls="grid",
             )

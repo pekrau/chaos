@@ -86,7 +86,7 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
                     Li(components.get_to_clipboard(file)),
                 ),
                 Ul(
-                    Li(components.get_search(file)),
+                    Li(components.get_search()),
                 ),
             ),
             cls="container",

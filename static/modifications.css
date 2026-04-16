@@ -29,6 +29,11 @@
     margin-right: 1em;
 }
 
+.minimize {
+    width: 0px;
+    padding: 0px;
+}
+
 *:required {
     border-color: red;
     border-width: 2px;

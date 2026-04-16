@@ -371,10 +371,11 @@ def get_items_display(items, page=None, gallery=False, name="page"):
     # Display items in a list.
     else:
         table = Table(
-            Thead(Tr(Th(title, cls="center", colspan=3))),
+            Thead(Tr(Th(title, cls="center", colspan=4))),
             Tbody(
                 *[
                     Tr(
+                        Td(get_to_clipboard(item), cls="minimize"),
                         Td(get_item_link(item)),
                         Td(
                             Small(

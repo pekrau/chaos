@@ -115,12 +115,15 @@ def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int 
     return (
         Title(database.title),
         components.get_clipboard_script(),
-        components.get_header_item_view(database, operations=[
-            A("Add plot...", href=f"{database.url}/plot"),
-            A("Create table from CSV file...", href=f"{database.url}/csv"),
-            A("Download Sqlite", href=database.url_file),
-            A("Download SQL", href=database.url_sql),
-        ]),
+        components.get_header_item_view(
+            database,
+            operations=[
+                A("Add plot...", href=f"{database.url}/plot"),
+                A("Create table from CSV file...", href=f"{database.url}/csv"),
+                A("Download Sqlite", href=database.url_file),
+                A("Download SQL", href=database.url_sql),
+            ],
+        ),
         Main(
             components.get_text_card(database),
             get_overview(database),
@@ -634,7 +637,12 @@ def post(database: items.Item, sql: str = None):
             Card(
                 Form(
                     Fieldset(
-                        Input(type="text", name="sql", value=sql or "", placeholder="SQL command"),
+                        Input(
+                            type="text",
+                            name="sql",
+                            value=sql or "",
+                            placeholder="SQL command",
+                        ),
                         Input(type="submit", value="Execute"),
                         role="group",
                     ),
@@ -995,14 +1003,32 @@ def get(database: items.Item, plotname: str):
                 else:
                     y = np.array(y, dtype=np.datetime64)
                     kwargs["y_axis_type"] = "datetime"
-            markers.append(dict(type=marker["type"], x=x, y=y, color=marker["color"]))
+            markers.append(
+                dict(
+                    type=marker["type"],
+                    x=x,
+                    y=y,
+                    width=marker.get("width", 1 if marker["type"] == "line" else 4),
+                    color=marker["color"],
+                )
+            )
         figure = bokeh.plotting.figure(title=plot["title"], **kwargs)
         for marker in markers:
             match marker["type"]:
                 case "line":
-                    figure.line(marker["x"], marker["y"], color=marker["color"])
+                    figure.line(
+                        marker["x"],
+                        marker["y"],
+                        color=marker["color"],
+                        line_width=marker["width"],
+                    )
                 case "scatter":
-                    figure.scatter(marker["x"], marker["y"], color=marker["color"])
+                    figure.scatter(
+                        marker["x"],
+                        marker["y"],
+                        color=marker["color"],
+                        size=marker["width"],
+                    )
                 case _:
                     raise NotImplementedError
         script, div = bokeh.embed.components(figure)
@@ -1016,12 +1042,25 @@ def get(database: items.Item, plotname: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(database, operations=[
-                        A("Edit plot", href=f"{database.url}/plot/{plotname}/edit"),
-                        A("Copy plot", href=f"{database.url}/plot/{plotname}/copy"),
-                        A("Delete plot", href=f"{database.url}/plot/{plotname}/delete"),
-                        
-                    ])),
+                    Li(
+                        components.get_nav_menu(
+                            database,
+                            operations=[
+                                A(
+                                    "Edit plot...",
+                                    href=f"{database.url}/plot/{plotname}/edit",
+                                ),
+                                A(
+                                    "Copy plot...",
+                                    href=f"{database.url}/plot/{plotname}/copy",
+                                ),
+                                A(
+                                    "Delete plot...",
+                                    href=f"{database.url}/plot/{plotname}/delete",
+                                ),
+                            ],
+                        )
+                    ),
                     Li(plot["title"]),
                 ),
             ),
@@ -1102,7 +1141,7 @@ def get(database: items.Item, plotname: str):
                 ),
                 Fieldset(
                     Label(
-                        "Markers",
+                        "Current markers",
                         Table(
                             Thead(
                                 Tr(
@@ -1110,6 +1149,7 @@ def get(database: items.Item, plotname: str):
                                     Th("X source"),
                                     Th("Y source"),
                                     Th("Color", colspan=2),
+                                    Th("Marker width"),
                                     Th("Delete"),
                                 ),
                             ),
@@ -1126,6 +1166,7 @@ def get(database: items.Item, plotname: str):
                                                 value=utils.to_name_color(
                                                     marker.get("color") or ""
                                                 ),
+                                                size=8,
                                             ),
                                         ),
                                         Td(
@@ -1136,6 +1177,17 @@ def get(database: items.Item, plotname: str):
                                                     marker.get("color")
                                                 ),
                                                 style="width: 4em;",
+                                            ),
+                                        ),
+                                        Td(
+                                            Input(
+                                                type="number",
+                                                name=f"width_{pos}",
+                                                value=marker.get("width") or "",
+                                                min=0,
+                                                max=20,
+                                                step=0.1,
+                                                size=4,
                                             ),
                                         ),
                                         Td(
@@ -1155,34 +1207,68 @@ def get(database: items.Item, plotname: str):
                 Fieldset(
                     Label(
                         "Add marker",
-                        Div(
-                            Select(
-                                Option("Type of marker", selected=True, disabled=True),
-                                Option("Scatter", value="scatter"),
-                                Option("Line", value="line"),
-                                name="type",
+                        Table(
+                            Thead(
+                                Tr(
+                                    Th("Type"),
+                                    Th("X source"),
+                                    Th("Y source"),
+                                    Th("Color", colspan=2),
+                                    Th("Marker width"),
+                                ),
                             ),
-                            Select(
-                                Option("X source", selected=True, disabled=True),
-                                *[Option(s) for s in sources],
-                                name="x",
+                            Tbody(
+                                Tr(
+                                    Td(
+                                        Select(
+                                            Option(" ", selected=True),
+                                            Option("Scatter", value="scatter"),
+                                            Option("Line", value="line"),
+                                            name="type",
+                                        ),
+                                    ),
+                                    Td(
+                                        Select(
+                                            *[Option(s) for s in sources],
+                                            name="x",
+                                            required=True,
+                                        ),
+                                    ),
+                                    Td(
+                                        Select(
+                                            *[Option(s) for s in sources],
+                                            name="y",
+                                            required=True,
+                                        ),
+                                    ),
+                                    Td(
+                                        Input(
+                                            type="text",
+                                            name="color_text",
+                                            placeholder="Color name",
+                                            size=8,
+                                        ),
+                                    ),
+                                    Td(
+                                        Input(
+                                            type="color",
+                                            name="color_palette",
+                                            style="width: 4em;",
+                                        ),
+                                    ),
+                                    Td(
+                                        Input(
+                                            type="number",
+                                            name="marker_width",
+                                            placeholder="Width",
+                                            min=0,
+                                            max=20,
+                                            step=0.1,
+                                            size=4,
+                                        ),
+                                    ),
+                                ),
                             ),
-                            Select(
-                                Option("Y source", selected=True, disabled=True),
-                                *[Option(s) for s in sources],
-                                name="y",
-                            ),
-                            Input(
-                                type="text",
-                                name="color_text",
-                                placeholder="Color name",
-                            ),
-                            Input(
-                                type="color",
-                                name="color_palette",
-                                style="width: 4em;",
-                            ),
-                            cls="grid",
                         ),
                     ),
                 ),
@@ -1227,15 +1313,28 @@ def post(database: items.Item, plotname: str, form: dict):
         marker["color"] = (
             form.get(f"color_text_{pos}") or form.get(f"color_palette_{pos}") or "black"
         )
+        try:
+            marker["width"] = float(form.get(f"width_{pos}"))
+        except (ValueError, TypeError):
+            marker.pop("width", None)
 
     # Add new marker.
     if type := form.get("type"):
-        color = form.get("color_text") or form.get("color_palette") or "black"
         if not (x := form.get("x")):
             raise errors.Error("no X source given")
         if not (y := form.get("y")):
             raise errors.Error("no Y source given")
-        plot["markers"].append(dict(type=type, x=x, y=y, color=color))
+        marker = dict(
+            type=type,
+            x=x,
+            y=y,
+            color=form.get("color_text") or form.get("color_palette") or "black",
+        )
+        try:
+            marker["width"] = float(form.get("marker_width"))
+        except (ValueError, TypeError):
+            pass
+        plot["markers"].append(marker)
 
     # Remove deleted markers.
     plot["markers"] = [m for m in plot["markers"] if m]

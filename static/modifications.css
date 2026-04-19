@@ -25,6 +25,10 @@
     white-space: nowrap;
 }
 
+.lmargin {
+    margin-left: 2em;
+}
+
 .rmargin {
     margin-right: 1em;
 }

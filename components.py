@@ -189,10 +189,16 @@ def get_article_icon(title="Article"):
 def get_nav_menu(item=None, copy=True, operations=None):
     links = [A("Home", href="/")]
     if item:
-        links.append(A(Strong(f"Edit {item.type}..."), href=f"{item.url}/edit"))
+        links.append(A(f"Edit {item.type}...", href=f"{item.url}/edit"))
         if copy:
-            links.append(A(Strong(f"Copy {item.type}..."), href=f"{item.url}/copy"))
-        links.append(A(Strong(f"Delete {item.type}..."), href=f"{item.url}/delete"))
+            links.append(A(f"Copy {item.type}...", href=f"{item.url}/copy"))
+        links.append(A(f"Delete {item.type}...", href=f"{item.url}/delete"))
+        if item.pinned:
+            links.append(
+                A(f"Unpin {item.type}", href=f"/unpin/{item.id}", title="Unpin")
+            )
+        else:
+            links.append(A(f"Pin {item.type}", href=f"/pin/{item.id}", title="Pin"))
     if operations:
         links.extend(operations)
     links.append(A("Add...", href="/add/"))
@@ -253,11 +259,6 @@ def get_header_item_view(item, copy=True, operations=None):
             ),
             Ul(
                 Li(get_to_clipboard(item)),
-                Li(
-                    A(get_icon("pin-fill.svg"), href=f"/unpin/{item.id}", title="Unpin")
-                    if item.pinned
-                    else A(get_icon("pin.svg"), href=f"/pin/{item.id}", title="Pin")
-                ),
                 Li(get_search()),
             ),
         ),
@@ -371,19 +372,26 @@ def get_items_display(items, page=None, gallery=False, name="page"):
     # Display items in a list.
     else:
         table = Table(
-            Thead(Tr(Th(title, cls="center", colspan=4))),
+            Thead(Tr(Th(title, cls="center", colspan=3))),
             Tbody(
                 *[
                     Tr(
                         Td(get_to_clipboard(item), cls="minimize"),
-                        Td(get_item_link(item)),
                         Td(
-                            Small(
-                                *[
-                                    A(tag.title, href=tag.url, cls="rmargin")
-                                    for tag in item.tags
-                                ]
-                            )
+                            get_item_link(item),
+                            *[
+                                Small(
+                                    *[
+                                        A(
+                                            tag.title,
+                                            href=tag.url,
+                                            cls="secondary rmargin",
+                                        )
+                                        for tag in item.tags
+                                    ],
+                                    cls="lmargin",
+                                )
+                            ],
                         ),
                         Td(item.age, cls="nobr right"),
                     )

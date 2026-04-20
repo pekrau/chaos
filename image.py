@@ -95,8 +95,8 @@ def get(image: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
             ),
             components.get_text_card(image),
             Form(
-                components.get_tags_card(image, tags_page),
                 components.get_refs_card(image, refs_page),
+                components.get_tags_card(image, tags_page),
                 action=image.url,
             ),
             cls="container",

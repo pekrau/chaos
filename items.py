@@ -352,10 +352,6 @@ class Database(_GenericFile):
         "Return the URL to download the database as SQL."
         return f"{self.url}.sql"
 
-    @property
-    def plots(self):
-        return self.frontmatter.get("plots") or {}
-
 
 class _DatabaseConnection:
 

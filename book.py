@@ -146,8 +146,8 @@ def get(book: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
             ),
             components.get_text_card(book),
             Form(
-                components.get_tags_card(book, tags_page),
                 components.get_refs_card(book, refs_page),
+                components.get_tags_card(book, tags_page),
                 action=book.url,
             ),
             cls="container",

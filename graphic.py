@@ -140,8 +140,8 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
             ),
             components.get_text_card(graphic),
             Form(
-                components.get_tags_card(graphic, tags_page),
                 components.get_refs_card(graphic, refs_page),
+                components.get_tags_card(graphic, tags_page),
                 action=graphic.url,
             ),
             cls="container",

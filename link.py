@@ -66,8 +66,8 @@ def get(link: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
             Card(Strong(A(link.href, href=link.href, target="_blank"))),
             components.get_text_card(link),
             Form(
-                components.get_tags_card(link, tags_page),
                 components.get_refs_card(link, refs_page),
+                components.get_tags_card(link, tags_page),
                 action=link.url,
             ),
             cls="container",

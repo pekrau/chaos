@@ -95,8 +95,8 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
             Card(Strong(A(file.filename, href=file.url_file))),
             components.get_text_card(file),
             Form(
-                components.get_tags_card(file, tags_page),
                 components.get_refs_card(file, refs_page),
+                components.get_tags_card(file, tags_page),
                 action=file.url,
             ),
             cls="container",

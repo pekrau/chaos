@@ -8,12 +8,10 @@ import shutil
 import sys
 
 import bibtexparser
-import bokeh
 import fasthtml
 from fasthtml.common import *
 import icecream
 import marko
-import numpy
 import psutil
 import yaml
 
@@ -636,14 +634,6 @@ def get():
                     )
                 ),
                 Td(yaml.__version__, cls="right"),
-            ),
-            Tr(
-                Td(A("bokeh", href="https://bokeh.org/", target="_blank")),
-                Td(bokeh.__version__, cls="right"),
-            ),
-            Tr(
-                Td(A("NumPy", href="https://numpy.org/", target="_blank")),
-                Td(numpy.__version__, cls="right"),
             ),
             Tr(
                 Td(

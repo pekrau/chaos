@@ -203,6 +203,7 @@ def get_nav_menu(item=None, copy=True, operations=None):
         links.extend(operations)
     links.append(A("Add...", href="/add/"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
+    links.append(A("Search...", href="/search"))
     links.append(A("System", href="/system"))
     links.extend([get_item_link(i, full=False) for i in items.get_shortcuts(item)])
     if item:
@@ -287,21 +288,6 @@ def get_text_card(item):
         return ""
 
 
-def get_tags_card(item, page=None):
-    "Show the tags for this item."
-    tags = list(item.tags)
-    if tags:
-        return Card(
-            Header(
-                Span("Tags:", cls="rmargin"),
-                *[A(tag.title, href=tag.url, cls="rmargin") for tag in item.tags],
-            ),
-            get_items_display(item.similar, page=page, name="tags_page"),
-        )
-    else:
-        return ""
-
-
 def get_refs_card(item, page=None):
     "Show the refs that other items make to this item."
     refs = sorted(
@@ -313,6 +299,21 @@ def get_refs_card(item, page=None):
         return Card(
             Header("Referred by..."),
             get_items_display(refs, page=page, name="refs_page"),
+        )
+    else:
+        return ""
+
+
+def get_tags_card(item, page=None):
+    "Show the tags for this item."
+    tags = list(item.tags)
+    if tags:
+        return Card(
+            Header(
+                Span("Tags:", cls="rmargin"),
+                *[A(tag.title, href=tag.url, cls="rmargin") for tag in item.tags],
+            ),
+            get_items_display(item.similar, page=page, name="tags_page"),
         )
     else:
         return ""
@@ -376,7 +377,7 @@ def get_items_display(items, page=None, gallery=False, name="page"):
             Tbody(
                 *[
                     Tr(
-                        Td(get_to_clipboard(item), cls="minimize"),
+                        Td(get_to_clipboard(item), cls="minimize top"),
                         Td(
                             get_item_link(item),
                             *[
@@ -401,7 +402,7 @@ def get_items_display(items, page=None, gallery=False, name="page"):
             cls="compressed",
         )
 
-    return Div(table, get_items_page_buttons(page, total_pages, name=name))
+    return Div(table, get_items_page_buttons(page, total_pages, name=name), cls="overflow-auto")
 
 
 def get_items_page_buttons(page, total_pages, name="page"):

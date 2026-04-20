@@ -68,8 +68,8 @@ def get(note: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
         Main(
             components.get_text_card(note),
             Form(
-                components.get_tags_card(note, tags_page),
                 components.get_refs_card(note, refs_page),
+                components.get_tags_card(note, tags_page),
                 action=note.url,
             ),
             cls="container",

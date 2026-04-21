@@ -565,6 +565,13 @@ def setup_pointers():
                 pass
             else:
                 other.refs_to_self.add(item.id)
+        for m in constants.INCL.finditer(item.text):
+            try:
+                other = get(m.group(1))
+            except KeyError:
+                pass
+            else:
+                other.refs_to_self.add(item.id)
 
 
 def get_items(type=None, key=None):

@@ -103,27 +103,24 @@ def get(graphic: items.Item, page: int = 1, tags_page: int = 1, refs_page: int =
     match graphic.frontmatter["graphic"]:
 
         case constants.VEGA_LITE:
-            header_scripts = [
-                Script(src="https://cdn.jsdelivr.net/npm/vega@6"),
-                Script(src="https://cdn.jsdelivr.net/npm/vega-lite@6"),
-                Script(src="https://cdn.jsdelivr.net/npm/vega-embed@7"),
-            ]
-            display = Div(id="graphic")
-            footer_scripts = [
-                Script(
-                    f"""const specification = {graphic.specification};
-vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
+            display = Card(
+                *[Script(src=lib) for lib in constants.VEGA_LITE_LIBRARIES],
+                Div(id="chaos_graphic"),
+                Script(f"""const specification = {graphic.specification};
+vegaEmbed("#chaos_graphic", specification, {{downloadFileName: "filename"}})
 .then(result=>console.log(result))
 .catch(console.warn);
-""",
-                    type="text/javascript",
-                ),
-            ]
+"""),
+                Footer(graphic.frontmatter["graphic"]),
+                cls="overflow-auto",
+            )
 
         case constants.SVG:
-            header_scripts = []
-            display = NotStr(graphic.specification)
-            footer_scripts = []
+            display = Card(
+                NotStr(graphic.specification),
+                Footer(graphic.frontmatter["graphic"]),
+                cls="overflow-auto",
+            )
 
         case _:
             raise NotImplementedError
@@ -131,13 +128,9 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
     return (
         Title(graphic.title),
         components.get_clipboard_script(),
-        *header_scripts,
         components.get_header_item_view(graphic),
         Main(
-            Card(
-                display,
-                Footer(graphic.frontmatter["graphic"]),
-            ),
+            display,
             components.get_text_card(graphic),
             Form(
                 components.get_refs_card(graphic, refs_page),
@@ -148,7 +141,6 @@ vegaEmbed("#graphic", specification, {{downloadFileName: "filename"}})
         ),
         components.get_footer_item_view(graphic),
         components.get_clipboard_activate(),
-        *footer_scripts,
     )
 
 

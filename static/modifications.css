@@ -97,3 +97,7 @@ textarea.specification {
 input.search {
     min-width: 100px;
 }
+
+span.error {
+    color: red;
+}

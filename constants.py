@@ -7,7 +7,7 @@ import string
 
 import babel.dates
 
-VERSION = (1, 5, 0)
+VERSION = (1, 5, 1)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -27,6 +27,7 @@ FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 
 FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
 REF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
+INCL = re.compile(r"\[!([0-9a-z-]+)\]\]", re.IGNORECASE)
 
 DEFAULT_LOCALE = "sv_SE"
 DEFAULT_TIMEZONE = babel.dates.get_timezone("Europe/Stockholm")
@@ -71,4 +72,9 @@ SCORE_TITLE_WEIGHT = 2.0
 
 SVG = "SVG"
 VEGA_LITE = "Vega-Lite"
+VEGA_LITE_LIBRARIES = [
+    "https://cdn.jsdelivr.net/npm/vega@6",
+    "https://cdn.jsdelivr.net/npm/vega-lite@6",
+    "https://cdn.jsdelivr.net/npm/vega-embed@7",
+]
 GRAPHIC_TYPES = [SVG, VEGA_LITE]

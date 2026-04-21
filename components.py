@@ -107,10 +107,6 @@ def get_chaos_icon():
     )
 
 
-def get_question_icon():
-    return get_icon("question-circle.svg")
-
-
 def get_item_icon(item):
     return get_type_icon(item.type)
 
@@ -402,7 +398,9 @@ def get_items_display(items, page=None, gallery=False, name="page"):
             cls="compressed",
         )
 
-    return Div(table, get_items_page_buttons(page, total_pages, name=name), cls="overflow-auto")
+    return Div(
+        table, get_items_page_buttons(page, total_pages, name=name), cls="overflow-auto"
+    )
 
 
 def get_items_page_buttons(page, total_pages, name="page"):

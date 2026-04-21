@@ -12,7 +12,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(form: dict):
+def get():
     "Form for adding a note."
     title = "Add note"
     return (
@@ -28,10 +28,9 @@ def get(form: dict):
         ),
         Main(
             Form(
-                components.get_title_input(form.get("title", "")),
+                components.get_title_input(),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="hidden", name="id", value=form.get("title", "")),
                 Input(type="submit", value="Add note"),
                 action="/note/",
                 method="POST",
@@ -43,13 +42,9 @@ def get(form: dict):
 
 
 @rt("/")
-def post(title: str, text: str, id: str = "", tags: list[str] = None):
+def post(title: str, text: str, tags: list[str] = None):
     "Actually add the note."
-    if id:
-        note = items.Note(constants.DATA_DIR / f"{id}.md")
-        items.lookup[note.id] = note
-    else:
-        note = items.Note()
+    note = items.Note()
     note.title = title.strip() or "no title"
     note.text = text.strip()
     note.tags = tags

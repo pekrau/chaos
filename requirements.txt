@@ -28,7 +28,7 @@ pyparsing==3.3.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 python-fasthtml==0.13.3
-python-multipart==0.0.26
+python-multipart==0.0.27
 PyYAML==6.0.3
 requests==2.33.1
 six==1.17.0

@@ -4,10 +4,9 @@ import os
 import pathlib
 import re
 import string
+import zoneinfo
 
-import babel.dates
-
-VERSION = (1, 5, 1)
+VERSION = (1, 6, 0)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -29,10 +28,7 @@ FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
 REF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
 INCL = re.compile(r"\[!([0-9a-z-]+)\]\]", re.IGNORECASE)
 
-DEFAULT_LOCALE = "sv_SE"
-DEFAULT_TIMEZONE = babel.dates.get_timezone("Europe/Stockholm")
-DATETIME_BABEL_FORMAT = "yyyy-MM-dd HH:mm:ss"
-DATETIME_ISO_FORMAT = "%Y-%m-%d %H:%M:%S"
+TIMEZONE = zoneinfo.ZoneInfo(os.environ.get("TZ", "UTC"))
 
 LANGUAGES = dict(
     en="English",

@@ -43,20 +43,12 @@ def get():
                     name="authors",
                     rows=2,
                     placeholder="Authors...",
+                    required=True,
+                    aria_describedby="authors-helper",
                 ),
-                Div(
-                    Input(
-                        name="published",
-                        placeholder="Published...",
-                    ),
-                    Input(
-                        name="doi",
-                        placeholder="DOI...",
-                    ),
-                    Input(
-                        name="pmid",
-                        placeholder="PubMed...",
-                    ),
+                Small(
+                    "Authors: 'Family name, first name(s)' separated by newlines.",
+                    id="authors-helper",
                 ),
                 Div(
                     Input(
@@ -77,6 +69,21 @@ def get():
                     ),
                     cls="grid",
                 ),
+                Div(
+                    Input(
+                        name="published",
+                        placeholder="Published...",
+                    ),
+                    Input(
+                        name="doi",
+                        placeholder="DOI...",
+                    ),
+                    Input(
+                        name="pmid",
+                        placeholder="PubMed...",
+                    ),
+                    cls="grid",
+                ),
                 components.get_text_input(),
                 components.get_tags_input(),
                 Input(type="submit", value="Add article"),
@@ -94,14 +101,14 @@ def post(
     id: str,
     title: str,
     authors: str,
-    published: str,
-    doi: str,
-    pmid: str,
-    journal: str,
-    volume: str,
-    issue: str,
-    pages: str,
     text: str,
+    journal: str = None,
+    volume: str = None,
+    issue: str = None,
+    pages: str = None,
+    published: str = None,
+    doi: str = None,
+    pmid: str = None,
     tags: list[str] = None,
 ):
     "Actually add the article."
@@ -114,16 +121,14 @@ def post(
     article = items.Article(constants.DATA_DIR / f"{id}.md")
     items.lookup[article.id] = article
     article.title = title.strip() or "no title"
-    article.frontmatter["authors"] = list(
-        filter(None, [a.strip() for a in authors.strip().split("\n")])
-    )
-    article.frontmatter["published"] = published.strip()
-    article.frontmatter["doi"] = doi.strip()
-    article.frontmatter["pmid"] = pmid.strip()
-    article.frontmatter["journal"] = journal.strip()
-    article.frontmatter["volume"] = volume.strip()
-    article.frontmatter["issue"] = issue.strip()
-    article.frontmatter["pages"] = pages.strip()
+    article.authors = authors
+    article.journal = journal
+    article.volume = volume
+    article.issue = issue
+    article.pages = pages
+    article.published = published
+    article.doi = doi
+    article.pmid = pmid
     article.text = text.strip()
     article.tags = tags
     article.write()
@@ -135,12 +140,21 @@ def get(article: items.Item, page: int = 1, tags_page: int = 1, refs_page: int =
     "View the article."
     assert isinstance(article, items.Article)
     return (
-        Title(article.title),
+        Title(article),
         components.get_clipboard_script(),
         components.get_header_item_view(article, copy=False),
         Main(
             Card("; ".join(article.authors), title="Authors"),
             Card(
+                Div(
+                    Span(article.journal, title="Journal"),
+                    " ",
+                    Strong(article.volume or "-", title="Volume"),
+                    " ",
+                    Span(f"({article.issue or '-'})", title="Issue"),
+                    " ",
+                    Span(article.pages or "-", title="Pages"),
+                ),
                 Div(article.published, title="Published"),
                 (
                     A(
@@ -161,15 +175,6 @@ def get(article: items.Item, page: int = 1, tags_page: int = 1, refs_page: int =
                     else ""
                 ),
                 cls="grid",
-            ),
-            Card(
-                Span(article.journal, title="Journal"),
-                " ",
-                Strong(article.volume or "-", title="Volume"),
-                " ",
-                Span(f"({article.issue or '-'})", title="Issue"),
-                " ",
-                Span(article.pages or "-", title="Pages"),
             ),
             components.get_text_card(article),
             Form(
@@ -198,22 +203,11 @@ def get(article: items.Item):
                     name="authors",
                     rows=4,
                     aria_describedby="authors-helper",
+                    required=True,
                 ),
                 Small(
-                    "Authors: 'Family name, first names' separated by newlines.",
+                    "Authors: 'Family name, first name(s)' separated by newlines.",
                     id="authors-helper",
-                ),
-                Div(
-                    Label(
-                        "Published",
-                        Input(name="published", value=article.published or ""),
-                    ),
-                    Label("DOI", Input(name="doi", value=article.doi or "")),
-                    Label(
-                        "PubMed",
-                        Input(name="pmid", value=article.pmid or ""),
-                    ),
-                    cls="grid",
                 ),
                 Div(
                     Label(
@@ -234,6 +228,18 @@ def get(article: items.Item):
                     ),
                     cls="grid",
                 ),
+                Div(
+                    Label(
+                        "Published",
+                        Input(name="published", value=article.published or ""),
+                    ),
+                    Label("DOI", Input(name="doi", value=article.doi or "")),
+                    Label(
+                        "PubMed",
+                        Input(name="pmid", value=article.pmid or ""),
+                    ),
+                    cls="grid",
+                ),
                 components.get_text_input(article.text),
                 components.get_tags_input(article.tags),
                 Input(type="submit", value="Save"),
@@ -251,29 +257,27 @@ def post(
     article: items.Item,
     title: str,
     authors: str,
-    doi: str,
-    pmid: str,
-    journal: str,
-    volume: str,
-    issue: str,
-    pages: str,
-    published: str,
     text: str,
+    journal: str = None,
+    volume: str = None,
+    issue: str = None,
+    pages: str = None,
+    published: str = None,
+    doi: str = None,
+    pmid: str = None,
     tags: list[str] = None,
 ):
     "Actually edit the article."
     assert isinstance(article, items.Article)
     article.title = title.strip()
-    article.frontmatter["authors"] = list(
-        filter(None, [a.strip() for a in authors.strip().split("\n")])
-    )
-    article.frontmatter["published"] = published.strip()
-    article.frontmatter["doi"] = doi.strip()
-    article.frontmatter["pmid"] = pmid.strip()
-    article.frontmatter["journal"] = journal.strip()
-    article.frontmatter["volume"] = volume.strip()
-    article.frontmatter["issue"] = issue.strip()
-    article.frontmatter["pages"] = pages.strip()
+    article.authors = authors
+    article.journal = journal
+    article.volume = volume
+    article.issue = issue
+    article.pages = pages
+    article.published = published
+    article.doi = doi
+    article.pmid = pmid
     article.text = text.strip()
     article.tags = tags
     article.write()
@@ -284,7 +288,7 @@ def post(
 def get(article: items.Item):
     "Ask for confirmation to delete the article."
     assert isinstance(article, items.Article)
-    title = f"Delete '{article.title}'"
+    title = f"Delete '{article}'"
     return (
         Title(title),
         Header(

@@ -26,7 +26,7 @@ class RefRenderer:
         try:
             item = items.get(element.ref)
         except KeyError:
-            return f'<span class="error">[!{element.ref}]] no such item</span>'
+            return f'<span class="error">Error: no such item [[{element.ref}]]</span>'
         return str(components.get_item_link(item))
 
 
@@ -78,7 +78,9 @@ class InclRenderer:
                                     for lib in constants.VEGA_LITE_LIBRARIES
                                 ]
                             )
-                        result.append(f'<div class="overflow-auto"><div id="chaos_graphic{ordinal}"></div></div>')
+                        result.append(
+                            f'<div class="overflow-auto"><div id="chaos_graphic{ordinal}"></div></div>'
+                        )
                         result.append(
                             f"""<script>const specification = {item.specification};
 vegaEmbed("#chaos_graphic{ordinal}", specification, {{downloadFileName: "filename"}})
@@ -88,11 +90,11 @@ vegaEmbed("#chaos_graphic{ordinal}", specification, {{downloadFileName: "filenam
                         )
                         return "\n".join(result)
 
-                    case _:
-                        return f'<span class="error">Error: not implemented [!{item.id}]]</span>'
+                return (
+                    f'<span class="error">Error: not implemented [!{item.id}]]</span>'
+                )
 
-            case _:
-                return f'<span class="error">Error: invalid type [!{item.id}]]</span>'
+        return f'<span class="error">Error: invalid type [!{item.id}]]</span>'
 
 
 def to_html(text):

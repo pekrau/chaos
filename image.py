@@ -66,7 +66,7 @@ async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None
     image.title = title.strip() or filename.stem
     filecontent = await upfile.read()
     filename = image.id + ext
-    image.frontmatter["filename"] = filename
+    image.filename = filename
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
@@ -83,7 +83,7 @@ def get(image: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
     "View the data for the image."
     assert isinstance(image, items.Image)
     return (
-        Title(image.title),
+        Title(image),
         components.get_clipboard_script(),
         components.get_header_item_view(image),
         Main(
@@ -185,7 +185,7 @@ async def post(
 def get(image: items.Item):
     "Form for making a copy of the image."
     assert isinstance(image, items.Image)
-    title = f"Copy '{image.title}'"
+    title = f"Copy '{image}'"
     return (
         Title(title),
         Header(
@@ -227,12 +227,12 @@ def post(source: items.File, title: str):
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
     filename = image.id + filename.suffix
+    image.filename = filename
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
-    image.frontmatter["filename"] = filename
     image.write()
     return components.redirect(image.url)
 
@@ -241,7 +241,7 @@ def post(source: items.File, title: str):
 def get(image: items.Item):
     "Ask for confirmation to delete the file image."
     assert isinstance(image, items.Image)
-    title = f"Delete '{image.title}'"
+    title = f"Delete '{image}'"
     return (
         Title(title),
         Header(

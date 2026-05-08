@@ -1,9 +1,9 @@
 "Various utility functions."
 
 import datetime
+import os
 import unicodedata
 
-import babel.dates
 import babel.numbers
 import webcolors
 
@@ -13,18 +13,42 @@ import constants
 def timestamp_utc(timestamp):
     "Convert timestamp to ISO format string in UTC time."
     return datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC).strftime(
-        constants.DATETIME_ISO_FORMAT
+        "%Y-%m-%d %H:%M:%S"
     )
 
 
-def timestamp_local(timestamp):
-    "Convert timestamp to ISO format string in local time."
-    return babel.dates.format_datetime(
-        datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC),
-        tzinfo=constants.DEFAULT_TIMEZONE,
-        locale=constants.DEFAULT_LOCALE,
-        format=constants.DATETIME_BABEL_FORMAT,
-    )
+def date(date, year=None):
+    "Return representation of the date."
+    result = [
+        date.strftime("%a"),
+        date.strftime("%d").lstrip("0"),
+        date.strftime("%b"),
+    ]
+    if year and date.year != year:
+        result.append(date.strftime("%Y"))
+    return " ".join(result).capitalize()
+
+
+def date_iso(date):
+    return date.strftime("%Y-%m-%d")
+
+
+def time(datetime):
+    "Return representation of the time."
+    return datetime.strftime("%H:%M")
+
+
+def week(date, year=False):
+    "Return the week representation for the given date, optionally with the year."
+    result = f"v{date.strftime('%V').lstrip('0')}"
+    if year:
+        result += " " + date.strftime("%Y")
+    return result
+
+
+def get_week(date):
+    "Return list of date instances for each of the 7 days following the given."
+    return [date] + [date + datetime.timedelta(days=day) for day in range(1, 7)]
 
 
 def normalize(s):
@@ -41,7 +65,7 @@ def normalize(s):
 
 def numerical(n):
     "Return numerical value as string formatted according to locale."
-    return babel.numbers.format_decimal(n, locale=constants.DEFAULT_LOCALE)
+    return babel.numbers.format_decimal(n, locale=os.environ.get("LC_MONETARY"))
 
 
 def to_hex_color(color):

@@ -3,6 +3,7 @@ databases, graphics, books and articles.
 """
 
 import itertools
+import locale
 import os
 import shutil
 import sys
@@ -35,6 +36,7 @@ import items
 import note
 import tag
 import link
+import event
 import file
 import image
 import database
@@ -44,11 +46,14 @@ import article
 import api
 import utils
 
+locale.setlocale(locale.LC_ALL, "")
+
 app, rt = components.get_app_rt(
     routes=[
         Mount("/note", note.app),
         Mount("/tag", tag.app),
         Mount("/link", link.app),
+        Mount("/event", event.app),
         Mount("/file", file.app),
         Mount("/image", image.app),
         Mount("/database", database.app),
@@ -261,27 +266,27 @@ def post(id: str, data: str, text: str):
     entry = entries[0]
     if entry["type"] == "article":
         item = items.Article(constants.DATA_DIR / f"{id}.md")
-        item.frontmatter["journal"] = entry["journal"]
-        item.frontmatter["doi"] = entry.get("doi")
-        item.frontmatter["volume"] = entry.get("volume")
-        item.frontmatter["issue"] = entry.get("issue")
-        item.frontmatter["pages"] = entry.get("pages")
-        item.frontmatter["pmid"] = entry.get("pmid")
+        item.journal = entry["journal"]
+        item.volume = entry.get("volume")
+        item.issue = entry.get("issue")
+        item.pages = entry.get("pages")
+        item.doi = entry.get("doi")
+        item.pmid = entry.get("pmid")
         if abstract := entry.get("abstract"):
             if text:
                 text = abstract + "\n\n" + text
     elif entry["type"] == "book":
         item = items.Book(constants.DATA_DIR / f"{id}.md")
-        item.frontmatter["isbn"] = entry.get("isbn")
-        item.frontmatter["publisher"] = entry["publisher"]
+        item.isbn = entry.get("isbn")
+        item.publisher = entry["publisher"]
     else:
         raise ValueError("unknown entry type in BibTex data")
 
     item.title = entry["title"]
-    item.frontmatter["authors"] = entry["authors"]
-    item.frontmatter["published"] = entry["published"]
-    item.frontmatter["year"] = entry.get("year") or entry["published"].split("-")[0]
-    item.frontmatter["language"] = entry.get("language")
+    item.authors = entry["authors"]
+    item.year = entry.get("year") or entry["published"].split("-")[0]
+    item.published = entry["published"]
+    item.language = entry.get("language")
     item.text = text
     items.lookup[item.id] = item
     item.write()

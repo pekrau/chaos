@@ -55,7 +55,7 @@ async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None
     file.title = title.strip() or filename.stem
     filecontent = await upfile.read()
     filename = file.id + ext
-    file.frontmatter["filename"] = filename
+    file.filename = filename
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
@@ -72,7 +72,7 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
     "View the data for the file."
     assert isinstance(file, items.File)
     return (
-        Title(file.title),
+        Title(file),
         components.get_clipboard_script(),
         # Non-standard header.
         Header(
@@ -81,7 +81,7 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
                     Li(components.get_nav_menu(file)),
                     Li(
                         components.get_file_icon(file.file_mimetype, title="File"),
-                        file.title,
+                        file,
                     ),
                     Li(components.get_to_clipboard(file)),
                 ),
@@ -177,7 +177,7 @@ async def post(
 def get(file: items.Item):
     "Form for making a copy of the file."
     assert isinstance(file, items.File)
-    title = f"Copy '{file.title}'"
+    title = f"Copy '{file}'"
     return (
         Title(title),
         Header(
@@ -219,12 +219,12 @@ def post(source: items.File, title: str):
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
     filename = file.id + filename.suffix
+    file.filename = filename
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
-    file.frontmatter["filename"] = filename
     file.write()
     return components.redirect(file.url)
 
@@ -233,7 +233,7 @@ def post(source: items.File, title: str):
 def get(file: items.Item):
     "Ask for confirmation to delete the file."
     assert isinstance(file, items.File)
-    title = f"Delete '{file.title}'"
+    title = f"Delete '{file}'"
     return (
         Title(title),
         Header(

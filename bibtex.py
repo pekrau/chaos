@@ -582,7 +582,7 @@ def parse(bibtex):
             data["published"] = f'{entry["year"]}-{month:02d}-{day:02d}'
         elif len(parts) == 1 and parts[0]:
             month = MONTHS[parts[0].strip().casefold()]
-            data["published"] = f'{entry["year"]}-{month:02d}-00'
+            data["published"] = f'{entry["year"]}-{month:02d}-01'
         # Issue instead of number.
         try:
             data["issue"] = data.pop("number")

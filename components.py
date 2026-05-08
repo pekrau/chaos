@@ -9,7 +9,6 @@ from fasthtml.common import *
 import constants
 import errors
 import items
-import markdown
 import utils
 
 
@@ -46,10 +45,10 @@ register_url_convertor("Ext", ExtConvertor())
 
 class StaticNoMatchConvertor(StringConvertor):
     """Replacement of the default static response handler.
-    Required since the 'static' convertor has been made useless, which
-    in turn was needed to enable using file extensions for determining
-    format of the data content for different items. The predefined
-    'static' convertor somehow prevented this.
+    This is required to make the 'static' convertor useless, in order
+    to enable using file extensions for determining format of the data
+    content for different items. The predefined 'static' convertor
+    somehow prevented this.
     """
 
     regex = "static_do_not_match_anything_at_all"
@@ -66,7 +65,7 @@ def get_app_rt(routes=None):
         ),
         hdrs=(
             Link(rel="stylesheet", href="/static/modifications.css", type="text/css"),
-            Link(rel="icon", href="/static/favicon.ico", type="image/x-icon"),
+            Link(rel="icon", href="/static/chaos.png", type="image/png"),
         ),
         exception_handlers={errors.Error: errors.error_handler},
         routes=routes,
@@ -117,6 +116,8 @@ def get_type_icon(type):
             return get_note_icon()
         case "tag":
             return get_tag_icon()
+        case "event":
+            return get_event_icon()
         case "link":
             return get_link_icon()
         case "file":
@@ -141,6 +142,10 @@ def get_note_icon(title="Note"):
 
 def get_tag_icon(title="Tag"):
     return get_icon("tag.svg", title=title)
+
+
+def get_event_icon(title="Event"):
+    return get_icon("calendar-event.svg", title=title)
 
 
 def get_link_icon(title="Link"):
@@ -182,9 +187,9 @@ def get_article_icon(title="Article"):
     return get_icon("journal-text.svg", title=title)
 
 
-def get_nav_menu(item=None, copy=True, operations=None):
+def get_nav_menu(item=None, copy=True, operations=None, icon=None):
     links = [A("Home", href="/")]
-    if item:
+    if item is not None:
         links.append(A(f"Edit {item.type}...", href=f"{item.url}/edit"))
         if copy:
             links.append(A(f"Copy {item.type}...", href=f"{item.url}/copy"))
@@ -195,16 +200,19 @@ def get_nav_menu(item=None, copy=True, operations=None):
             )
         else:
             links.append(A(f"Pin {item.type}", href=f"/pin/{item.id}", title="Pin"))
-    if operations:
+    if operations is not None:
         links.extend(operations)
+    links.append(A("Week", href="/event/week/"))
+    links.append(A("Month", href="/event/month/"))
+    links.append(A("Year", href="/event/year/"))
     links.append(A("Add...", href="/add/"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("Search...", href="/search"))
     links.append(A("System", href="/system"))
     links.extend([get_item_link(i, full=False) for i in items.get_shortcuts(item)])
-    if item:
+    if item is not None:
         icon = get_item_icon(item)
-    else:
+    elif icon is None:
         icon = get_chaos_icon()
     return Details(
         Summary(icon),
@@ -252,7 +260,7 @@ def get_header_item_view(item, copy=True, operations=None):
         Nav(
             Ul(
                 Li(get_nav_menu(item, copy=copy, operations=operations)),
-                Li(item.title),
+                Li(item),
             ),
             Ul(
                 Li(get_to_clipboard(item)),
@@ -277,9 +285,11 @@ def get_footer_item_view(item, size=None):
     )
 
 
-def get_text_card(item):
-    if text := item.text:
-        return Card(NotStr(markdown.to_html(text)))
+def get_text_card(item, header=None):
+    if html := item.html:
+        return Card(header or "", NotStr(html))
+    elif header:
+        return Card(header)
     else:
         return ""
 
@@ -307,9 +317,9 @@ def get_tags_card(item, page=None):
         return Card(
             Header(
                 Span("Tags:", cls="rmargin"),
-                *[A(tag.title, href=tag.url, cls="rmargin") for tag in item.tags],
+                *[A(tag, href=tag.url, cls="rmargin") for tag in item.tags],
             ),
-            get_items_display(item.similar, page=page, name="tags_page"),
+            get_items_display(item.similar(), page=page, name="tags_page"),
         )
     else:
         return ""
@@ -353,7 +363,7 @@ def get_items_display(items, page=None, gallery=False, name="page"):
                         Div(
                             A(
                                 get_image_icon(),
-                                item.title,
+                                item,
                                 Img(src=item.url_file, cls="autoscale display"),
                                 href=str(item.url),
                             ),
@@ -380,7 +390,7 @@ def get_items_display(items, page=None, gallery=False, name="page"):
                                 Small(
                                     *[
                                         A(
-                                            tag.title,
+                                            tag,
                                             href=tag.url,
                                             cls="secondary rmargin",
                                         )
@@ -504,13 +514,15 @@ def get_item_link(item, full=True, cls=None):
     "Get link to item. Optionally provide link to resource."
     match item.type:
         case "note":
-            return A(get_note_icon(), item.title, href=item.url, cls=cls)
+            return A(get_note_icon(), item, href=item.url, cls=cls)
         case "tag":
-            return A(get_tag_icon(), item.title, href=item.url, cls=cls)
+            return A(get_tag_icon(), item, href=item.url, cls=cls)
+        case "event":
+            return A(get_event_icon(), item, href=item.url, cls=cls)
         case "link":
             if full:
                 return Span(
-                    A(get_link_icon(), item.title, href=item.url),
+                    A(get_link_icon(), item, href=item.url),
                     ", ",
                     A(
                         urlsplit(item.href).hostname,
@@ -521,21 +533,21 @@ def get_item_link(item, full=True, cls=None):
                     cls=cls,
                 )
             else:
-                return A(get_link_icon(), item.title, href=item.url, cls=cls)
+                return A(get_link_icon(), item, href=item.url, cls=cls)
         case "image":
             if full:
                 return Span(
-                    A(get_image_icon(), item.title, href=item.url),
+                    A(get_image_icon(), item, href=item.url),
                     ", ",
                     A(f"[{item.ext}]", href=item.url_file, cls="contrast"),
                     cls=cls,
                 )
             else:
-                return A(get_image_icon(), item.title, href=item.url, cls=cls)
+                return A(get_image_icon(), item, href=item.url, cls=cls)
         case "file":
             if full:
                 return Span(
-                    A(get_file_icon(item.file_mimetype), item.title, href=item.url),
+                    A(get_file_icon(item.file_mimetype), item, href=item.url),
                     ", ",
                     A(f"[{item.ext}]", href=item.url_file, cls="contrast"),
                     cls=cls,
@@ -543,25 +555,25 @@ def get_item_link(item, full=True, cls=None):
             else:
                 return A(
                     get_file_icon(item.file_mimetype),
-                    item.title,
+                    item,
                     href=item.url,
                     cls=cls,
                 )
         case "database":
-            return A(get_database_icon(), item.title, href=item.url, cls=cls)
+            return A(get_database_icon(), item, href=item.url, cls=cls)
         case "graphic":
-            return A(get_graphic_icon(), item.title, href=item.url, cls=cls)
+            return A(get_graphic_icon(), item, href=item.url, cls=cls)
         case "book":
-            return A(get_book_icon(), item.title, href=item.url, cls=cls)
+            return A(get_book_icon(), item, href=item.url, cls=cls)
         case "article":
-            return A(get_article_icon(), item.title, href=item.url, cls=cls)
+            return A(get_article_icon(), item, href=item.url, cls=cls)
         case _:
             raise NotImplementedError
 
 
 def get_header_item_edit(item):
     "Tuple of standard title and header for item edit page."
-    title = f"Edit '{item.title}'"
+    title = f"Edit '{item}'"
     return (
         Title(title),
         Header(
@@ -616,7 +628,7 @@ def get_tags_input(item_tags=frozenset(), tag=None):
                             value=t.id,
                             checked=t in item_tags,
                         ),
-                        t.title,
+                        t,
                     )
                 )
                 for t in tags

@@ -1,5 +1,6 @@
 "Book reference item pages."
 
+import datetime as dt
 import urllib.parse
 
 from fasthtml.common import *
@@ -43,33 +44,49 @@ def get():
                     name="authors",
                     rows=2,
                     placeholder="Authors...",
+                    aria_describedby="authors-helper",
                     required=True,
                 ),
+                Small(
+                    "Authors: 'Family name, first name(s)' separated by newlines.",
+                    id="authors-helper",
+                ),
                 Div(
-                    Input(
-                        name="year",
-                        placeholder="Year...",
-                        required=True,
-                    ),
-                    Input(
-                        name="isbn",
-                        placeholder="ISBN...",
+                    Div(
+                        Input(
+                            name="year",
+                            placeholder="Year...",
+                            aria_describedby="year-helper",
+                            required=True,
+                        ),
+                        Small("Original year of publication.", id="year-helper"),
                     ),
                     Input(
                         name="publisher",
                         placeholder="Publisher...",
                     ),
-                    Input(
-                        name="published",
-                        placeholder="Published...",
+                    Div(
+                        Input(
+                            name="published",
+                            placeholder="Published...",
+                            aria_describedby="published-helper",
+                        ),
+                        Small("Date for this edition.", id="published-helper"),
                     ),
-                    Select(
-                        Option("Language", selected=True, disabled=True, value=""),
-                        *[
-                            Option(lang[1], value=lang[0])
-                            for lang in constants.LANGUAGES.items()
-                        ],
-                        name="language",
+                    Div(
+                        Select(
+                            Option("Language", selected=True, value=""),
+                            *[
+                                Option(lang[1], value=lang[0])
+                                for lang in constants.LANGUAGES.items()
+                            ],
+                            name="language",
+                        ),
+                        Small(),
+                    ),
+                    Input(
+                        name="isbn",
+                        placeholder="ISBN...",
                     ),
                     cls="grid",
                 ),
@@ -91,11 +108,11 @@ def post(
     title: str,
     authors: str,
     year: str,
-    isbn: str,
-    publisher: str,
-    published: str,
-    language: str,
     text: str,
+    publisher: str = None,
+    published: str = None,
+    language: str = None,
+    isbn: str = None,
     tags: list[str] = None,
 ):
     "Actually add the book."
@@ -108,14 +125,12 @@ def post(
     book = items.Book(constants.DATA_DIR / f"{id}.md")
     items.lookup[book.id] = book
     book.title = title.strip() or "no title"
-    book.frontmatter["authors"] = list(
-        filter(None, [a.strip() for a in authors.strip().split("\n")])
-    )
-    book.frontmatter["year"] = year.strip()
-    book.frontmatter["isbn"] = isbn.strip()
-    book.frontmatter["publisher"] = publisher.strip()
-    book.frontmatter["published"] = published.strip() or book.frontmatter["year"]
-    book.frontmatter["language"] = language.strip()
+    book.authors = authors
+    book.year = year
+    book.publisher = publisher
+    book.published = published
+    book.language = language
+    book.isbn = isbn
     book.text = text.strip()
     book.tags = tags
     book.write()
@@ -127,21 +142,21 @@ def get(book: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
     "View the book."
     assert isinstance(book, items.Book)
     return (
-        Title(book.title),
+        Title(book),
         components.get_clipboard_script(),
         components.get_header_item_view(book, copy=False),
         Main(
             Card("; ".join(book.authors)),
             Card(
                 Div(book.year, title="Year"),
+                Div(book.publisher or "", title="Publisher"),
+                Div(book.published or "", title="Published"),
+                Div(constants.LANGUAGES.get(book.language, ""), title="Language"),
                 A(
                     f"ISBN {book.isbn}",
                     href=constants.ISBN_URL.format(isbn=book.isbn),
                     target="_blank",
                 ),
-                Div(book.publisher, title="Publisher"),
-                Div(book.published, title="Published"),
-                Div(constants.LANGUAGES.get(book.language, "")),
                 cls="grid",
             ),
             components.get_text_card(book),
@@ -170,22 +185,41 @@ def get(book: items.Item):
                     "\n".join(book.authors),
                     name="authors",
                     rows=4,
+                    aria_describedby="authors-helper",
+                    required=True,
+                ),
+                Small(
+                    "Authors: 'Family name, first name(s)' separated by newlines.",
+                    id="authors-helper",
                 ),
                 Div(
-                    Label("Year", Input(name="year", value=book.year)),
-                    Label("ISBN", Input(name="isbn", value=book.isbn)),
+                    Label(
+                        "Year",
+                        Input(
+                            name="year",
+                            value=book.year,
+                            aria_describedby="year-helper",
+                            required=True,
+                        ),
+                        Small("Original year of publication.", id="year-helper"),
+                    ),
                     Label(
                         "Publisher",
                         Input(name="publisher", value=book.publisher or ""),
                     ),
                     Label(
                         "Published",
-                        Input(name="published", value=book.published or ""),
+                        Input(
+                            name="published",
+                            value=book.published or "",
+                            aria_describedby="published-helper",
+                        ),
+                        Small("Date for this edition.", id="published-helper"),
                     ),
                     Label(
                         "Language",
                         Select(
-                            Option("", disabled=True, value=""),
+                            Option("", value=""),
                             *[
                                 Option(
                                     lang[1],
@@ -197,6 +231,7 @@ def get(book: items.Item):
                             name="language",
                         ),
                     ),
+                    Label("ISBN", Input(name="isbn", value=book.isbn)),
                     cls="grid",
                 ),
                 components.get_text_input(book.text),
@@ -217,24 +252,22 @@ def post(
     title: str,
     authors: str,
     year: str,
-    isbn: str,
-    publisher: str,
-    published: str,
-    language: str,
     text: str,
+    publisher: str = None,
+    published: str = None,
+    language: str = None,
+    isbn: str = None,
     tags: list[str] = None,
 ):
     "Actually edit the book."
     assert isinstance(book, items.Book)
     book.title = title.strip() or "no title"
-    book.frontmatter["authors"] = list(
-        filter(None, [a.strip() for a in authors.strip().split("\n")])
-    )
-    book.frontmatter["year"] = year.strip()
-    book.frontmatter["isbn"] = isbn.strip()
-    book.frontmatter["publisher"] = publisher.strip()
-    book.frontmatter["published"] = published.strip() or book.frontmatter["year"]
-    book.frontmatter["language"] = language.strip()
+    book.authors = authors
+    book.year = year
+    book.publisher = publisher
+    book.published = published
+    book.language = language
+    book.isbn = isbn
     book.text = text.strip()
     book.tags = tags
     book.write()
@@ -245,7 +278,7 @@ def post(
 def get(book: items.Item):
     "Ask for confirmation to delete the book."
     assert isinstance(book, items.Book)
-    title = f"Delete '{book.title}'"
+    title = f"Delete '{book}'"
     return (
         Title(title),
         Header(

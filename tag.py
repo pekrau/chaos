@@ -63,7 +63,7 @@ def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     items_list = tag.tagged
     items_list.sort(key=lambda i: i.modified, reverse=True)
     return (
-        Title(tag.title),
+        Title(tag),
         components.get_clipboard_script(),
         components.get_header_item_view(tag),
         Main(
@@ -120,7 +120,7 @@ def post(tag: items.Item, title: str, text: str, tags: list[str] = None):
 def get(tag: items.Item):
     "Form for making a copy of the tag."
     assert isinstance(tag, items.Tag)
-    title = f"Copy '{tag.title}'"
+    title = f"Copy '{tag}'"
     return (
         Title(title),
         Header(
@@ -166,7 +166,7 @@ def post(source: items.File, title: str):
 def get(tag: items.Item):
     "Ask for confirmation to delete the tag."
     assert isinstance(tag, items.Tag)
-    title = f"Delete '{tag.title}'"
+    title = f"Delete '{tag}'"
     return (
         Title(title),
         Header(

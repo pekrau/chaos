@@ -59,7 +59,7 @@ def get(link: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
     "View the data for the link."
     assert isinstance(link, items.Link)
     return (
-        Title(link.title),
+        Title(link),
         components.get_clipboard_script(),
         components.get_header_item_view(link),
         Main(
@@ -121,7 +121,7 @@ def post(link: items.Item, title: str, href: str, text: str, tags: list[str] = N
 def get(link: items.Item):
     "Form for making a copy of the link."
     assert isinstance(link, items.Link)
-    title = f"Copy '{link.title}'"
+    title = f"Copy '{link}'"
     return (
         Title(title),
         Header(
@@ -168,7 +168,7 @@ def post(source: items.File, title: str):
 def get(link: items.Item):
     "Ask for confirmation to delete the link."
     assert isinstance(link, items.Link)
-    title = f"Delete {link.title}"
+    title = f"Delete {link}"
     return (
         Title(title),
         Header(

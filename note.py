@@ -57,7 +57,7 @@ def get(note: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
     "View the note."
     assert isinstance(note, items.Note)
     return (
-        Title(note.title),
+        Title(note),
         components.get_clipboard_script(),
         components.get_header_item_view(note),
         Main(
@@ -110,7 +110,7 @@ def post(note: items.Item, title: str, text: str, tags: list[str] = None):
 def get(note: items.Item):
     "Form for making a copy of the note."
     assert isinstance(note, items.Note)
-    title = f"Copy '{note.title}'"
+    title = f"Copy '{note}'"
     return (
         Title(title),
         Header(
@@ -156,7 +156,7 @@ def post(source: items.File, title: str):
 def get(note: items.Item):
     "Ask for confirmation to delete the note."
     assert isinstance(note, items.Note)
-    title = f"Delete '{note.title}'"
+    title = f"Delete '{note}'"
     return (
         Title(title),
         Header(

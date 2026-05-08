@@ -69,7 +69,7 @@ async def post(
     "Actually create the database."
     database = items.Database()
     database.title = title.strip()
-    database.frontmatter["filename"] = database.id + ".sqlite"
+    database.filename = database.id + ".sqlite"
     if upfile.filename:
         try:
             with open(database.filepath, "wb") as outfile:
@@ -95,7 +95,7 @@ def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int 
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     return (
-        Title(database.title),
+        Title(database),
         components.get_clipboard_script(),
         components.get_header_item_view(
             database,
@@ -173,9 +173,9 @@ def get(database: items.Item, tablename: str):
             label.append(" PRIMARY KEY")
         kwargs = dict(name=name, required=not column["null"])
         if column["type"] == "INTEGER":
-            inputs.append((Div(*label), Input(type="number", step="1", **kwargs)))
+            inputs.append((Div(*label), Input(type="number", step=1, **kwargs)))
         elif column["type"] == "REAL":
-            inputs.append((Div(*label), Input(type="number", **kwargs)))
+            inputs.append((Div(*label), Input(type="number", step=0.01, **kwargs)))
         else:
             inputs.append((Div(*label), Input(type="text", **kwargs)))
     title = "Add row to table"
@@ -194,7 +194,7 @@ def get(database: items.Item, tablename: str):
             Card(
                 Div(
                     components.get_database_icon(),
-                    A(database.title, href=database.url),
+                    A(database, href=database.url),
                 ),
                 A(
                     "Table ",
@@ -289,7 +289,7 @@ def get(database: items.Item, relname: str):
                 Header(
                     Div(
                         components.get_database_icon(),
-                        A(database.title, href=database.url),
+                        A(database, href=database.url),
                     ),
                     Strong(f"{schema[relname]['count']} rows"),
                     cls="grid",
@@ -380,7 +380,7 @@ def get(database: items.Item, tablename: str):
             Card(
                 Div(
                     components.get_database_icon(),
-                    A(database.title, href=database.url),
+                    A(database, href=database.url),
                 ),
                 A(
                     f"{schema[tablename]['count']} rows",
@@ -474,7 +474,7 @@ def get(database: items.Item):
         Main(
             Card(
                 components.get_database_icon(),
-                A(database.title, href=database.url),
+                A(database, href=database.url),
             ),
             Form(
                 Label(
@@ -595,7 +595,7 @@ def post(database: items.Item, sql: str = None):
         Main(
             Card(
                 components.get_database_icon(),
-                A(database.title, href=database.url),
+                A(database, href=database.url),
             ),
             get_overview(database),
             Card(
@@ -697,7 +697,7 @@ async def post(database: items.Item, title: str, text: str, tags: list[str] = No
 def get(database: items.Item):
     "Form for making a copy of the database."
     assert isinstance(database, items.Database)
-    title = f"Copy '{database.title}'"
+    title = f"Copy '{database}'"
     return (
         Title(title),
         Header(
@@ -739,12 +739,12 @@ def post(source: items.Database, title: str):
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
     filename = database.id + filename.suffix
+    database.filename = filename
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
-    database.frontmatter["filename"] = filename
     database.write()
     return components.redirect(database.url)
 
@@ -753,7 +753,7 @@ def post(source: items.Database, title: str):
 def get(database: items.Item, sql: str = None):
     "Form for creating a view in the database."
     assert isinstance(database, items.Database)
-    title = f"Create view in '{database.title}'"
+    title = f"Create view in '{database}'"
     return (
         Title(title),
         Header(
@@ -806,7 +806,7 @@ def post(database: items.Item, sql: str, view: str):
 def get(database: items.Item):
     "Ask for confirmation to delete the database."
     assert isinstance(database, items.Database)
-    title = f"Delete '{database.title}'"
+    title = f"Delete '{database}'"
     return (
         Title(title),
         Header(

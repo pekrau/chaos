@@ -126,7 +126,7 @@ vegaEmbed("#chaos_graphic", specification, {{downloadFileName: "filename"}})
             raise NotImplementedError
 
     return (
-        Title(graphic.title),
+        Title(graphic),
         components.get_clipboard_script(),
         components.get_header_item_view(graphic),
         Main(
@@ -238,7 +238,7 @@ def post(
 def get(graphic: items.Item):
     "Form for making a copy of the graphic."
     assert isinstance(graphic, items.Graphic)
-    title = f"Copy '{graphic.title}'"
+    title = f"Copy '{graphic}'"
     return (
         Title(title),
         Header(
@@ -286,7 +286,7 @@ def post(source: items.File, title: str):
 def get(graphic: items.Item):
     "Ask for confirmation to delete the graphic."
     assert isinstance(graphic, items.Graphic)
-    title = f"Delete '{graphic.title}'"
+    title = f"Delete '{graphic}'"
     return (
         Title(title),
         Header(

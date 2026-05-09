@@ -17,7 +17,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get():
+def get(start_date: str = None):
     "Form for adding an event."
     title = "Add event"
     return (
@@ -40,6 +40,7 @@ def get():
                         Input(
                             type="date",
                             name="start_date",
+                            value=start_date or "",
                             required=True,
                         ),
                     ),
@@ -114,6 +115,7 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                 header=Header(
                     Div(
                         Strong(event.nice(date=True, year=True)),
+                        f" ({event.duration})",
                         cls="center bmargin1",
                     ),
                     Div(
@@ -339,6 +341,16 @@ def get(year: int):
     start = dt.datetime(year, 1, 1, tzinfo=constants.TIMEZONE)
     end = dt.datetime(year + 1, 1, 1, tzinfo=constants.TIMEZONE)
     events = sorted([p for p in items.get_items(type="event") if p.within(start, end)])
+    months = [dt.datetime(year, m, 1, tzinfo=constants.TIMEZONE)
+              for m in range(1, 13)]
+    rows = []
+    for quarter in itertools.batched(months, 3):
+        rows.append(Tr(*[Td(Strong(A(m.strftime("%b").capitalize(),
+                              href=f"/event/month/{year}-{m.month}",
+                              cls="secondary"
+                                     )),
+                            )
+                         for m in quarter]))
     title = f"Year {year}"
     return (
         Title(title),
@@ -377,7 +389,7 @@ def get(year: int):
                     ),
                     cls="grid",
                 ),
-                
+                Table(*rows, cls="overflow-auto center"),
             ),
             cls="container",
         ),
@@ -407,8 +419,13 @@ def get(year: int, month: int):
     events = sorted(
         [p for p in items.get_items(type="event") if p.overlap(start, next)]
     )
-    rows = []
-    for week in itertools.batched(calendar.Calendar().itermonthdates(year, month), 7):
+    month_days = list(calendar.Calendar().itermonthdates(year, month))
+    rows = [
+        Tr(
+            Td(),
+            *[Td(d.strftime("%a").capitalize()) for d in month_days[0:7]])
+    ]
+    for week in itertools.batched(month_days, 7):
         rows.append(
             Tr(
                 Td(
@@ -423,10 +440,10 @@ def get(year: int, month: int):
                 *[
                     Td(
                         A(
-                            utils.date(d, year=year),
+                            utils.date(d, weekday=False, year=year),
                             href=f"/event/day/{d.year}-{d.month:02}-{d.day:02}",
                             cls="secondary strong",
-                        )
+                        ),
                     )
                     for d in week
                 ]
@@ -441,12 +458,13 @@ def get(year: int, month: int):
                 days.append(
                     Td(
                         *[
-                            Div(
-                                A(
+                            A(
+                                Div(
                                     e.nice(end=False, title=True),
-                                    href=e.url,
+                                    cls="bmargin3 border border-closed",
                                 ),
-                                cls="bmargin3",
+                                href=e.url,
+                                cls="plain",
                             )
                             for e in day_events
                         ],
@@ -503,7 +521,7 @@ def get(year: int, month: int):
                     ),
                     cls="grid",
                 ),
-                Table(*rows),
+                Table(*rows, cls="overflow-auto center"),
             ),
             cls="container",
         ),
@@ -629,11 +647,13 @@ def get(year: int, week: int):
                             Td(
                                 Div(
                                     *[
-                                        Div(
-                                            A(
+                                        A(
+                                            Div(
                                                 f"{e.nice(end=False, title=True)}",
-                                                href=e.url,
-                                            )
+                                                cls="border border-closed",
+                                            ),
+                                            href=e.url,
+                                            cls="plain",
                                         )
                                         for e in events
                                         if e.within(d, d + dt.timedelta(days=1))
@@ -642,10 +662,23 @@ def get(year: int, week: int):
                                 ),
                                 cls="top",
                             )
-                            for d in utils.get_week(start)
+                            for d in weekdays
                         ]
                     ),
-                    cls="overflow-auto",
+                    Tr(
+                        *[
+                            Td(
+                                A(
+                                    "Add event...",
+                                    href=f"/event?start_date={d.year}-{d.month:02}-{d.day:02}",
+                                    role="button",
+                                    cls="thin",
+                                ),
+                            )
+                            for d in weekdays
+                        ]
+                    ),
+                    cls="overflow-auto center",
                 ),
             ),
             cls="container",
@@ -730,18 +763,24 @@ def get(year: int, month: int, day: int):
                     ),
                     cls="grid",
                 ),
-                Ul(
-                    *[
-                        Li(
-                            A(
-                                e.nice(date=not e.within(start, end), title=True),
-                                href=e.url,
-                            ),
-                            Br(),
-                            NotStr(e.html or ""),
-                        )
-                        for e in events
-                    ]
+                *[
+                    Div(
+                        A(
+                            e.nice(date=not e.within(start, end), title=True),
+                            href=e.url,
+                        ),
+                        Br(),
+                        NotStr(e.html or ""),
+                        cls="border border-closed",
+                    )
+                    for e in events
+                ],
+                Footer(
+                    A(
+                        "Add event...",
+                        href=f"/event?start_date={year}-{month:02}-{day:02}",
+                        role="button",
+                    ),
                 ),
             ),
             cls="container",

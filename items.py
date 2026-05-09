@@ -322,6 +322,19 @@ class Event(Item):
         else:
             raise ValueError("invalid datetime value")
 
+    @property
+    def duration(self):
+        minutes = round((self.end - self.start).total_seconds() / 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
+        if days:
+            if hours == 0 and minutes == 0:
+                return f"{days}d"
+            else:
+                return f"{days}d {hours:02}:{minutes:02}"
+        else:
+            return f"{hours:02}:{minutes:02}"
+
     def set_end(self, date, time):
         if date:
             if time:
@@ -340,8 +353,10 @@ class Event(Item):
                 dt.time.fromisoformat(time),
                 tzinfo=constants.TIMEZONE,
             )
-        else:
+        elif self.start.hour == 0 and self.start.minute == 0:
             self.frontmatter["end"] = self.start + dt.timedelta(days=1)
+        else:
+            self.frontmatter["end"] = self.start + dt.timedelta(seconds=3600)
 
     def after(self, datetime):
         "Is this event strictly after the given datetime?"
@@ -383,10 +398,12 @@ class Event(Item):
     def nice(self, end=True, date=False, year=False, title=False):
         "Human-readable representation of the period of the event."
         result = []
-        # Exactly one day: show only date.
+        # Exactly one day: do not show times.
         if self.start + dt.timedelta(days=1) == self.end:
             if date:
                 result.append(f"{utils.date(self.start)}")
+            if year:
+                result.append(str(self.start.year))
         # Less than one day: show period.
         elif self.end - self.start < dt.timedelta(days=1):
             if date:

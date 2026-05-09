@@ -17,16 +17,17 @@ def timestamp_utc(timestamp):
     )
 
 
-def date(date, year=None):
+def date(date, weekday=True, year=None):
     "Return representation of the date."
-    result = [
-        date.strftime("%a"),
-        date.strftime("%d").lstrip("0"),
-        date.strftime("%b"),
-    ]
+    if weekday:
+        result = [date.strftime("%a").capitalize()]
+    else:
+        result = []
+    result.append(date.strftime("%d").lstrip("0"))
+    result.append(date.strftime("%b"))
     if year and date.year != year:
         result.append(date.strftime("%Y"))
-    return " ".join(result).capitalize()
+    return " ".join(result)
 
 
 def date_iso(date):

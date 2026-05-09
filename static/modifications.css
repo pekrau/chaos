@@ -90,10 +90,18 @@ a.button {
     margin: 6px;
 }
 
+a.plain {
+    text-decoration: none;
+}
+
 table.compressed > tbody > tr > td {
     padding-top: 2px;
     padding-bottom: 0px;
     margin-bottom: 2px;
+}
+
+table.center > tbody > tr > td {
+    text-align: center;
 }
 
 select.slim {
@@ -112,4 +120,30 @@ input.search {
 
 span.error {
     color: red;
+}
+
+div.border {
+    border-width: 2px;
+    border-color: lightgrey;
+    padding: 2px 6px;
+    margin: 2px;
+}
+
+div.border-closed {
+    border-style: solid;
+    border-radius: 8px;
+}
+
+div.border-open-right {
+    border-style: solid none solid solid;
+    border-radius: 8px 0px 0px 8px;
+}
+
+div.border-open-left {
+    border-style: solid solid solid none;
+    border-radius: 0px 8px 8px 0px;
+}
+
+div.border-open-both {
+    border-style: solid none solid none;
 }

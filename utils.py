@@ -17,6 +17,14 @@ def timestamp_utc(timestamp):
     )
 
 
+def get_datetime(year, month, day=1):
+    "Return the datetime instance for the given day."
+    return datetime.datetime(year, month, day, tzinfo=constants.TIMEZONE)
+
+def to_datetime(date, hour=0, minute=0):
+    "Convert the date instance to datetime."
+    return datetime.datetime.combine(date, datetime.time(hour, minute, tzinfo=constants.TIMEZONE))
+
 def date(date, weekday=True, year=None):
     "Return representation of the date."
     if weekday:
@@ -45,11 +53,6 @@ def week(date, year=False):
     if year:
         result += " " + date.strftime("%Y")
     return result
-
-
-def get_week(date):
-    "Return list of date instances for each of the 7 days following the given."
-    return [date] + [date + datetime.timedelta(days=day) for day in range(1, 7)]
 
 
 def normalize(s):

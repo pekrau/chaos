@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 6, 1)
+VERSION = (1, 6, 2)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -74,3 +74,5 @@ VEGA_LITE_LIBRARIES = [
     "https://cdn.jsdelivr.net/npm/vega-embed@7",
 ]
 GRAPHIC_TYPES = [SVG, VEGA_LITE]
+
+EVENT_CATEGORIES = ["standard", "important", "travel", "meeting", "activity", "other"]

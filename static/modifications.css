@@ -33,21 +33,32 @@
     margin-right: 1em;
 }
 
-.bmargin1 {
-    margin-bottom: 1em;
-}
-
-.bmargin3 {
-    margin-bottom: 3em;
-}
-
-.minimize {
-    width: 0px;
-    padding: 0px;
-}
-
 .strong {
     font-weight: bold;
+}
+
+.standard {
+    background-color: #edede9;
+}
+
+.important {
+    background-color: #ff8fa3;
+}
+
+.travel {
+    background-color:  #ade8f4;
+}
+
+.meeting {
+    background-color: #fdffb6;
+}
+
+.activity {
+    background-color: #ffc6ff;
+}
+
+.other {
+    background-color: #c1fba4;
 }
 
 *:required {
@@ -94,14 +105,29 @@ a.plain {
     text-decoration: none;
 }
 
+a.small {
+    font-size: small;
+}
+
 table.compressed > tbody > tr > td {
     padding-top: 2px;
     padding-bottom: 0px;
     margin-bottom: 2px;
 }
 
-table.center > tbody > tr > td {
+table.days > tbody > tr > td {
     text-align: center;
+    font-size: small;
+    padding: 2px 0px 0px;
+    margin-bottom: 2px;
+}
+
+table.days > tbody > tr > td > div {
+    min-height: 3em;
+}
+
+td.minwidth {
+    width: 0px;
 }
 
 select.slim {
@@ -123,8 +149,8 @@ span.error {
 }
 
 div.border {
-    border-width: 2px;
-    border-color: lightgrey;
+    border-width: 3px;
+    border-color: black;
     padding: 2px 6px;
     margin: 2px;
 }

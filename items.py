@@ -322,19 +322,6 @@ class Event(Item):
         else:
             raise ValueError("invalid datetime value")
 
-    @property
-    def duration(self):
-        minutes = round((self.end - self.start).total_seconds() / 60)
-        hours, minutes = divmod(minutes, 60)
-        days, hours = divmod(hours, 24)
-        if days:
-            if hours == 0 and minutes == 0:
-                return f"{days}d"
-            else:
-                return f"{days}d {hours:02}:{minutes:02}"
-        else:
-            return f"{hours:02}:{minutes:02}"
-
     def set_end(self, date, time):
         if date:
             if time:
@@ -357,6 +344,23 @@ class Event(Item):
             self.frontmatter["end"] = self.start + dt.timedelta(days=1)
         else:
             self.frontmatter["end"] = self.start + dt.timedelta(seconds=3600)
+
+    @property
+    def days(self):
+        "Duration of event in days."
+        return (self.end - self.start).total_seconds() / (24 * 3600)
+
+    @property
+    def category(self):
+        return self.frontmatter.get("category", constants.EVENT_CATEGORIES[0])
+
+    @category.setter
+    def category(self, value):
+        assert (not value) or (value in constants.EVENT_CATEGORIES)
+        if value:
+            self.frontmatter["category"] = value
+        else:
+            self.frontmatter.pop("category", None)
 
     def after(self, datetime):
         "Is this event strictly after the given datetime?"
@@ -449,6 +453,18 @@ class Event(Item):
         if title:
             result.append(str(self))
         return " ".join(result)
+
+    def nice_duration(self):
+        minutes = round((self.end - self.start).total_seconds() / 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
+        if days:
+            if hours == 0 and minutes == 0:
+                return f"{days}d"
+            else:
+                return f"{days}d {hours:02}:{minutes:02}"
+        else:
+            return f"{hours:02}:{minutes:02}"
 
 
 class _GenericFile(Item):

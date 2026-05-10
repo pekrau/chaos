@@ -383,7 +383,7 @@ def get_items_display(items, page=None, gallery=False, name="page"):
             Tbody(
                 *[
                     Tr(
-                        Td(get_to_clipboard(item), cls="minimize top"),
+                        Td(get_to_clipboard(item), cls="minwidth top"),
                         Td(
                             get_item_link(item),
                             *[

@@ -21,9 +21,16 @@ def get_datetime(year, month, day=1):
     "Return the datetime instance for the given day."
     return datetime.datetime(year, month, day, tzinfo=constants.TIMEZONE)
 
+
 def to_datetime(date, hour=0, minute=0):
     "Convert the date instance to datetime."
-    return datetime.datetime.combine(date, datetime.time(hour, minute, tzinfo=constants.TIMEZONE))
+    if isinstance(date, datetime.datetime):
+        return date
+    else:
+        return datetime.datetime.combine(
+            date, datetime.time(hour, minute, tzinfo=constants.TIMEZONE)
+        )
+
 
 def date(date, weekday=True, year=None):
     "Return representation of the date."

@@ -280,6 +280,10 @@ class Event(Item):
         "It seems that this must be defined again, when '__eq__' is also defined?!"
         return hash(self.id)
 
+    def __len__(self):
+        "Duration in minutes."
+        return round((self.end - self.start).total_seconds() / 60)
+
     @property
     def start(self):
         return self.frontmatter["start"]
@@ -346,9 +350,32 @@ class Event(Item):
             self.frontmatter["end"] = self.start + dt.timedelta(seconds=3600)
 
     @property
+    def whole_days(self):
+        "This event specifies a number of whole days; time is effectively undefined."
+        return (
+            self.start.hour == 0
+            and self.start.minute == 0
+            and self.end.hour == 0
+            and self.end.minute == 0
+        )
+
+    @property
     def days(self):
-        "Duration of event in days."
-        return (self.end - self.start).total_seconds() / (24 * 3600)
+        "Number of days this event affects."
+        if self.whole_days:
+            return self.end.toordinal() - self.start.toordinal()
+        else:
+            return self.end.toordinal() - self.start.toordinal() + 1
+
+    @property
+    def weekdays(self):
+        "The weekdays this event affects."
+        if self.whole_days:
+            if (last := self.end.isoweekday() - 1) == 0:
+                last = 7
+            return (self.start.isoweekday(), last)
+        else:
+            return (self.start.isoweekday(), self.end.isoweekday())
 
     @property
     def category(self):
@@ -362,26 +389,6 @@ class Event(Item):
         else:
             self.frontmatter.pop("category", None)
 
-    def after(self, datetime):
-        "Is this event strictly after the given datetime?"
-        assert isinstance(datetime, dt.datetime)
-        return datetime <= self.start
-
-    def before(self, datetime):
-        "Is this event strictly before the given datetime?"
-        assert isinstance(datetime, dt.datetime)
-        return self.end <= datetime
-
-    def precede(self, datetime):
-        "Does this event directly precede the given datetime?"
-        assert isinstance(datetime, dt.datetime)
-        return datetime == self.start
-
-    def follow(self, datetime):
-        "Does this event directly follow the given datetime?"
-        assert isinstance(datetime, dt.datetime)
-        return self.end == datetime
-
     def within(self, start, end):
         "Is this event within the given start and end datetimes?"
         assert isinstance(start, dt.datetime)
@@ -389,27 +396,45 @@ class Event(Item):
         return start <= self.start and self.end <= end
 
     def overlap(self, start, end):
-        "Does this event overlap with the given start and end datetimes?"
+        """Return the overlap in minutes of this event with the given start
+        and end datetimes.
+        Zero if none.
+        """
         assert isinstance(start, dt.datetime)
         assert isinstance(end, dt.datetime)
-        return not (self.end <= start or end <= self.start)
+        if self.end <= start:
+            return 0
+        if self.start >= end:
+            return 0
+        if start <= self.start:
+            if self.end <= end:
+                return len(self)
+            else:
+                return round((end - self.start).total_seconds() / 60)
+        elif self.end < end:
+            return round((self.end - start).total_seconds() / 60)
+        else:
+            return round((end - start).total_seconds() / 60)
 
     def check(self):
         "Check that the current event value is valid, i.e. start <= end."
         if self.start > self.end:
             raise ValueError("invalid event; start must be <= end")
 
-    def nice(self, end=True, date=False, year=False, title=False):
+    def nice(self, end=True, date=False, year=False, title=False, category=False):
         "Human-readable representation of the period of the event."
-        result = []
-        # Exactly one day: do not show times.
-        if self.start + dt.timedelta(days=1) == self.end:
+        if category:
+            result = [f"{self.category.capitalize()}:"]
+        else:
+            result = []
+        # Whole days event.
+        if self.whole_days:
             if date:
                 result.append(f"{utils.date(self.start)}")
             if year:
                 result.append(str(self.start.year))
-        # Less than one day: show period.
-        elif self.end - self.start < dt.timedelta(days=1):
+        # One day or less (not being whole days event): show period.
+        elif self.days <= 1:
             if date:
                 result.append(f"{utils.date(self.start, year=year)}")
                 if end:
@@ -420,7 +445,7 @@ class Event(Item):
                 result.append(f"{utils.time(self.start)}-{utils.time(self.end)}")
             else:
                 result.append(f"{utils.time(self.start)}")
-        # More than one day and 'end': show both dates.
+        # More than one day and not whole days event: show both dates.
         elif end:
             start_day = self.start.strftime("%d").lstrip("0")
             end_day = self.end.strftime("%d").lstrip("0")

@@ -358,8 +358,11 @@ def get(year: int):
     "Display events during a specified year."
     start = dt.datetime(year, 1, 1, tzinfo=constants.TIMEZONE)
     end = dt.datetime(year + 1, 1, 1, tzinfo=constants.TIMEZONE)
-    events = [e for e in items.get_items(type="event")
-              if e.overlap(start, end) and len(e) > 24 * 60]
+    events = [
+        e
+        for e in items.get_items(type="event")
+        if e.overlap(start, end) and len(e) > 24 * 60
+    ]
     rows = []
     for month in [utils.get_datetime(year, m) for m in range(1, 13)]:
         rows.append(
@@ -375,7 +378,9 @@ def get(year: int):
                 )
             )
         )
-        rows.append(Tr(Td(get_month_table(month.year, month.month, events, thick=False))))
+        rows.append(
+            Tr(Td(get_month_table(month.year, month.month, events, thick=False)))
+        )
     title = f"Year {year}"
     return (
         Title(title),
@@ -613,7 +618,7 @@ def get(year: int, week: int):
                                 for d in weekdays
                             ]
                         ),
-                        *get_week_rows(weekdays, events, offset=False),
+                        *get_week_rows(weekdays, events, offset=False, thick=True),
                         Tr(Td(Div(cls="vspacer"), colspan=7)),
                         Tr(
                             *[
@@ -782,7 +787,11 @@ def get_month_table(year, month, events, thick=True):
         )
         first = utils.to_datetime(weekdays[0])
         last = utils.to_datetime(weekdays[6]) + dt.timedelta(days=1)
-        rows.extend(get_week_rows(weekdays, [e for e in events if e.overlap(first, last)], thick=thick))
+        rows.extend(
+            get_week_rows(
+                weekdays, [e for e in events if e.overlap(first, last)], thick=thick
+            )
+        )
         rows.append(Tr(Td(Div(cls="vspacer"), colspan=8)))
     return Table(*rows, cls="days")
 
@@ -850,9 +859,7 @@ def get_week_rows(weekdays, events, offset=True, thick=False):
         row_cells.append(cells)
     if offset:
         if row_cells:
-            result = [
-                Tr(Td(rowspan=max(1, len(row_cells))), *row_cells[0])
-            ]
+            result = [Tr(Td(rowspan=max(1, len(row_cells))), *row_cells[0])]
             result.extend([Tr(*c) for c in row_cells[1:]])
         else:
             result = [Tr(Td())]

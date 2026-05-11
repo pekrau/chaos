@@ -111,17 +111,9 @@ a.button {
     margin: 6px;
 }
 
-a.small {
-    font-size: small;
-}
-
 table.compressed > tbody > tr > td {
     padding-top: 2px;
     padding-bottom: 0px;
-}
-
-table.days > tbody > tr > td {
-    border-width: 0px;
 }
 
 table.days > tbody > tr > th {
@@ -132,7 +124,7 @@ table.days > tbody > tr > th {
 
 table.days > tbody > tr > td {
     text-align: center;
-    font-size: small;
+    border-width: 0px;
     padding: 2px 0px 0px;
 }
 

@@ -1,6 +1,6 @@
 "Various utility functions."
 
-import datetime
+import datetime as dt
 import os
 import unicodedata
 
@@ -12,54 +12,33 @@ import constants
 
 def timestamp_utc(timestamp):
     "Convert timestamp to ISO format string in UTC time."
-    return datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC).strftime(
-        "%Y-%m-%d %H:%M:%S"
-    )
+    return dt.datetime.fromtimestamp(timestamp, tz=dt.UTC).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_datetime(year, month, day=1):
     "Return the datetime instance for the given day."
-    return datetime.datetime(year, month, day, tzinfo=constants.TIMEZONE)
+    return dt.datetime(year, month, day, tzinfo=constants.TIMEZONE)
 
 
 def to_datetime(date, hour=0, minute=0):
     "Convert the date instance to datetime."
-    if isinstance(date, datetime.datetime):
+    if isinstance(date, dt.datetime):
         return date
-    else:
-        return datetime.datetime.combine(
-            date, datetime.time(hour, minute, tzinfo=constants.TIMEZONE)
-        )
+    return dt.datetime.combine(date, dt.time(hour, minute, tzinfo=constants.TIMEZONE))
 
 
-def date(date, weekday=True, year=None):
-    "Return representation of the date."
+def date(date, weekday=True, month=None, year=None):
+    "Return human-readable date. Show month and/or year if given and different."
     if weekday:
         result = [date.strftime("%a").capitalize()]
     else:
         result = []
-    result.append(date.strftime("%d").lstrip("0"))
-    result.append(date.strftime("%b"))
+    result.append(str(date.day))
+    if month and date.month != month:
+        result.append(date.strftime("%b"))
     if year and date.year != year:
         result.append(date.strftime("%Y"))
     return " ".join(result)
-
-
-def date_iso(date):
-    return date.strftime("%Y-%m-%d")
-
-
-def time(datetime):
-    "Return representation of the time."
-    return datetime.strftime("%H:%M")
-
-
-def week(date, year=False):
-    "Return the week representation for the given date, optionally with the year."
-    result = f"v{date.strftime('%V').lstrip('0')}"
-    if year:
-        result += " " + date.strftime("%Y")
-    return result
 
 
 def normalize(s):

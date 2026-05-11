@@ -159,7 +159,6 @@ class Item:
         "Return a list of items similar to this. Currently based on tags."
         result = set()
         for tag in self.tags:
-            ic(tag, tag.tagged)
             result.update(tag.tagged)
         result.remove(self)
         tags = self.tag_ids
@@ -264,6 +263,9 @@ class Link(Item):
 class Event(Item):
     "Event item class; start and end datetimes in the local timezone."
 
+    def __str__(self):
+        return f"{self.title}, {self.period(date=True)}"
+
     def __lt__(self, other):
         assert isinstance(other, Event)
         return self.start < other.start or (
@@ -351,7 +353,7 @@ class Event(Item):
 
     @property
     def whole_days(self):
-        "This event specifies a number of whole days; time is effectively undefined."
+        "Does this event span a whole number of days?"
         return (
             self.start.hour == 0
             and self.start.minute == 0
@@ -361,21 +363,99 @@ class Event(Item):
 
     @property
     def days(self):
-        "Number of days this event affects."
+        "Number of days this event affects; int."
         if self.whole_days:
             return self.end.toordinal() - self.start.toordinal()
         else:
             return self.end.toordinal() - self.start.toordinal() + 1
 
     @property
-    def weekdays(self):
-        "The weekdays this event affects."
+    def time(self):
+        "The start time."
+        return self.start.strftime("%H:%M")
+
+    @property
+    def week(self):
+        "The start week number."
+        return self.start.isocalendar().week
+
+    @property
+    def weekday(self):
+        "The start weekday name."
+        return self.start.strftime("%A").capitalize()
+
+    @property
+    def weekday_short(self):
+        "The start weekday abbreviated name."
+        return self.start.strftime("%a").capitalize()
+
+    @property
+    def weekday_number(self):
+        "The start weekday number."
+        return self.start.isoweekday()
+
+    @property
+    def month(self):
+        "The start month name."
+        return self.start.strftime("%B")
+
+    @property
+    def month_short(self):
+        "The start month abbreviated name."
+        return self.start.strftime("%b")
+
+    @property
+    def _end(self):
+        "The end datetime taking whole days into account."
         if self.whole_days:
-            if (last := self.end.isoweekday() - 1) == 0:
-                last = 7
-            return (self.start.isoweekday(), last)
+            return self.end - dt.timedelta(days=1)
         else:
-            return (self.start.isoweekday(), self.end.isoweekday())
+            return self.end
+
+    @property
+    def end_time(self):
+        "The end time."
+        return self.end.strftime("%H:%M")
+
+    @property
+    def end_week(self):
+        "The end week number."
+        return self._end.isocalendar().week
+
+    @property
+    def end_weekday(self):
+        "The end weekday name."
+        return self._end.strftime("%A").capitalize()
+
+    @property
+    def end_weekday_short(self):
+        "The end weekday abbreviated name."
+        return self._end.strftime("%a").capitalize()
+
+    @property
+    def end_weekday_number(self):
+        "The end weekday number."
+        return self._end.isoweekday()
+
+    @property
+    def end_day(self):
+        "The end day month number."
+        return self._end.day
+
+    @property
+    def end_month(self):
+        "The end month name."
+        return self._end.strftime("%B")
+
+    @property
+    def end_month_short(self):
+        "The end month name abbreviation."
+        return self._end.strftime("%b")
+
+    @property
+    def end_year(self):
+        "The end year number."
+        return self._end.year
 
     @property
     def category(self):
@@ -421,75 +501,50 @@ class Event(Item):
         if self.start > self.end:
             raise ValueError("invalid event; start must be <= end")
 
-    def nice(self, end=True, date=False, year=False, title=False, category=False):
-        "Human-readable representation of the period of the event."
-        if category:
-            result = [f"{self.category.capitalize()}:"]
+    def isodate(self, month=True, day=True, week=False):
+        if week:
+            return f"{self.start.year}-{self.start.isocalendar().week}"
+        elif day:
+            return f"{self.start.year}-{self.start.month:02}-{self.start.day:02}"
+        elif month:
+            return f"{self.start.year}-{self.start.month:02}"
         else:
-            result = []
-        # Whole days event.
-        if self.whole_days:
-            if date:
-                result.append(f"{utils.date(self.start)}")
-            if year:
-                result.append(str(self.start.year))
-        # One day or less (not being whole days event): show period.
-        elif self.days <= 1:
-            if date:
-                result.append(f"{utils.date(self.start, year=year)}")
-                if end:
-                    result.append(f"{utils.time(self.start)}-{utils.time(self.end)}")
-                else:
-                    result.append(f"{utils.time(self.start)}")
-            elif end:
-                result.append(f"{utils.time(self.start)}-{utils.time(self.end)}")
-            else:
-                result.append(f"{utils.time(self.start)}")
-        # More than one day and not whole days event: show both dates.
-        elif end:
-            start_day = self.start.strftime("%d").lstrip("0")
-            end_day = self.end.strftime("%d").lstrip("0")
-            # Same year.
-            if self.start.year == self.end.year:
-                # Same month: show days interval.
-                if self.start.month == self.end.month:
-                    result.append(
-                        f"{start_day} - {end_day} {self.start.strftime('%b')}"
-                    )
-                # Different month: show day and month interval.
-                else:
-                    result.append(
-                        f"{start_day} {self.start.strftime('%b')} - {end_day} {self.end.strftime('%b')}"
-                    )
-                if year:
-                    result.append(str(self.start.year))
-            # Different years: year is shown regardless of argument.
-            else:
-                result.append(
-                    f"{start_day} {self.start.strftime('%b %Y')} - {end_day} {self.end.strftime('%b %Y')}"
-                )
-        # Do not show end.
-        else:
-            result.append(
-                f"{self.start.strftime('%d').lstrip('0')} {self.start.strftime('%b')}"
-            )
-            if year:
-                result.append(str(self.start.year))
-        if title:
-            result.append(str(self))
-        return " ".join(result)
+            return str(self.start.year)
 
-    def nice_duration(self):
+    def period(self, date=False):
+        "Human-readable representation of the period. Omit date if less than one day."
+        if self.start.year == self.end_year:
+            if self.month == self.end_month:
+                if self.whole_days:
+                    if self.days == 1:
+                        return f"{self.start.day} {self.month} {self.start.year}"
+                elif self.start.day == self.end.day:
+                    if date:
+                        return f"{self.weekday} {self.start.day} {self.month} {self.start.year} {self.time}-{self.end_time}"
+                    else:
+                        return f"{self.time}-{self.end_time}"
+                return f"{self.start.day}-{self.end_day} {self.month} {self.start.year}"
+            else:  # Different months; same year.
+                return f"{self.start.day} {self.month_short} - {self.end_day} {self.end_month_short}  {self.start.year}"
+        else:  # Different years.
+            return f"{self.start.day} {self.month_short} {self.start.year} - {self.end_day} {self.end_month_short} {self.end_year}"
+
+    def duration(self):
+        "Formatted duration; weeks, days, hours, minutes."
         minutes = round((self.end - self.start).total_seconds() / 60)
         hours, minutes = divmod(minutes, 60)
         days, hours = divmod(hours, 24)
+        weeks, days = divmod(days, 7)
+        result = []
+        if weeks:
+            result.append(f"{weeks}w")
         if days:
-            if hours == 0 and minutes == 0:
-                return f"{days}d"
-            else:
-                return f"{days}d {hours:02}:{minutes:02}"
-        else:
-            return f"{hours:02}:{minutes:02}"
+            result.append(f"{days}d")
+        if hours:
+            result.append(f"{hours}h")
+        if minutes:
+            result.append(f"{minutes}m")
+        return " ".join(result)
 
 
 class _GenericFile(Item):

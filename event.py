@@ -124,32 +124,29 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                 event,
                 header=Header(
                     Div(event.category.capitalize()),
-                    Div(
-                        Strong(event.nice(date=True, year=True)),
-                        f" ({event.nice_duration()})",
-                    ),
+                    Div(Strong(event.period(date=True)), f" ({event.duration()})"),
                     Div(
                         A(
-                            f"{event.start.strftime('%A').capitalize()} {event.start.strftime('%d').lstrip('0')}",
-                            href=f"/event/day/{event.start.year}-{event.start.month:02}-{event.start.day:02}",
+                            f"{event.weekday_short.capitalize()} {event.start.day}",
+                            href=f"/event/day/{event.isodate()}",
                             role="button",
                             cls="outline thin rmargin",
                         ),
                         A(
-                            event.start.strftime("%B"),
-                            href=f"/event/month/{event.start.year}-{event.start.month:02}",
+                            event.month,
+                            href=f"/event/month/{event.isodate(day=False)}",
                             role="button",
                             cls="outline thin rmargin",
                         ),
                         A(
                             event.start.year,
-                            href=f"/event/year/{event.start.year}",
+                            href=f"/event/year/{event.isodate(month=False, day=False)}",
                             role="button",
                             cls="outline thin rmargin",
                         ),
                         A(
-                            f"v{event.start.strftime('%V').lstrip('0')}",
-                            href=f"/event/week/{event.start.year}-{event.start.isocalendar().week}",
+                            f"w{event.week}",
+                            href=f"/event/week/{event.isodate(week=True)}",
                             role="button",
                             cls="outline thin right",
                         ),
@@ -551,7 +548,8 @@ def get(year: int, week: int):
         )
     events = [p for p in items.get_items(type="event") if p.overlap(start, next)]
     weekdays = [start] + [start + dt.timedelta(days=day) for day in range(1, 7)]
-    title = f"v{week} {year}"
+    thursday = weekdays[3]
+    title = f"w{week} {year}"
     return (
         Title(title),
         Header(
@@ -571,23 +569,24 @@ def get(year: int, week: int):
                 Header(
                     Div(
                         A(
-                            utils.week(prev, year=True),
+                            f"w{prev.strftime('%V').lstrip('0')}",
+                            f" {prev.year}" if prev.year != thursday.year else "",
                             href=f"/event/week/{prev.strftime('%Y-%V')}",
                             role="button",
                             cls="outline thin",
                         ),
                     ),
                     Div(
-                        Strong(f"v{week}", cls="rmargin"),
+                        Strong(f"w{week}", cls="rmargin"),
                         A(
-                            weekdays[3].strftime("%B"),
-                            href=weekdays[3].strftime("/event/month/%Y-%m"),
+                            thursday.strftime("%B"),
+                            href=thursday.strftime("/event/month/%Y-%m"),
                             role="button",
                             cls="outline thin rmargin",
                         ),
                         A(
-                            weekdays[3].strftime("%Y"),
-                            href=weekdays[3].strftime("/event/year/%Y"),
+                            thursday.strftime("%Y"),
+                            href=thursday.strftime("/event/year/%Y"),
                             role="button",
                             cls="outline thin",
                         ),
@@ -595,7 +594,8 @@ def get(year: int, week: int):
                     ),
                     Div(
                         A(
-                            utils.week(next, year=True),
+                            f"w{next.strftime('%V').lstrip('0')}",
+                            f" {next.year}" if next.year != thursday.year else "",
                             href=f"/event/week/{next.strftime('%Y-%V')}",
                             role="button",
                             cls="outline thin",
@@ -610,10 +610,11 @@ def get(year: int, week: int):
                             *[
                                 Td(
                                     A(
-                                        utils.date(d, year=year),
-                                        href=f"/event/day/{utils.date_iso(d)}",
+                                        utils.date(d, month=True, year=year),
+                                        href=d.strftime("/event/day/%Y-%m-%d"),
                                         cls="secondary strong",
                                     ),
+                                    style="width: 15%",
                                 )
                                 for d in weekdays
                             ]
@@ -627,7 +628,7 @@ def get(year: int, week: int):
                                         "Add",
                                         href=f"/event?start_date={d.year}-{d.month:02}-{d.day:02}",
                                         role="button",
-                                        cls="thin small",
+                                        cls="thin",
                                     ),
                                 )
                                 for d in weekdays
@@ -652,22 +653,24 @@ def get():
 @rt("/day/{year}-{month}-{day}")
 def get(year: int, month: int, day: int):
     "Display events during a specified day."
-    start = utils.get_datetime(year, month, day)
-    end = start + dt.timedelta(days=1)
-    prev = start - dt.timedelta(days=1)
+    today = utils.get_datetime(year, month, day)
+    prev = today - dt.timedelta(days=1)
+    next = today + dt.timedelta(days=1)
 
     # First events that extend over more than today, sorted by length.
     # Then todays events, sorted by start time.
-    events = [e for e in items.get_items(type="event") if e.overlap(start, end)]
+    events = [e for e in items.get_items(type="event") if e.overlap(today, next)]
     beyond_today = sorted(
-        [e for e in events if not e.within(start, end)],
+        [e for e in events if not e.within(today, next)],
         key=lambda e: len(e),
         reverse=True,
     )
-    today = sorted([e for e in events if e.within(start, end)], key=lambda e: e.start)
-    events = beyond_today + today
+    just_today = sorted(
+        [e for e in events if e.within(today, next)], key=lambda e: e.start
+    )
+    events = beyond_today + just_today
 
-    title = utils.date(start, year=True).capitalize()
+    title = f"{today.strftime('%A').capitalize()} {today.day} {today.strftime('%B')} {today.year}"
     return (
         Title(title),
         Header(
@@ -687,21 +690,21 @@ def get(year: int, month: int, day: int):
                 Header(
                     Div(
                         A(
-                            utils.date(prev),
-                            href=f"/event/day/{utils.date_iso(prev)}",
+                            f"{prev.day} {prev.strftime('%b')}",
+                            href=prev.strftime("/event/day/%Y-%m-%d"),
                             role="button",
                             cls="outline thin",
                         ),
                     ),
                     Div(
                         Strong(
-                            start.strftime("%A").capitalize(),
+                            today.strftime("%A").capitalize(),
                             " ",
-                            start.strftime("%d").lstrip("0"),
+                            today.day,
                             cls="rmargin",
                         ),
                         A(
-                            start.strftime("%B"),
+                            today.strftime("%B"),
                             href=f"/event/month/{year}-{month}",
                             role="button",
                             cls="outline thin rmargin",
@@ -713,8 +716,8 @@ def get(year: int, month: int, day: int):
                             cls="outline thin rmargin",
                         ),
                         A(
-                            f"v{start.strftime('%V').lstrip('0')}",
-                            href=f"/event/week/{start.year}-{start.isocalendar().week}",
+                            f"w{today.strftime('%V').lstrip('0')}",
+                            href=f"/event/week/{today.year}-{today.isocalendar().week}",
                             role="button",
                             cls="outline thin",
                         ),
@@ -722,8 +725,8 @@ def get(year: int, month: int, day: int):
                     ),
                     Div(
                         A(
-                            utils.date(end),
-                            href=f"/event/day/{utils.date_iso(end)}",
+                            f"{next.day} {next.strftime('%b')}",
+                            href=next.strftime("/event/day/%Y-%m-%d"),
                             role="button",
                             cls="outline thin",
                         ),
@@ -734,13 +737,13 @@ def get(year: int, month: int, day: int):
                 *[
                     Div(
                         A(
-                            e.nice(date=not e.within(start, end), title=True),
+                            f"{e.period()} {e.title}",
                             href=e.url,
                             cls="black",
                         ),
                         Br(),
                         NotStr(e.html or ""),
-                        cls=get_event_classes(e, start, end) + " border-plus",
+                        cls=get_event_classes(e, today, next) + " border-plus",
                     )
                     for e in events
                 ],
@@ -760,23 +763,23 @@ def get(year: int, month: int, day: int):
 def get_month_table(year, month, events, thick=True):
     "Generate the display the given events of a specified month."
     monthdays = list(calendar.Calendar().monthdatescalendar(year, month))
-    rows = [Tr(Td(), *[Td(d.strftime("%a").capitalize()) for d in monthdays[0]])]
+    rows = [Tr(Td(), *[Td(d.strftime("%a").capitalize(), style="width: 15%") for d in monthdays[0]])]
     for weekdays in monthdays:
         rows.append(
             Tr(
                 Th(
                     A(
-                        f"v{weekdays[0].strftime('%V').lstrip('0')}",
+                        f"w{weekdays[0].strftime('%V').lstrip('0')}",
                         href=f"/event/week/{weekdays[0].year}-{weekdays[0].isocalendar().week}",
                         role="button",
-                        cls="outline thin small",
+                        cls="outline thin",
                     ),
                     cls="minwidth",
                 ),
                 *[
                     Th(
                         A(
-                            utils.date(d, weekday=False, year=year),
+                            utils.date(d, weekday=False, month=month, year=year),
                             href=f"/event/day/{d.year}-{d.month:02}-{d.day:02}",
                             cls="secondary strong",
                         ),
@@ -808,23 +811,22 @@ def get_week_rows(weekdays, events, offset=True, thick=False):
         cells = []
         events_set = get_next_events(events, start, end)
         events = set(events).difference(events_set)
-        current_weekday = 1
         sum_colspan = 0
         for event in events_set:
             if event.start < start:
                 if event.end > end:
                     colspan = 7
                 else:
-                    first, last = event.weekdays
-                    colspan = last + 1
+                    colspan = event.end_weekday_number + 1
                     sum_colspan += colspan
             elif event.end > end:
-                first, last = event.weekdays
+                first = event.weekday_number
                 if pad := first - sum_colspan - 1:
                     cells.append(Td(colspan=pad))
                 colspan = 8 - first
             else:
-                first, last = event.weekdays
+                first = event.weekday_number
+                last = event.end_weekday_number
                 if pad := first - sum_colspan - 1:
                     cells.append(Td(colspan=pad))
                 colspan = last - first + 1
@@ -834,7 +836,7 @@ def get_week_rows(weekdays, events, offset=True, thick=False):
                     Td(
                         A(
                             Div(
-                                event.nice(end=False, title=True),
+                                f"{event.period()} {event.title}",
                                 cls=get_event_classes(event, start, end),
                             ),
                             href=event.url,
@@ -850,7 +852,7 @@ def get_week_rows(weekdays, events, offset=True, thick=False):
                         A(
                             Div(cls="vspacer " + get_event_classes(event, start, end)),
                             href=event.url,
-                            title=event.nice(end=False, title=True, category=True),
+                            title=f"{event.category.capitalize()}: {event.period()} {event.title}",
                             cls="black",
                         ),
                         colspan=colspan,

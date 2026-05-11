@@ -46,7 +46,7 @@ import article
 import api
 import utils
 
-locale.setlocale(locale.LC_ALL, os.environ.get("LANG", ""))
+locale.setlocale(locale.LC_ALL, "")
 
 app, rt = components.get_app_rt(
     routes=[

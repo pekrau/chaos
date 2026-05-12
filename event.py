@@ -549,6 +549,7 @@ def get(year: int, week: int):
     events = [p for p in items.get_items(type="event") if p.overlap(start, next)]
     weekdays = [start] + [start + dt.timedelta(days=day) for day in range(1, 7)]
     thursday = weekdays[3]
+    today_ordinal = dt.datetime.now(constants.TIMEZONE).toordinal()
     title = f"w{week} {year}"
     return (
         Title(title),
@@ -614,6 +615,7 @@ def get(year: int, week: int):
                                         href=d.strftime("/event/day/%Y-%m-%d"),
                                         cls="secondary strong",
                                     ),
+                                    cls="today" if d.toordinal() == today_ordinal else "",
                                     style="width: 15%",
                                 )
                                 for d in weekdays
@@ -653,24 +655,24 @@ def get():
 @rt("/day/{year}-{month}-{day}")
 def get(year: int, month: int, day: int):
     "Display events during a specified day."
-    today = utils.get_datetime(year, month, day)
-    prev = today - dt.timedelta(days=1)
-    next = today + dt.timedelta(days=1)
+    thisday = utils.get_datetime(year, month, day)
+    prev = thisday - dt.timedelta(days=1)
+    next = thisday + dt.timedelta(days=1)
 
-    # First events that extend over more than today, sorted by length.
-    # Then todays events, sorted by start time.
-    events = [e for e in items.get_items(type="event") if e.overlap(today, next)]
-    beyond_today = sorted(
-        [e for e in events if not e.within(today, next)],
+    # First events that extend over more than thisday, sorted by length.
+    # Then thisdays events, sorted by start time.
+    events = [e for e in items.get_items(type="event") if e.overlap(thisday, next)]
+    beyond_thisday = sorted(
+        [e for e in events if not e.within(thisday, next)],
         key=lambda e: len(e),
         reverse=True,
     )
-    just_today = sorted(
-        [e for e in events if e.within(today, next)], key=lambda e: e.start
+    just_thisday = sorted(
+        [e for e in events if e.within(thisday, next)], key=lambda e: e.start
     )
-    events = beyond_today + just_today
+    events = beyond_thisday + just_thisday
 
-    title = f"{today.strftime('%A').capitalize()} {today.day} {today.strftime('%B')} {today.year}"
+    title = f"{thisday.strftime('%A').capitalize()} {thisday.day} {thisday.strftime('%B')} {thisday.year}"
     return (
         Title(title),
         Header(
@@ -698,13 +700,13 @@ def get(year: int, month: int, day: int):
                     ),
                     Div(
                         Strong(
-                            today.strftime("%A").capitalize(),
+                            thisday.strftime("%A").capitalize(),
                             " ",
-                            today.day,
+                            thisday.day,
                             cls="rmargin",
                         ),
                         A(
-                            today.strftime("%B"),
+                            thisday.strftime("%B"),
                             href=f"/event/month/{year}-{month}",
                             role="button",
                             cls="outline thin rmargin",
@@ -716,8 +718,8 @@ def get(year: int, month: int, day: int):
                             cls="outline thin rmargin",
                         ),
                         A(
-                            f"w{today.strftime('%V').lstrip('0')}",
-                            href=f"/event/week/{today.year}-{today.isocalendar().week}",
+                            f"w{thisday.strftime('%V').lstrip('0')}",
+                            href=f"/event/week/{thisday.year}-{thisday.isocalendar().week}",
                             role="button",
                             cls="outline thin",
                         ),
@@ -743,7 +745,7 @@ def get(year: int, month: int, day: int):
                         ),
                         Br(),
                         NotStr(e.html or ""),
-                        cls=get_event_classes(e, today, next) + " border-plus",
+                        cls=get_event_classes(e, thisday, next) + " border-plus",
                     )
                     for e in events
                 ],
@@ -762,6 +764,7 @@ def get(year: int, month: int, day: int):
 
 def get_month_table(year, month, events, thick=True):
     "Generate the display the given events of a specified month."
+    today_ordinal = dt.datetime.now(constants.TIMEZONE).toordinal()
     monthdays = list(calendar.Calendar().monthdatescalendar(year, month))
     rows = [Tr(Td(), *[Td(d.strftime("%a").capitalize(), style="width: 15%") for d in monthdays[0]])]
     for weekdays in monthdays:
@@ -779,10 +782,11 @@ def get_month_table(year, month, events, thick=True):
                 *[
                     Th(
                         A(
-                            utils.date(d, weekday=False, month=month, year=year),
+                            utils.date(d, weekday=False, month=False, year=year),
                             href=f"/event/day/{d.year}-{d.month:02}-{d.day:02}",
-                            cls="secondary strong",
+                            cls="secondary strong" if d.month == month else "secondary small"
                         ),
+                        cls="today" if d.toordinal() == today_ordinal else ""
                     )
                     for d in weekdays
                 ],
@@ -836,7 +840,7 @@ def get_week_rows(weekdays, events, offset=True, thick=False):
                     Td(
                         A(
                             Div(
-                                f"{event.period()} {event.title}",
+                                event.display(),
                                 cls=get_event_classes(event, start, end),
                             ),
                             href=event.url,

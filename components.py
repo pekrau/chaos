@@ -202,9 +202,7 @@ def get_nav_menu(item=None, copy=True, operations=None, icon=None):
             links.append(A(f"Pin {item.type}", href=f"/pin/{item.id}", title="Pin"))
     if operations is not None:
         links.extend(operations)
-    links.append(A("Week", href="/event/week/"))
-    links.append(A("Month", href="/event/month/"))
-    links.append(A("Year", href="/event/year/"))
+    links.append(A("Today", href="/event/day/"))
     links.append(A("Add...", href="/add/"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("Search...", href="/search"))

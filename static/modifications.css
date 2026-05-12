@@ -43,6 +43,10 @@
     font-weight: bold;
 }
 
+.small {
+    font-size: small;
+}
+
 .black {
     color: black;
 }
@@ -70,6 +74,11 @@
 .other {
     background-color: #c1fba4;
 }
+.today {
+    border: 2px solid blue !important;
+    background-color: yellow;
+}
+
 
 *:required {
     border-color: red;
@@ -116,13 +125,8 @@ table.compressed > tbody > tr > td {
     padding-bottom: 0px;
 }
 
-table.days > tbody > tr > th {
-    text-align: center;
-    border-top: 1px solid grey;
-    border-bottom: 0px none;
-}
-
-table.days > tbody > tr > td {
+table.days > tbody > tr > td, th {
+    vertical-align: top;
     text-align: center;
     border-width: 0px;
     padding: 2px 0px 0px;
@@ -147,13 +151,13 @@ span.error {
 }
 
 div.vspacer {
-    min-height: 1em;
+    min-height: 0.5em;
 }
 
 div.border {
     border-width: 1px;
     border-color: black;
-    padding: 2px 6px;
+    padding: 0px 4px;
     margin-left: 1px;
     margin-right: 1px;
 }

@@ -502,6 +502,7 @@ class Event(Item):
             raise ValueError("invalid event; start must be <= end")
 
     def isodate(self, month=True, day=True, week=False):
+        "Return formatted date in ISO style."
         if week:
             return f"{self.start.year}-{self.start.isocalendar().week}"
         elif day:
@@ -511,23 +512,37 @@ class Event(Item):
         else:
             return str(self.start.year)
 
-    def period(self, date=False):
-        "Human-readable representation of the period. Omit date if less than one day."
+    def period(self, date=False, time=True):
+        """Human-readable representation of the period.
+        Omit date if less than one day.
+        """
         if self.start.year == self.end_year:
             if self.month == self.end_month:
                 if self.whole_days:
                     if self.days == 1:
                         return f"{self.start.day} {self.month} {self.start.year}"
+                    else:
+                        return f"{self.start.day}-{self.end_day} {self.month} {self.start.year}"
                 elif self.start.day == self.end.day:
                     if date:
                         return f"{self.weekday} {self.start.day} {self.month} {self.start.year} {self.time}-{self.end_time}"
                     else:
                         return f"{self.time}-{self.end_time}"
-                return f"{self.start.day}-{self.end_day} {self.month} {self.start.year}"
+                else:
+                    return f"{self.start.day}-{self.end_day} {self.month} {self.start.year}"
             else:  # Different months; same year.
                 return f"{self.start.day} {self.month_short} - {self.end_day} {self.end_month_short}  {self.start.year}"
         else:  # Different years.
             return f"{self.start.day} {self.month_short} {self.start.year} - {self.end_day} {self.end_month_short} {self.end_year}"
+
+    def display(self):
+        "Return information formatted for display in table."
+        if self.whole_days:
+            return self.title
+        elif self.days > 1:
+            return self.title
+        else:
+            return f"{self.time}-{self.end_time} {self.title}"
 
     def duration(self):
         "Formatted duration; weeks, days, hours, minutes."

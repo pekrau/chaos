@@ -572,7 +572,7 @@ class _GenericFile(Item):
 
     @filename.setter
     def filename(self, value):
-        self.frontmatter["filename"] = filename
+        self.frontmatter["filename"] = value
 
     @property
     def filepath(self):

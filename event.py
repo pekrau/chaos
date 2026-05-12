@@ -611,7 +611,7 @@ def get(year: int, week: int):
                             *[
                                 Td(
                                     A(
-                                        utils.date(d, month=True, year=year),
+                                        f"{d.strftime('%a')} {d.day} {d.strftime('%b')}".capitalize(),
                                         href=d.strftime("/event/day/%Y-%m-%d"),
                                         cls="secondary strong",
                                     ),
@@ -782,7 +782,7 @@ def get_month_table(year, month, events, thick=True):
                 *[
                     Th(
                         A(
-                            utils.date(d, weekday=False, month=False, year=year),
+                            d.day,
                             href=f"/event/day/{d.year}-{d.month:02}-{d.day:02}",
                             cls="secondary strong" if d.month == month else "secondary small"
                         ),

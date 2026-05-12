@@ -27,20 +27,6 @@ def to_datetime(date, hour=0, minute=0):
     return dt.datetime.combine(date, dt.time(hour, minute, tzinfo=constants.TIMEZONE))
 
 
-def date(date, weekday=True, month=None, year=None):
-    "Return human-readable date. Show month and/or year if given and different."
-    if weekday:
-        result = [date.strftime("%a").capitalize()]
-    else:
-        result = []
-    result.append(str(date.day))
-    if month and date.month != month:
-        result.append(date.strftime("%b"))
-    if year and date.year != year:
-        result.append(date.strftime("%Y"))
-    return " ".join(result)
-
-
 def normalize(s):
     "Normalize string to ASCII, fold case, replace non-file characters with '-'."
     result = unicodedata.normalize("NFKD", s).encode("ASCII", "ignore")

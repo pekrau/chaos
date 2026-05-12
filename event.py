@@ -207,7 +207,7 @@ def get(event: items.Item):
                         Input(
                             type="date",
                             name="end_date",
-                            value=str(event.end).split()[0],
+                            value=str(event._end).split()[0], # Note: uses '_end'!
                         ),
                     ),
                     Label(
@@ -819,12 +819,12 @@ def get_week_rows(weekdays, events, offset=True, thick=False):
         sum_colspan = 0
         for event in events_set:
             if event.start < start:
-                if event.end > end:
+                if event._end > end:
                     colspan = 7
                 else:
-                    colspan = event.end_weekday_number + 1
+                    colspan = event.end_weekday_number
                     sum_colspan += colspan
-            elif event.end > end:
+            elif event._end > end:
                 first = event.weekday_number
                 if pad := first - sum_colspan - 1:
                     cells.append(Td(colspan=pad))

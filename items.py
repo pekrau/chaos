@@ -330,7 +330,7 @@ class Event(Item):
 
     def set_end(self, date, time):
         if date:
-            if time:
+            if time and time != "00:00":
                 self.frontmatter["end"] = dt.datetime.combine(
                     dt.date.fromisoformat(date),
                     dt.time.fromisoformat(time),
@@ -479,7 +479,7 @@ class Event(Item):
     def overlap(self, start, end):
         """Return the overlap in minutes of this event with the given start
         and end datetimes.
-        Zero if none.
+        Zero if no overlap.
         """
         assert isinstance(start, dt.datetime)
         assert isinstance(end, dt.datetime)

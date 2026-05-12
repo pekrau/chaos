@@ -337,9 +337,10 @@ class Event(Item):
                     tzinfo=constants.TIMEZONE,
                 )
             else:
-                self.frontmatter["end"] = dt.datetime.fromisoformat(date).replace(
-                    tzinfo=constants.TIMEZONE
-                )
+                end = dt.datetime.fromisoformat(date).replace(tzinfo=constants.TIMEZONE)
+                if self.start.hour == 0 and self.start.minute == 0:
+                    end = end + dt.timedelta(days=1)
+                self.frontmatter["end"] = end
         elif time:
             self.frontmatter["end"] = dt.datetime.combine(
                 self.start,

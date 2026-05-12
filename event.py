@@ -17,7 +17,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(start_date: str = None):
+def get(date: str = None):
     "Form for adding an event."
     title = "Add event"
     return (
@@ -40,7 +40,7 @@ def get(start_date: str = None):
                         Input(
                             type="date",
                             name="start_date",
-                            value=start_date or "",
+                            value=date or "",
                             required=True,
                         ),
                     ),
@@ -56,6 +56,7 @@ def get(start_date: str = None):
                         Input(
                             type="date",
                             name="end_date",
+                            value=date or "",
                         ),
                     ),
                     Label(
@@ -115,6 +116,9 @@ def post(
 def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the event."
     assert isinstance(event, items.Event)
+    events = items.get_events_within(event.start, event.end)
+    events.remove(event)
+    events = sorted(events, key=lambda e: (len(e), e.start), reverse=True)
     return (
         Title(event),
         components.get_clipboard_script(),
@@ -154,6 +158,10 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                     ),
                     cls=f"grid {event.category}",
                 ),
+            ),
+            Card(
+                Header("Contains"),
+                components.get_items_display(events),
             ),
             Form(
                 components.get_refs_card(event, refs_page),
@@ -355,11 +363,7 @@ def get(year: int):
     "Display events during a specified year."
     start = dt.datetime(year, 1, 1, tzinfo=constants.TIMEZONE)
     end = dt.datetime(year + 1, 1, 1, tzinfo=constants.TIMEZONE)
-    events = [
-        e
-        for e in items.get_items(type="event")
-        if e.overlap(start, end) and len(e) > 24 * 60
-    ]
+    events = [e for e in items.get_events_overlapping(start, end) if len(e) > 24 * 60]
     rows = []
     for month in [utils.get_datetime(year, m) for m in range(1, 13)]:
         rows.append(
@@ -441,10 +445,7 @@ def get(year: int, month: int):
     last = utils.to_datetime(days[-1][-1]) + dt.timedelta(days=1)
     start = utils.get_datetime(year, month)
     prev = first - dt.timedelta(days=1)
-
-    # Fetch events overlapping any of the weeks at the ends of the month display.
-    events = [p for p in items.get_items(type="event") if p.overlap(first, last)]
-
+    events = items.get_events_overlapping(first, last)
     title = f"{start.strftime('%B %Y').capitalize()}"
     return (
         Title(title),
@@ -546,7 +547,7 @@ def get(year: int, week: int):
         next = dt.datetime.strptime(f"{year+1}-1-1", "%G-%V-%u").replace(
             tzinfo=constants.TIMEZONE
         )
-    events = [p for p in items.get_items(type="event") if p.overlap(start, next)]
+    events = items.get_events_overlapping(start, end)
     weekdays = [start] + [start + dt.timedelta(days=day) for day in range(1, 7)]
     thursday = weekdays[3]
     today_ordinal = dt.datetime.now(constants.TIMEZONE).toordinal()
@@ -628,7 +629,7 @@ def get(year: int, week: int):
                                 Td(
                                     A(
                                         "Add",
-                                        href=f"/event?start_date={d.year}-{d.month:02}-{d.day:02}",
+                                        href=f"/event?date={d.year}-{d.month:02}-{d.day:02}",
                                         role="button",
                                         cls="thin",
                                     ),
@@ -661,7 +662,7 @@ def get(year: int, month: int, day: int):
 
     # First events that extend over more than thisday, sorted by length.
     # Then thisdays events, sorted by start time.
-    events = [e for e in items.get_items(type="event") if e.overlap(thisday, next)]
+    events = items.get_events_overlapping(thisday, next)
     beyond_thisday = sorted(
         [e for e in events if not e.within(thisday, next)],
         key=lambda e: len(e),
@@ -752,7 +753,7 @@ def get(year: int, month: int, day: int):
                 Footer(
                     A(
                         "Add",
-                        href=f"/event?start_date={year}-{month:02}-{day:02}",
+                        href=f"/event?date={year}-{month:02}-{day:02}",
                         role="button",
                     ),
                 ),

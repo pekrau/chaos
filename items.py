@@ -978,6 +978,15 @@ def get_items(type=None, key=None):
     return result
 
 
+def get_events_overlapping(start, end):
+    "Return the list of events overlapping with the time period specified."
+    return [e for e in get_items(type="event") if e.overlap(start, end)]
+
+def get_events_within(start, end):
+    "Return the list of events within with the time period specified."
+    return [e for e in get_items(type="event") if e.within(start, end)]
+
+
 def get_all_files():
     "Get a map of item paths and filepaths with their modified timestamps."
     global lookup

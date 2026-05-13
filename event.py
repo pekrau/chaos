@@ -127,8 +127,11 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
             components.get_text_card(
                 event,
                 header=Header(
-                    Div(event.category.capitalize()),
-                    Div(Strong(event.period(date=True)), f" ({event.duration()})"),
+                    Div(
+                        Strong(event.period(date=True)),
+                        f" ({event.duration()})",
+                        cls="center",
+                    ),
                     Div(
                         A(
                             f"{event.weekday_short.capitalize()} {event.start.day}",
@@ -207,7 +210,7 @@ def get(event: items.Item):
                         Input(
                             type="date",
                             name="end_date",
-                            value=str(event._end).split()[0], # Note: uses '_end'!
+                            value=str(event._end).split()[0],  # Note: uses '_end'!
                         ),
                     ),
                     Label(
@@ -616,7 +619,11 @@ def get(year: int, week: int):
                                         href=d.strftime("/event/day/%Y-%m-%d"),
                                         cls="secondary strong",
                                     ),
-                                    cls="today" if d.toordinal() == today_ordinal else "",
+                                    cls=(
+                                        "today"
+                                        if d.toordinal() == today_ordinal
+                                        else ""
+                                    ),
                                     style="width: 15%",
                                 )
                                 for d in weekdays
@@ -767,7 +774,15 @@ def get_month_table(year, month, events, thick=True):
     "Generate the display the given events of a specified month."
     today_ordinal = dt.datetime.now(constants.TIMEZONE).toordinal()
     monthdays = list(calendar.Calendar().monthdatescalendar(year, month))
-    rows = [Tr(Td(), *[Td(d.strftime("%a").capitalize(), style="width: 15%") for d in monthdays[0]])]
+    rows = [
+        Tr(
+            Td(),
+            *[
+                Td(d.strftime("%a").capitalize(), style="width: 15%")
+                for d in monthdays[0]
+            ],
+        )
+    ]
     for weekdays in monthdays:
         rows.append(
             Tr(
@@ -785,9 +800,13 @@ def get_month_table(year, month, events, thick=True):
                         A(
                             d.day,
                             href=f"/event/day/{d.year}-{d.month:02}-{d.day:02}",
-                            cls="secondary strong" if d.month == month else "secondary small"
+                            cls=(
+                                "secondary strong"
+                                if d.month == month
+                                else "secondary small"
+                            ),
                         ),
-                        cls="today" if d.toordinal() == today_ordinal else ""
+                        cls="today" if d.toordinal() == today_ordinal else "",
                     )
                     for d in weekdays
                 ],

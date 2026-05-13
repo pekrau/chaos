@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 6, 9)
+VERSION = (1, 6, 10)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"

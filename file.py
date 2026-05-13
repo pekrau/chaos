@@ -83,9 +83,9 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
                         components.get_file_icon(file.file_mimetype, title="File"),
                         file,
                     ),
-                    Li(components.get_to_clipboard(file)),
                 ),
                 Ul(
+                    Li(components.get_to_clipboard(file)),
                     Li(components.get_search()),
                 ),
             ),

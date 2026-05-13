@@ -187,13 +187,17 @@ def get_article_icon(title="Article"):
     return get_icon("journal-text.svg", title=title)
 
 
+def get_edit_icon(title="Edit"):
+    return get_icon("pencil-square.svg", title=title)
+
+
 def get_nav_menu(item=None, copy=True, operations=None, icon=None):
     links = [A("Home", href="/")]
     if item is not None:
-        links.append(A(f"Edit {item.type}...", href=f"{item.url}/edit"))
+        links.append(A("Edit...", href=f"{item.url}/edit"))
         if copy:
-            links.append(A(f"Copy {item.type}...", href=f"{item.url}/copy"))
-        links.append(A(f"Delete {item.type}...", href=f"{item.url}/delete"))
+            links.append(A("Copy...", href=f"{item.url}/copy"))
+        links.append(A("Delete...", href=f"{item.url}/delete"))
         if item.pinned:
             links.append(
                 A(f"Unpin {item.type}", href=f"/unpin/{item.id}", title="Unpin")
@@ -261,6 +265,7 @@ def get_header_item_view(item, copy=True, operations=None):
                 Li(item),
             ),
             Ul(
+                Li(A(get_edit_icon(), href=f"{item.url}/edit")),
                 Li(get_to_clipboard(item)),
                 Li(get_search()),
             ),

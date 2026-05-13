@@ -69,10 +69,7 @@ def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
         Main(
             components.get_text_card(tag),
             Form(
-                Card(
-                    Header("Tagged..."),
-                    components.get_items_display(items_list, page=page),
-                ),
+                components.get_items_display(items_list, title="Tagged...", page=page),
                 components.get_refs_card(tag, refs_page),
                 components.get_tags_card(tag, tags_page),
                 action=tag.url,

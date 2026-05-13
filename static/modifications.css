@@ -75,7 +75,9 @@
     background-color: #c1fba4;
 }
 .today {
-    background-image: linear-gradient(to bottom right, blue, white, white, blue);
+    border-style: dashed;
+    border-width: 4px  !important;
+    border-color: blue;
 }
 
 

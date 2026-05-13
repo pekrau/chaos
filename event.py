@@ -116,9 +116,17 @@ def post(
 def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the event."
     assert isinstance(event, items.Event)
-    events = items.get_events_within(event.start, event.end)
-    events.remove(event)
-    events = sorted(events, key=lambda e: (len(e), e.start), reverse=True)
+    subevents = items.get_events_within(event.start, event.end)
+    subevents.remove(event)
+    subevents = sorted(subevents, key=lambda e: (len(e), e.start), reverse=True)
+    superevents = items.get_events_overlapping(event.start, event.end)
+    superevents.remove(event)
+    superevents = set(superevents).difference(subevents)
+    superevents = sorted(superevents, key=lambda e: (len(e), e.start), reverse=True)
+    if subevents:
+        subevents = components.get_items_display(subevents, title="Contains")
+    if superevents:
+        superevents = components.get_items_display(superevents, title="Overlaps")
     return (
         Title(event),
         components.get_clipboard_script(),
@@ -160,12 +168,11 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                         cls="right",
                     ),
                     cls=f"grid {event.category}",
+                    title=event.category.capitalize(),
                 ),
             ),
-            Card(
-                Header("Contains"),
-                components.get_items_display(events),
-            ),
+            subevents or "",
+            superevents or "",
             Form(
                 components.get_refs_card(event, refs_page),
                 components.get_tags_card(event, tags_page),
@@ -664,6 +671,7 @@ def get():
 def get(year: int, month: int, day: int):
     "Display events during a specified day."
     thisday = utils.get_datetime(year, month, day)
+    today = dt.date(year, month, day) == dt.date.today()
     prev = thisday - dt.timedelta(days=1)
     next = thisday + dt.timedelta(days=1)
 
@@ -687,7 +695,7 @@ def get(year: int, month: int, day: int):
             Nav(
                 Ul(
                     Li(components.get_nav_menu(icon=components.get_event_icon())),
-                    Li(title),
+                    Li(title, cls="today" if today else ""),
                 ),
                 Ul(
                     Li(components.get_search()),

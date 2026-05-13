@@ -305,10 +305,7 @@ def get_refs_card(item, page=None):
         reverse=True,
     )
     if refs:
-        return Card(
-            Header("Referred by..."),
-            get_items_display(refs, page=page, name="refs_page"),
-        )
+        return get_items_display(refs, title="Referred by...", page=page, name="refs_page")
     else:
         return ""
 
@@ -317,39 +314,38 @@ def get_tags_card(item, page=None):
     "Show the tags for this item."
     tags = list(item.tags)
     if tags:
-        return Card(
-            Header(
-                Span("Tags:", cls="rmargin"),
-                *[A(tag, href=tag.url, cls="rmargin") for tag in item.tags],
-            ),
-            get_items_display(item.similar(), page=page, name="tags_page"),
-        )
+        title = str(Div(
+            Span("Tags:", cls="rmargin"),
+            *[A(tag, href=tag.url, cls="rmargin") for tag in item.tags],
+        ))
+        return get_items_display(item.similar(), title=title, page=page, name="tags_page"),
     else:
         return ""
 
 
-def get_items_display(items, page=None, gallery=False, name="page"):
+def get_items_display(items, title=None, page=None, gallery=False, name="page"):
     "Get a display of the items. Paged if 'page' is defined."
     total_items = len(items)
+
     if total_items == 0:
-        return I("No items.")
+        number = "No items"
 
     # All items in one single page.
-    if page is None:
+    elif page is None:
         total_pages = 1
-        title = f"{total_items} items"
+        number = f"{total_items} items"
 
     else:
         total_pages = (total_items - 1) // constants.MAX_PAGE_ITEMS + 1
         # One single page is sufficient.
         if total_pages == 1:
-            title = f"{total_items} items"
+            number = f"{total_items} items"
         # Paged display
         else:
             page = min(max(1, page), total_pages)
             start = (page - 1) * constants.MAX_PAGE_ITEMS
             end = min(page * constants.MAX_PAGE_ITEMS, total_items)
-            title = f"Items {start+1}-{end} of {total_items}"
+            number = f"Items {start+1}-{end} of {total_items}."
             items = items[start:end]
 
     # Display items in a gallery.
@@ -382,7 +378,6 @@ def get_items_display(items, page=None, gallery=False, name="page"):
     # Display items in a list.
     else:
         table = Table(
-            Thead(Tr(Th(title, cls="center", colspan=3))),
             Tbody(
                 *[
                     Tr(
@@ -411,9 +406,13 @@ def get_items_display(items, page=None, gallery=False, name="page"):
             cls="compressed",
         )
 
-    return Div(
+    display = Div(
         table, get_items_page_buttons(page, total_pages, name=name), cls="overflow-auto"
     )
+    if title is None:
+        return Card(Header(number, cls="right"), display)
+    else:
+        return Card(Header(Div(NotStr(title)), Div(number, cls="right"), cls="grid"), display)
 
 
 def get_items_page_buttons(page, total_pages, name="page"):

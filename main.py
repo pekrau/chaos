@@ -427,34 +427,6 @@ def get(
                         cls="dropdown",
                     ),
                     Details(
-                        Summary("Display..."),
-                        Ul(
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="display",
-                                        value="list",
-                                        checked=display == "list" or not display,
-                                    ),
-                                    "List",
-                                )
-                            ),
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="display",
-                                        value="gallery",
-                                        checked=display == "gallery",
-                                    ),
-                                    "Gallery",
-                                )
-                            ),
-                        ),
-                        cls="dropdown",
-                    ),
-                    Details(
                         Summary("Order by..."),
                         Ul(
                             Li(
@@ -515,12 +487,22 @@ def get(
                         ),
                         cls="dropdown",
                     ),
+                    Fieldset(
+                        Label(
+                            Input(type="radio", name="display", value="list",
+                                  checked=display == "list" or not display),
+                            "List"
+                        ),
+                        Label(
+                            Input(type="radio", name="display", value="gallery",
+                                  checked=display == "gallery"),
+                            "Gallery"
+                        ),
+                    ),
                     Input(type="submit", value="Search"),
                     cls="grid",
                 ),
-                components.get_items_display(
-                    result, page=page, gallery=display.lower() == "gallery"
-                ),
+                components.get_items_display(result, title="Search results", page=page, gallery=display.lower() == "gallery"),
                 action="/search",
             ),
             cls="container",

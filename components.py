@@ -149,7 +149,7 @@ def get_event_icon(title="Event"):
 
 
 def get_link_icon(title="Link"):
-    return get_icon("box-arrow-up-right.svg", title=title)
+    return get_icon("link-45deg.svg", title=title)
 
 
 def get_file_icon(mimetype=None, title="", **kwargs):

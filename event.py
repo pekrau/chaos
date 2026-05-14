@@ -390,7 +390,7 @@ def get(year: int):
             )
         )
         rows.append(
-            Tr(Td(get_month_table(month.year, month.month, events, thick=False)))
+            Tr(Td(get_month_table(month.year, month.month, events, full=False)))
         )
     title = f"Year {year}"
     return (
@@ -636,7 +636,7 @@ def get(year: int, week: int):
                                 for d in weekdays
                             ]
                         ),
-                        *get_week_rows(weekdays, events, offset=False, thick=True),
+                        *get_week_rows(weekdays, events, offset=False, full=True),
                         Tr(Td(Div(cls="vspacer"), colspan=7)),
                         Tr(
                             *[
@@ -778,7 +778,7 @@ def get(year: int, month: int, day: int):
     )
 
 
-def get_month_table(year, month, events, thick=True):
+def get_month_table(year, month, events, full=True):
     "Generate the display the given events of a specified month."
     today_ordinal = dt.datetime.now(constants.TIMEZONE).toordinal()
     monthdays = list(calendar.Calendar().monthdatescalendar(year, month))
@@ -824,14 +824,14 @@ def get_month_table(year, month, events, thick=True):
         last = utils.to_datetime(weekdays[6]) + dt.timedelta(days=1)
         rows.extend(
             get_week_rows(
-                weekdays, [e for e in events if e.overlap(first, last)], thick=thick
+                weekdays, [e for e in events if e.overlap(first, last)], full=full
             )
         )
         rows.append(Tr(Td(Div(cls="vspacer"), colspan=8)))
     return Table(*rows, cls="days")
 
 
-def get_week_rows(weekdays, events, offset=True, thick=False):
+def get_week_rows(weekdays, events, offset=True, full=True):
     """Return rows for the events of the week.
     NOTE: 'events' is depleted during execution.
     """
@@ -863,7 +863,7 @@ def get_week_rows(weekdays, events, offset=True, thick=False):
                     cells.append(Td(colspan=pad))
                 colspan = last - first + 1
                 sum_colspan += pad + colspan
-            if thick:
+            if full:
                 cells.append(
                     Td(
                         A(

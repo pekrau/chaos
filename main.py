@@ -189,7 +189,7 @@ def get():
     forms.append(
         Form(
             Button(
-                components.get_icon("box-arrow-in-right.svg"),
+                components.get_icon("box-arrow-in-down-right.svg"),
                 "Add from BibTex",
                 type="submit",
                 cls="outline",

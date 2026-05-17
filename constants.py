@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 6, 12)
+VERSION = (1, 6, 13)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -61,7 +61,7 @@ IMAGE_MIMETYPES = {
 }
 
 MAX_PAGE_ITEMS = 20
-N_GALLERY_ROW_ITEMS = 5
+N_GALLERY_ROW_ITEMS = 4
 MAX_RECENT_ITEMS = 6
 
 SCORE_TITLE_WEIGHT = 2.0

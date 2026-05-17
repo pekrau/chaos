@@ -724,7 +724,7 @@ class _GenericReference(Item):
     @property
     def published(self):
         "Publication date for this edition."
-        return self.frontmatter["published"]
+        return self.frontmatter.get("published")
 
     @published.setter
     def published(self, value):
@@ -733,14 +733,17 @@ class _GenericReference(Item):
                 try:
                     value = dt.date.fromisoformat(value)
                 except ValueError:  # Assume just year.
-                    pass
+                    try:
+                        value = dt.date(year=int(value), month=1, day=1)
+                    except ValueError:
+                        value = None
             else:
                 value = None
         self.frontmatter["published"] = value
 
     @property
     def language(self):
-        return self.frontmatter["language"]
+        return self.frontmatter.get("language")
 
     @language.setter
     def language(self, value):
@@ -888,6 +891,7 @@ def get_shortcuts(item=None):
     """Get the pinned and recent items for display in the nav menu.
     If item is provided, update the recent items.
     """
+    global lookup
     global state
     recent = list(state["recent"])
     if item is not None:
@@ -896,8 +900,8 @@ def get_shortcuts(item=None):
         except ValueError:
             pass
         write_state(recent=item)
-    pinned = list(state["pinned"])
-    recent = [id for id in recent if id not in pinned]
+    pinned = [id for id in state["pinned"] if id in lookup]
+    recent = [id for id in recent if id not in pinned if id in lookup]
     return [get(id) for id in (pinned + recent)]
 
 

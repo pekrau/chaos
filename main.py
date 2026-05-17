@@ -31,7 +31,6 @@ else:
 import bibtex
 import components
 import constants
-import errors
 import items
 import note
 import tag
@@ -186,17 +185,6 @@ def get():
         )
         for type in items.TYPES
     ]
-    forms.append(
-        Form(
-            Button(
-                components.get_icon("box-arrow-in-down-right.svg"),
-                "Add from BibTex",
-                type="submit",
-                cls="outline",
-            ),
-            action="/bibtex",
-        )
-    )
     return (
         Title("Add item..."),
         Header(
@@ -212,88 +200,6 @@ def get():
             *[Div(*t, cls="grid") for t in itertools.batched(forms, 2)], cls="container"
         ),
     )
-
-
-@rt("/bibtex")
-def get():
-    "Form for adding book or article from BibTex data."
-    title = "Add book or article from BibTex data"
-    return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu()),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
-        Main(
-            Form(
-                Input(
-                    name="id",
-                    placeholder="Id...",
-                ),
-                Textarea(
-                    name="data",
-                    rows=10,
-                    placeholder="BibTex...",
-                ),
-                components.get_text_input(),
-                Input(type="submit", value="Add book or article"),
-                action="/bibtex/",
-                method="POST",
-            ),
-            components.get_cancel_form("/"),
-            cls="container",
-        ),
-    )
-
-
-@rt("/bibtex")
-def post(id: str, data: str, text: str):
-    "Actually add reference (book or article) from BibTex data."
-    if id in items.lookup:
-        add_toast(session, "Id already in use.", "error")
-        return components.redirect("/bibtex")
-
-    entries = list(bibtex.parse(data))
-    if len(entries) == 0:
-        add_toast(session, "No entry in the BibTex data.", "error")
-        return components.redirect()
-
-    entry = entries[0]
-    if entry["type"] == "article":
-        item = items.Article(constants.DATA_DIR / f"{id}.md")
-        item.journal = entry["journal"]
-        item.volume = entry.get("volume")
-        item.issue = entry.get("issue")
-        item.pages = entry.get("pages")
-        item.doi = entry.get("doi")
-        item.pmid = entry.get("pmid")
-        if abstract := entry.get("abstract"):
-            if text:
-                text = abstract + "\n\n" + text
-    elif entry["type"] == "book":
-        item = items.Book(constants.DATA_DIR / f"{id}.md")
-        item.isbn = entry.get("isbn")
-        item.publisher = entry["publisher"]
-    else:
-        raise ValueError("unknown entry type in BibTex data")
-
-    item.title = entry["title"]
-    item.authors = entry["authors"]
-    item.year = entry.get("year") or entry["published"].split("-")[0]
-    item.published = entry["published"]
-    item.language = entry.get("language")
-    item.text = text
-    items.lookup[item.id] = item
-    item.write()
-
-    if len(entries) > 1:
-        add_toast(session, "Parsed only the first entry in the BibTex data.", "warning")
-    return components.redirect(item.url)
 
 
 @rt("/search")
@@ -489,20 +395,33 @@ def get(
                     ),
                     Fieldset(
                         Label(
-                            Input(type="radio", name="display", value="list",
-                                  checked=display == "list" or not display),
-                            "List"
+                            Input(
+                                type="radio",
+                                name="display",
+                                value="list",
+                                checked=display == "list" or not display,
+                            ),
+                            "List",
                         ),
                         Label(
-                            Input(type="radio", name="display", value="gallery",
-                                  checked=display == "gallery"),
-                            "Gallery"
+                            Input(
+                                type="radio",
+                                name="display",
+                                value="gallery",
+                                checked=display == "gallery",
+                            ),
+                            "Gallery",
                         ),
                     ),
                     Input(type="submit", value="Search"),
                     cls="grid",
                 ),
-                components.get_items_display(result, title="Search results", page=page, gallery=display.lower() == "gallery"),
+                components.get_items_display(
+                    result,
+                    title="Search results",
+                    page=page,
+                    gallery=display.lower() == "gallery",
+                ),
                 action="/search",
             ),
             cls="container",

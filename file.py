@@ -74,23 +74,7 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
     return (
         Title(file),
         components.get_clipboard_script(),
-        # Non-standard header.
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(file)),
-                    Li(
-                        components.get_file_icon(file.file_mimetype, title="File"),
-                        file,
-                    ),
-                ),
-                Ul(
-                    Li(components.get_to_clipboard(file)),
-                    Li(components.get_search()),
-                ),
-            ),
-            cls="container",
-        ),
+        components.get_header_item_view(file),
         Main(
             Card(Strong(A(file.filename, href=file.url_file))),
             components.get_text_card(file),

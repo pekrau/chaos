@@ -18,7 +18,10 @@ class ItemConvertor(Convertor):
     regex = "[^./]+"
 
     def convert(self, value: str) -> items.Item:
-        return items.get(value)
+        try:
+            return items.get(value)
+        except KeyError:
+            raise errors.Error(f"No such item '{value}'")
 
     def to_string(self, value: items.Item) -> str:
         return str(value)
@@ -107,7 +110,10 @@ def get_chaos_icon():
 
 
 def get_item_icon(item):
-    return get_type_icon(item.type)
+    if item.type == "file":
+        return get_file_icon(item.file_mimetype)
+    else:
+        return get_type_icon(item.type)
 
 
 def get_type_icon(type):
@@ -305,7 +311,9 @@ def get_refs_card(item, page=None):
         reverse=True,
     )
     if refs:
-        return get_items_display(refs, title="Referred by...", page=page, name="refs_page")
+        return get_items_display(
+            refs, title="Referred by...", page=page, name="refs_page"
+        )
     else:
         return ""
 
@@ -314,11 +322,15 @@ def get_tags_card(item, page=None):
     "Show the tags for this item."
     tags = list(item.tags)
     if tags:
-        title = str(Div(
-            Span("Tags:", cls="rmargin"),
-            *[A(tag, href=tag.url, cls="rmargin") for tag in item.tags],
-        ))
-        return get_items_display(item.similar(), title=title, page=page, name="tags_page"),
+        title = str(
+            Div(
+                Span("Tags:", cls="rmargin"),
+                *[A(tag, href=tag.url, cls="rmargin") for tag in item.tags],
+            )
+        )
+        return (
+            get_items_display(item.similar(), title=title, page=page, name="tags_page"),
+        )
     else:
         return ""
 
@@ -381,7 +393,6 @@ def get_items_display(items, title=None, page=None, gallery=False, name="page"):
             Tbody(
                 *[
                     Tr(
-                        Td(get_to_clipboard(item), cls="minwidth top"),
                         Td(
                             get_item_link(item),
                             *[
@@ -399,6 +410,7 @@ def get_items_display(items, title=None, page=None, gallery=False, name="page"):
                             ],
                         ),
                         Td(item.age, cls="nobr right"),
+                        Td(get_to_clipboard(item), cls="minwidth top"),
                     )
                     for item in items
                 ]
@@ -412,7 +424,9 @@ def get_items_display(items, title=None, page=None, gallery=False, name="page"):
     if title is None:
         return Card(Header(number, cls="right"), display)
     else:
-        return Card(Header(Div(NotStr(title)), Div(number, cls="right"), cls="grid"), display)
+        return Card(
+            Header(Div(NotStr(title)), Div(number, cls="right"), cls="grid"), display
+        )
 
 
 def get_items_page_buttons(page, total_pages, name="page"):
@@ -590,13 +604,13 @@ def get_header_item_edit(item):
     )
 
 
-def get_title_input(title=""):
+def get_title_input(title="", required=True):
     return Input(
         type="text",
         name="title",
         value=title,
         placeholder="Title...",
-        required=True,
+        required=required,
     )
 
 

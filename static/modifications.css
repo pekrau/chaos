@@ -75,8 +75,8 @@
     background-color: #c1fba4;
 }
 .today {
-    border-style: dashed;
-    border-width: 4px  !important;
+    border-style: dotted;
+    border-width: 6px  !important;
     border-color: blue;
 }
 

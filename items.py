@@ -478,8 +478,7 @@ class Event(Item):
 
     def overlap(self, start, end):
         """Return the overlap in minutes of this event with the given start
-        and end datetimes.
-        Zero if no overlap.
+        and end datetimes. Zero if no overlap.
         """
         assert isinstance(start, dt.datetime)
         assert isinstance(end, dt.datetime)
@@ -880,8 +879,7 @@ def write_state(recent=None, pin=None, unpin=None):
             state["pinned"].remove(unpin.id)
         except ValueError:
             pass
-    state["recent"] = [id for id in state["recent"] if id in lookup]
-    state["pinned"] = [id for id in state["pinned"] if id in lookup]
+    cleanup_state()
     while len(state["recent"]) > constants.MAX_RECENT_ITEMS + len(state["pinned"]) + 1:
         state["recent"].pop()
     constants.STATE_FILE.write_text(yaml.safe_dump(state, allow_unicode=True))
@@ -894,15 +892,24 @@ def get_shortcuts(item=None):
     global lookup
     global state
     recent = list(state["recent"])
-    if item is not None:
+    if item is None:
+        cleanup_state()
+    else:
         try:
             recent.remove(item.id)
         except ValueError:
             pass
         write_state(recent=item)
-    pinned = [id for id in state["pinned"] if id in lookup]
-    recent = [id for id in recent if id not in pinned if id in lookup]
+    pinned = [id for id in state["pinned"]]
+    recent = [id for id in recent if id not in pinned]
     return [get(id) for id in (pinned + recent)]
+
+
+def cleanup_state():
+    "Remove any non-existen ids from the state."
+    global state
+    state["recent"] = [id for id in state["recent"] if id in lookup]
+    state["pinned"] = [id for id in state["pinned"] if id in lookup]
 
 
 def read():

@@ -124,9 +124,16 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
     superevents = set(superevents).difference(subevents)
     superevents = sorted(superevents, key=lambda e: (len(e), e.start), reverse=True)
     if subevents:
-        subevents = components.get_items_display(subevents, title="Contains")
+        # subevents_vertical = get_events_vertical(event, subevents)
+        subevents_display = components.get_items_display(subevents, title="Contains")
+    else:
+        subevents_display = ""
     if superevents:
-        superevents = components.get_items_display(superevents, title="Overlaps")
+        superevents_display = components.get_items_display(
+            superevents, title="Overlaps"
+        )
+    else:
+        superevents_display = ""
     return (
         Title(event),
         components.get_clipboard_script(),
@@ -171,8 +178,9 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                     title=event.category.capitalize(),
                 ),
             ),
-            subevents or "",
-            superevents or "",
+            # subevents_vertical,
+            subevents_display,
+            superevents_display,
             Form(
                 components.get_refs_card(event, refs_page),
                 components.get_tags_card(event, tags_page),
@@ -373,7 +381,7 @@ def get(year: int):
     "Display events during a specified year."
     start = dt.datetime(year, 1, 1, tzinfo=constants.TIMEZONE)
     end = dt.datetime(year + 1, 1, 1, tzinfo=constants.TIMEZONE)
-    events = [e for e in items.get_events_overlapping(start, end) if len(e) > 24 * 60]
+    events = [e for e in items.get_events_overlapping(start, end)]
     rows = []
     for month in [utils.get_datetime(year, m) for m in range(1, 13)]:
         rows.append(
@@ -832,19 +840,18 @@ def get_month_table(year, month, events, full=True):
 
 
 def get_week_rows(weekdays, events, offset=True, full=True):
-    """Return rows for the events of the week.
-    NOTE: 'events' is depleted during execution.
-    """
+    "Return rows for the events of the week."
     weekdays = [utils.to_datetime(d) for d in weekdays]
     start = weekdays[0]
     end = weekdays[6] + dt.timedelta(days=1)
     row_cells = []
+    events = list(events)  # To avoid changing incoming argument.
     while events:
         cells = []
-        events_set = get_next_events(events, start, end)
-        events = set(events).difference(events_set)
+        events_list = get_next_events_list(events, start, end)
+        events = set(events).difference(events_list)
         sum_colspan = 0
-        for event in events_set:
+        for event in events_list:
             if event.start < start:
                 if event._end > end:
                     colspan = 7
@@ -902,8 +909,37 @@ def get_week_rows(weekdays, events, offset=True, full=True):
     return result
 
 
-def get_next_events(events, start, end, candidates=None):
-    "Return the next set of non-overlapping events."
+def get_events_vertical(event, subevents):
+    "Return a vertical display of the events."
+    if len(event) <= 24 * 60:  # Less than one day.
+        raise NotImplementedError
+    days = [
+        dt.datetime.fromordinal(d)
+        for d in range(event.start.toordinal(), event.end.toordinal())
+    ]
+    rows = [[Td(day.strftime("%Y-%m-%d"))] for day in days]
+    subevents = list(subevents)  # To avoid changing incoming argument.
+    while subevents:
+        events_list = get_next_events_list(subevents, event.start, event.end)
+        subevents = set(subevents).difference(events_list)
+        for subevent in events_list:
+            for slot, day in enumerate(days[:-1]):
+                if day.toordinal() == subevent.start.toordinal():
+                    rows[slot].append(
+                        Td(
+                            Div(
+                                subevent,
+                                cls=get_event_classes(subevent, event.start, event.end),
+                            ),
+                            cls=subevent.category,
+                            rowspan=subevent.days,
+                        )
+                    )
+    return Table(*[Tr(*row) for row in rows], cls="days")
+
+
+def get_next_events_list(events, start, end):
+    "Return the next sorted list of non-overlapping events."
     non_overlapping = get_non_overlapping(events)
     non_overlapping.sort(
         key=lambda s: (

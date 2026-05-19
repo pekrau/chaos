@@ -340,6 +340,7 @@ def get_items_display(items, title=None, page=None, gallery=False, name="page"):
     total_items = len(items)
 
     if total_items == 0:
+        total_pages = 0
         number = "No items"
 
     # All items in one single page.
@@ -437,7 +438,7 @@ def get_items_page_buttons(page, total_pages, name="page"):
         return ""
 
     # One single page sufficient for all items.
-    if total_pages == 1:
+    if total_pages <= 1:
         return ""
 
     # All buttons shown when 7 pages or less.

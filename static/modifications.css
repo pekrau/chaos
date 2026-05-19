@@ -133,6 +133,14 @@ table.days > tbody > tr > td, th {
     padding: 2px 0px 0px;
 }
 
+table.vertical > tbody > tr > td {
+    height: 2em;
+    vertical-align: top;
+    text-align: center;
+    border-width: 0px;
+    padding: 2px 4px 0px 0px;
+}
+
 select.slim {
     padding-top: 0px;
     padding-bottom: 0px;
@@ -156,6 +164,7 @@ div.vspacer {
 }
 
 div.border {
+    height: 100%;
     border-width: 1px;
     border-color: black;
     padding: 0px 4px;
@@ -173,13 +182,27 @@ div.border-open-right {
     border-radius: 8px 0px 0px 8px;
 }
 
+div.border-open-bottom {
+    border-style: solid solid none solid;
+    border-radius: 8px 8px 0px 0px;
+}
+
 div.border-open-left {
     border-style: solid solid solid none;
     border-radius: 0px 8px 8px 0px;
 }
 
-div.border-open-both {
+div.border-open-top {
+    border-style: none solid solid solid;
+    border-radius: 0px 0px 8px 8px;
+}
+
+div.border-open-left-right {
     border-style: solid none solid none;
+}
+
+div.border-open-top-bottom {
+    border-style: none solid none solid;
 }
 
 div.border-plus {

@@ -264,7 +264,7 @@ class Event(Item):
     "Event item class; start and end datetimes in the local timezone."
 
     def __str__(self):
-        return f"{self.title}, {self.period(date=True)}"
+        return f"{self.title} ({self.display(date=True)})"
 
     def __lt__(self, other):
         assert isinstance(other, Event)
@@ -496,6 +496,22 @@ class Event(Item):
         else:
             return round((end - start).total_seconds() / 60)
 
+    def overlap_days(self, start, end):
+        "Does this event overlap any of the days between 'start' and 'end'?"
+        assert isinstance(start, dt.datetime)
+        assert isinstance(end, dt.datetime)
+        return not (self._end.toordinal() < start.toordinal() or
+                    self.start.toordinal() > end.toordinal())
+
+    def overlap_hours(self, start, end):
+        "Does this event overlap any of the hours between 'start' and 'end'?"
+        assert isinstance(start, dt.datetime)
+        assert isinstance(end, dt.datetime)
+        return not ((24 * self._end.toordinal() + self._end.hour) <
+                    (24 * start.toordinal() + start.hour) or
+                    (24 * self.start.toordinal() + self.start.hour) >
+                    (24 * end.toordinal() + end.hour))
+
     def check(self):
         "Check that the current event value is valid, i.e. start <= end."
         if self.start > self.end:
@@ -512,37 +528,41 @@ class Event(Item):
         else:
             return str(self.start.year)
 
-    def period(self, date=False, time=True):
-        """Human-readable representation of the period.
+    def display(self, date=False, year=None, time=True):
+        """Human-readable representation of the period for the event.
         Omit date if less than one day.
         """
         if self.start.year == self.end_year:
             if self.month == self.end_month:
                 if self.whole_days:
                     if self.days == 1:
-                        return f"{self.start.day} {self.month} {self.start.year}"
+                        if year and year == self.start.year:
+                            return f"{self.start.day} {self.month}"
+                        else:
+                            return f"{self.start.day} {self.month} {self.start.year}"
+                    elif year and year == self.start.year:
+                        return f"{self.start.day}-{self.end_day} {self.month}"
                     else:
                         return f"{self.start.day}-{self.end_day} {self.month} {self.start.year}"
                 elif self.start.day == self.end.day:
                     if date:
-                        return f"{self.weekday} {self.start.day} {self.month} {self.start.year} {self.time}-{self.end_time}"
+                        if year and year == self.start.year:
+                            return f"{self.weekday} {self.start.day} {self.month} {self.time}-{self.end_time}"
+                        else:
+                            return f"{self.weekday} {self.start.day} {self.month} {self.start.year} {self.time}-{self.end_time}"
                     else:
                         return f"{self.time}-{self.end_time}"
+                elif year and year == self.start.year:
+                    return f"{self.start.day}-{self.end_day} {self.month}"
                 else:
                     return f"{self.start.day}-{self.end_day} {self.month} {self.start.year}"
-            else:  # Different months; same year.
+            # Different months; same year.
+            elif year and year == self.start.year:
+                return f"{self.start.day} {self.month_short} - {self.end_day} {self.end_month_short}"
+            else:
                 return f"{self.start.day} {self.month_short} - {self.end_day} {self.end_month_short}  {self.start.year}"
-        else:  # Different years.
+        else:  # Different years; ignore flag.
             return f"{self.start.day} {self.month_short} {self.start.year} - {self.end_day} {self.end_month_short} {self.end_year}"
-
-    def display(self):
-        "Return information formatted for display in table."
-        if self.whole_days:
-            return self.title
-        elif self.days > 1:
-            return self.title
-        else:
-            return f"{self.time}-{self.end_time} {self.title}"
 
     def duration(self):
         "Formatted duration; weeks, days, hours, minutes."

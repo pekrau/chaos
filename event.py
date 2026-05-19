@@ -534,8 +534,8 @@ def get(year: int, week: int):
         end = dt.datetime.strptime(f"{year+1}-{1}-1", "%G-%V-%u").replace(
             tzinfo=constants.TIMEZONE
         )
-    prev = start - dt.timedelta(days=4) # Thursday previous week.
-    next = end + dt.timedelta(days=3)   # Thursday next week.
+    prev = start - dt.timedelta(days=4)  # Thursday previous week.
+    next = end + dt.timedelta(days=3)  # Thursday next week.
     events = items.get_events_overlapping(start, end)
     weekdays = [start] + [start + dt.timedelta(days=day) for day in range(1, 7)]
     thursday = weekdays[3]
@@ -836,9 +836,9 @@ def get_week_rows(weekdays, events, offset=True, full=True):
                             A(
                                 event.display(year=start.year),
                                 href=event.url,
-                                title=event.category.capitalize(),
                                 cls="black",
                             ),
+                            title=f"{event.category.capitalize()}: {event.title}",
                             cls=get_event_classes(event, start, end),
                         ),
                         colspan=colspan,
@@ -850,9 +850,9 @@ def get_week_rows(weekdays, events, offset=True, full=True):
                         A(
                             Div(cls="vspacer " + get_event_classes(event, start, end)),
                             href=event.url,
-                            title=f"{event.category.capitalize()}: {event.display(year=start.year)} {event.title}",
                             cls="black",
                         ),
+                        title=f"{event.category.capitalize()}: {event.title}",
                         colspan=colspan,
                     )
                 )
@@ -897,15 +897,23 @@ def get_vertical_display(start, end, subevents):
                             Td(
                                 Div(
                                     A(
-                                        subevent.display(year=start.year),
+                                        f"{subevent.display(year=start.year)}: {subevent.title}",
                                         href=subevent.url,
                                         cls="black",
                                     ),
                                     Br(),
                                     NotStr(subevent.html or ""),
-                                    cls=get_event_classes(subevent, start, end, vertical=True),
+                                    cls=get_event_classes(
+                                        subevent, start, end, vertical=True
+                                    ),
+                                    title=subevent.category.capitalize(),
                                 ),
-                                rowspan=max(1, math.floor((subevent.end - hour).total_seconds() / 3600)),
+                                rowspan=max(
+                                    1,
+                                    math.floor(
+                                        (subevent.end - hour).total_seconds() / 3600
+                                    ),
+                                ),
                             )
                         )
     else:
@@ -935,11 +943,12 @@ def get_vertical_display(start, end, subevents):
                             Td(
                                 Div(
                                     A(
-                                        subevent.display(year=start.year),
+                                        f"{subevent.display(year=start.year)}: {subevent.title}",
                                         href=subevent.url,
                                         cls="black",
                                     ),
                                     cls=get_event_classes(subevent, start, end),
+                                    title=subevent.category.capitalize(),
                                 ),
                                 rowspan=subevent.days,
                             )

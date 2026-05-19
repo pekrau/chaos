@@ -56,6 +56,10 @@
 }
 
 .important {
+    background-color: #ffa500;
+}
+
+.critical {
     background-color: #ff8fa3;
 }
 

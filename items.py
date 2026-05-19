@@ -500,17 +500,21 @@ class Event(Item):
         "Does this event overlap any of the days between 'start' and 'end'?"
         assert isinstance(start, dt.datetime)
         assert isinstance(end, dt.datetime)
-        return not (self._end.toordinal() < start.toordinal() or
-                    self.start.toordinal() > end.toordinal())
+        return not (
+            self._end.toordinal() < start.toordinal()
+            or self.start.toordinal() > end.toordinal()
+        )
 
     def overlap_hours(self, start, end):
         "Does this event overlap any of the hours between 'start' and 'end'?"
         assert isinstance(start, dt.datetime)
         assert isinstance(end, dt.datetime)
-        return not ((24 * self._end.toordinal() + self._end.hour) <
-                    (24 * start.toordinal() + start.hour) or
-                    (24 * self.start.toordinal() + self.start.hour) >
-                    (24 * end.toordinal() + end.hour))
+        return not (
+            (24 * self._end.toordinal() + self._end.hour)
+            < (24 * start.toordinal() + start.hour)
+            or (24 * self.start.toordinal() + self.start.hour)
+            > (24 * end.toordinal() + end.hour)
+        )
 
     def check(self):
         "Check that the current event value is valid, i.e. start <= end."

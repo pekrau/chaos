@@ -18,14 +18,13 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get():
     "Form for adding a book reference."
-    title = "Add book"
     return (
-        Title(title),
+        Title("Add book"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li("Add ", components.get_book_icon(), "book"),
                 ),
             ),
             cls="container",
@@ -110,7 +109,7 @@ def get():
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add book"),
+                Input(type="submit", value="Add"),
                 action="/book/",
                 method="POST",
             ),
@@ -313,18 +312,8 @@ def post(
 def get(book: items.Item):
     "Ask for confirmation to delete the book."
     assert isinstance(book, items.Book)
-    title = f"Delete '{book}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(book, copy=False)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_delete(book),
         Main(
             H3("Really delete the book? All data will be lost."),
             Form(

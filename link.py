@@ -14,14 +14,13 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get():
     "Form for adding a link."
-    title = "Add link"
     return (
-        Title(title),
+        Title("Add link"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li("Add ", components.get_link_icon(), "link"),
                 ),
             ),
             cls="container",
@@ -32,7 +31,7 @@ def get():
                 Input(type="href", name="href", placeholder="Href...", required=True),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add link"),
+                Input(type="submit", value="Add"),
                 action="/link/",
                 method="POST",
             ),
@@ -127,8 +126,8 @@ def get(link: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(link)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_link_icon(), title),
                 ),
             ),
             cls="container",
@@ -168,18 +167,8 @@ def post(source: items.File, title: str):
 def get(link: items.Item):
     "Ask for confirmation to delete the link."
     assert isinstance(link, items.Link)
-    title = f"Delete {link}"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(link)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_delete(link),
         Main(
             H3("Really delete the link? All data will be lost."),
             Form(
@@ -187,7 +176,7 @@ def get(link: items.Item):
                 action=f"{link.url}/delete",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(link.url),
             cls="container",
         ),
     )

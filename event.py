@@ -20,14 +20,13 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get(date: str = None):
     "Form for adding an event."
-    title = "Add event"
     return (
-        Title(title),
+        Title("Add event"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li("Add ", components.get_event_icon(), "event"),
                 ),
             ),
             cls="container",
@@ -79,7 +78,7 @@ def get(date: str = None):
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add event"),
+                Input(type="submit", value="Add"),
                 action="/event/",
                 method="POST",
             ),
@@ -287,8 +286,8 @@ def get(event: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(event)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_event_icon(), title),
                 ),
             ),
             cls="container",
@@ -329,18 +328,8 @@ def post(source: items.File, title: str):
 def get(event: items.Item):
     "Ask for confirmation to delete the event."
     assert isinstance(event, items.Event)
-    title = f"Delete '{event}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(event)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_delete(event),
         Main(
             H3("Really delete the event? All data will be lost."),
             Form(
@@ -398,11 +387,11 @@ def get(year: int):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(icon=components.get_event_icon())),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_event_icon(), title),
                 ),
                 Ul(
-                    Li(components.get_search()),
+                    Li(components.get_search_field()),
                 ),
             ),
             cls="container",
@@ -462,11 +451,11 @@ def get(year: int, month: int):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(icon=components.get_event_icon())),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_event_icon(), title),
                 ),
                 Ul(
-                    Li(components.get_search()),
+                    Li(components.get_search_field()),
                 ),
             ),
             cls="container",
@@ -546,11 +535,11 @@ def get(year: int, week: int):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(icon=components.get_event_icon())),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_event_icon(), title),
                 ),
                 Ul(
-                    Li(components.get_search()),
+                    Li(components.get_search_field()),
                 ),
             ),
             cls="container",
@@ -673,11 +662,11 @@ def get(year: int, month: int, day: int):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(icon=components.get_event_icon())),
-                    Li(title, cls="today" if today else ""),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_event_icon(), title, cls="today" if today else ""),
                 ),
                 Ul(
-                    Li(components.get_search()),
+                    Li(components.get_search_field()),
                 ),
             ),
             cls="container",

@@ -14,14 +14,13 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get():
     "Form for adding a tag."
-    title = "Add tag"
     return (
-        Title(title),
+        Title("Add tag"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li("Add ", components.get_tag_icon(), "tag"),
                 ),
             ),
             cls="container",
@@ -31,7 +30,7 @@ def get():
                 components.get_title_input(),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add tag"),
+                Input(type="submit", value="Add"),
                 action="/tag/",
                 method="POST",
             ),
@@ -123,8 +122,8 @@ def get(tag: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(tag)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_tag_icon(), title),
                 ),
             ),
             cls="container",
@@ -163,18 +162,8 @@ def post(source: items.File, title: str):
 def get(tag: items.Item):
     "Ask for confirmation to delete the tag."
     assert isinstance(tag, items.Tag)
-    title = f"Delete '{tag}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(tag)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_delete(tag),
         Main(
             H3("Really delete the tag? All data will be lost."),
             Form(

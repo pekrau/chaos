@@ -613,12 +613,12 @@ class _GenericFile(Item):
     @property
     def file_mimetype(self):
         """Return MIME type, or None if not recognized.
-        Determined from the file data, not from the file extension.
+        Determined primarily from the file data, from the file extension as fall-back.
         """
         kind = filetype.guess(self.filepath)
         if kind is None:
-            None
-        # Special case; convert to the mimetype used in this package.
+            return mimetypes.guess_type(self.filepath)[0]
+        # Sqlite3 special case; convert to the mimetype used in this package.
         elif kind.mime == "application/x-sqlite3":
             return constants.SQLITE_MIMETYPE
         else:

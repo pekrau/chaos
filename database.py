@@ -27,14 +27,13 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get():
     "Form for adding a database."
-    title = "Add database"
     return (
-        Title(title),
+        Title("Add database"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li("Add ", components.get_database_icon(), "database"),
                 ),
             ),
             cls="container",
@@ -52,7 +51,7 @@ def get():
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add database"),
+                Input(type="submit", value="Add"),
                 action="/database/",
                 method="POST",
             ),
@@ -184,8 +183,8 @@ def get(database: items.Item, tablename: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(database)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_database_icon(), title),
                 ),
             ),
             cls="container",
@@ -279,7 +278,7 @@ def get(database: items.Item, relname: str):
             Nav(
                 Ul(
                     Li(components.get_nav_menu(database)),
-                    Li(title),
+                    Li(components.get_database_icon(), title),
                 ),
             ),
             cls="container",
@@ -370,8 +369,8 @@ def get(database: items.Item, tablename: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(database)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_database_icon(), title),
                 ),
             ),
             cls="container",
@@ -465,8 +464,8 @@ def get(database: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(database)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_database_icon(), title),
                 ),
             ),
             cls="container",
@@ -703,8 +702,8 @@ def get(database: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(database)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_database_icon(), title),
                 ),
             ),
             cls="container",
@@ -753,14 +752,13 @@ def post(source: items.Database, title: str):
 def get(database: items.Item, sql: str = None):
     "Form for creating a view in the database."
     assert isinstance(database, items.Database)
-    title = f"Create view in '{database}'"
     return (
-        Title(title),
+        Title(f"Create view in '{database}'"),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(database)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li("Create view in ", components.get_database_icon(), database),
                 ),
             ),
             cls="container",
@@ -806,18 +804,8 @@ def post(database: items.Item, sql: str, view: str):
 def get(database: items.Item):
     "Ask for confirmation to delete the database."
     assert isinstance(database, items.Database)
-    title = f"Delete '{database}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(database)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_delete(database),
         Main(
             H3("Really delete the database? All data will be lost."),
             Form(

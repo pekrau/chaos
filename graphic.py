@@ -4,7 +4,6 @@ import json
 import urllib.parse
 
 from fasthtml.common import *
-import requests
 
 import components
 import constants
@@ -18,14 +17,13 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get():
     "Form for adding a graphic."
-    title = "Add graphic"
     return (
-        Title(title),
+        Title("Add graphic"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li("Add ", components.get_graphic_icon(), "graphic"),
                 ),
             ),
             cls="container",
@@ -42,13 +40,13 @@ def get():
                 ),
                 Textarea(
                     name="specification",
-                    rows=10,
+                    rows=20,
                     placeholder="Specification...",
                     cls="specification",
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add graphic"),
+                Input(type="submit", value="Add"),
                 action="/graphic/",
                 method="POST",
             ),
@@ -179,7 +177,7 @@ def get(graphic: items.Item):
                 Textarea(
                     specification,
                     name="specification",
-                    rows=10,
+                    rows=20,
                     cls="specification",
                 ),
                 components.get_text_input(graphic.text),
@@ -199,7 +197,8 @@ def post(
     graphic: items.Item,
     title: str,
     text: str,
-    specification: str,
+
+        specification: str,
     tags: list[str] = None,
 ):
     "Actually edit the graphic."
@@ -244,8 +243,8 @@ def get(graphic: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(graphic)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_graphic_icon(), title),
                 ),
             ),
             cls="container",
@@ -286,18 +285,8 @@ def post(source: items.File, title: str):
 def get(graphic: items.Item):
     "Ask for confirmation to delete the graphic."
     assert isinstance(graphic, items.Graphic)
-    title = f"Delete '{graphic}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(graphic)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_delete(graphic),
         Main(
             H3("Really delete the graphic? All data will be lost."),
             Form(

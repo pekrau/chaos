@@ -14,14 +14,13 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get():
     "Form for adding a note."
-    title = "Add note"
     return (
-        Title(title),
+        Title("Add note"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li("Add ", components.get_note_icon(), "note"),
                 ),
             ),
             cls="container",
@@ -31,7 +30,7 @@ def get():
                 components.get_title_input(),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add note"),
+                Input(type="submit", value="Add"),
                 action="/note/",
                 method="POST",
             ),
@@ -116,8 +115,8 @@ def get(note: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(note)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_note_icon(), title),
                 ),
             ),
             cls="container",
@@ -156,18 +155,8 @@ def post(source: items.File, title: str):
 def get(note: items.Item):
     "Ask for confirmation to delete the note."
     assert isinstance(note, items.Note)
-    title = f"Delete '{note}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(note)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_edit(note),
         Main(
             H3("Really delete the note? All data will be lost."),
             Form(

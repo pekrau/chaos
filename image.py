@@ -18,14 +18,13 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get():
     "Form for adding an image."
-    title = "Add image"
     return (
-        Title(title),
+        Title("Add image"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li("Add ", components.get_image_icon(), "image"),
                 ),
             ),
             cls="container",
@@ -43,7 +42,7 @@ def get():
                 Small("Image file: PNG, JPEG, SVG, WEBP or GIF.", id="file-helper"),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add image"),
+                Input(type="submit", value="Add"),
                 action="/image/",
                 method="POST",
             ),
@@ -185,14 +184,13 @@ async def post(
 def get(image: items.Item):
     "Form for making a copy of the image."
     assert isinstance(image, items.Image)
-    title = f"Copy '{image}'"
     return (
-        Title(title),
+        Title(f"Copy '{image}'"),
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(image)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li("Copy ", components.get_image_icon(), image),
                 ),
             ),
             cls="container",
@@ -206,7 +204,7 @@ def get(image: items.Item):
                     placeholder="Title...",
                     required=True,
                 ),
-                Input(type="submit", value="Copy image"),
+                Input(type="submit", value="Copy"),
                 action=f"{image.url}/copy",
                 method="POST",
             ),
@@ -241,18 +239,8 @@ def post(source: items.File, title: str):
 def get(image: items.Item):
     "Ask for confirmation to delete the file image."
     assert isinstance(image, items.Image)
-    title = f"Delete '{image}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(image)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_delete(image),
         Main(
             H3("Really delete the image? All data will be lost."),
             Form(

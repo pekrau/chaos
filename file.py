@@ -16,14 +16,13 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get():
     "Form for adding a file."
-    title = "Add file"
     return (
-        Title(title),
+        Title("Add file"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li("Add ", components.get_file_icon(), "file"),
                 ),
             ),
             cls="container",
@@ -34,7 +33,7 @@ def get():
                 Input(type="file", name="upfile", required=True),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add file"),
+                Input(type="submit", value="Add"),
                 action="/file/",
                 method="POST",
             ),
@@ -167,8 +166,8 @@ def get(file: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(file)),
-                    Li(title),
+                    Li(components.get_nav_menu()),
+                    Li(components.get_file_icon(), title),
                 ),
             ),
             cls="container",
@@ -217,18 +216,8 @@ def post(source: items.File, title: str):
 def get(file: items.Item):
     "Ask for confirmation to delete the file."
     assert isinstance(file, items.File)
-    title = f"Delete '{file}'"
     return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(components.get_nav_menu(file)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
+        *components.get_header_item_delete(file),
         Main(
             H3("Really delete the file? All data will be lost."),
             Form(
@@ -236,7 +225,7 @@ def get(file: items.Item):
                 action=f"{file.url}/delete",
                 method="POST",
             ),
-            components.get_cancel_form(request.headers["Referer"]),
+            components.get_cancel_form(file.url),
             cls="container",
         ),
     )

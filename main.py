@@ -82,7 +82,7 @@ def get(page: int = 1):
                     Li(Strong(title)),
                 ),
                 Ul(
-                    Li(components.get_search()),
+                    Li(components.get_search_field()),
                 ),
             ),
             cls="container",
@@ -566,7 +566,7 @@ def get():
                     Li("System"),
                 ),
                 Ul(
-                    Li(components.get_search()),
+                    Li(components.get_search_field()),
                 ),
                 cls="main",
             ),

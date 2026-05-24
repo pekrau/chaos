@@ -14,13 +14,13 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(request):
+def get():
     "Return a JSON dictionary of items {name: modified} for all items."
     return items.get_all_files()
 
 
 @rt("/item/{item:Item}")
-def get(request, item: items.Item):
+def get(item: items.Item):
     "Return the Markdown contents of an item."
     return {"frontmatter": item.frontmatter, "text": item.text}
 

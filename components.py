@@ -218,12 +218,8 @@ def get_nav_menu(item=None, copy=True, operations=None, icon=None):
     links.append(A("Search...", href="/search"))
     links.append(A("System", href="/system"))
     links.extend([get_item_link(i, full=False) for i in items.get_shortcuts(item)])
-    if item is not None:
-        icon = get_item_icon(item)
-    elif icon is None:
-        icon = get_chaos_icon()
     return Details(
-        Summary(icon),
+        Summary(get_chaos_icon()),
         Ul(*[Li(l) for l in links]),
         title="chaos: Web-based repository of items with no intrinsic order.",
         cls="dropdown",
@@ -249,7 +245,7 @@ def get_clipboard_activate():
     return Script("new ClipboardJS('.to_clipboard');", type="text/javascript")
 
 
-def get_search():
+def get_search_field():
     return Form(
         Input(
             type="search",
@@ -268,12 +264,12 @@ def get_header_item_view(item, copy=True, operations=None):
         Nav(
             Ul(
                 Li(get_nav_menu(item, copy=copy, operations=operations)),
-                Li(item),
+                Li(get_item_icon(item), item),
             ),
             Ul(
                 Li(A(get_edit_icon(), href=f"{item.url}/edit")),
                 Li(get_to_clipboard(item)),
-                Li(get_search()),
+                Li(get_search_field()),
             ),
         ),
         cls="container",
@@ -291,6 +287,38 @@ def get_footer_item_view(item, size=None):
             cls="grid",
         ),
         cls="container",
+    )
+
+
+def get_header_item_edit(item):
+    "Tuple of standard title and header for item edit page."
+    return (
+        Title(f"Edit '{item}'"),
+        Header(
+            Nav(
+                Ul(
+                    Li(get_nav_menu()),
+                    Li("Edit ", get_item_icon(item), item),
+                ),
+            ),
+            cls="container",
+        ),
+    )
+
+
+def get_header_item_delete(item):
+    "Tuple of standard title and header for item delete page."
+    return (
+        Title(f"Delete '{item}'"),
+        Header(
+            Nav(
+                Ul(
+                    Li(get_nav_menu()),
+                    Li("Delete ", get_item_icon(item), item),
+                ),
+            ),
+            cls="container",
+        ),
     )
 
 
@@ -586,23 +614,6 @@ def get_item_link(item, full=True, cls=None):
             return A(get_article_icon(), item, href=item.url, cls=cls)
         case _:
             raise NotImplementedError
-
-
-def get_header_item_edit(item):
-    "Tuple of standard title and header for item edit page."
-    title = f"Edit '{item}'"
-    return (
-        Title(title),
-        Header(
-            Nav(
-                Ul(
-                    Li(get_nav_menu(item)),
-                    Li(title),
-                ),
-            ),
-            cls="container",
-        ),
-    )
 
 
 def get_title_input(title="", required=True):

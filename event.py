@@ -116,10 +116,10 @@ def post(
 def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the event."
     assert isinstance(event, items.Event)
-    subevents = items.get_events_within(event.start, event.end)
+    subevents = set(items.get_events_within(event.start, event.end))
     subevents.remove(event)
     subevents = sorted(subevents, key=lambda e: (len(e), e.start), reverse=True)
-    superevents = items.get_events_overlapping(event.start, event.end)
+    superevents = set(items.get_events_overlapping(event.start, event.end))
     superevents.remove(event)
     superevents = set(superevents).difference(subevents)
     superevents = sorted(superevents, key=lambda e: (len(e), e.start), reverse=True)
@@ -301,6 +301,30 @@ def get(event: items.Item):
                     placeholder="Title...",
                     required=True,
                 ),
+                Fieldset(
+                    Legend("Recurring every..."),
+                    Input(type="radio", id="recur_never", name="recur", checked=True, value=""),
+                    Label("Never", htmlFor="recur_never"),
+                    Input(type="radio", id="recur_day", name="recur", value="day"),
+                    Label("Day", htmlFor="recur_day"),
+                    Input(type="radio", id="recur_week", name="recur", value="week"),
+                    Label("Week", htmlFor="recur_week"),
+                    Input(type="radio", id="recur_month", name="recur", value="month"),
+                    Label("Month", htmlFor="recur_month"),
+                    Input(type="radio", id="recur_year", name="recur", value="year"),
+                    Label("Year", htmlFor="recur_year"),
+                ),
+                Fieldset(
+                    Label(
+                        "Last day",
+                        Input(type="date", name="end_date"),
+                    ),
+                    Label(
+                        "Number of times",
+                        Input(type="number", name="number", min=1, step=1),
+                    ),
+                    cls="grid",
+                ),
                 Input(type="submit", value="Copy event"),
                 action=f"{event.url}/copy",
                 method="POST",
@@ -312,15 +336,98 @@ def get(event: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(source: items.File, title: str):
-    "Actually copy the event."
+def post(session, source: items.File, title: str, recur: str=None, end: str=None, number: int=None):
+    "Actually copy the event, possibly several recurring times."
     assert isinstance(source, items.Event)
-    event = items.Event()
-    event.title = title.strip()
-    event.start = copy.copy(source.start)
-    event.end = copy.copy(source.end)
-    event.text = source.text
-    event.write()
+    ic(recur, end, number)
+    if recur and (end or number):
+        if end:
+            end = dt.datetime.combine(
+                dt.date.fromisoformat(end),
+                dt.time(),
+                tzinfo=constants.TIMEZONE
+            )
+        start = copy.copy(source.start)
+        starts = []
+        match recur:
+            case "day":
+                while True:
+                    start = start + dt.timedelta(days=1)
+                    if (end and start > end):
+                        break
+                    if (number is not None and (number := number - 1) < 0):
+                        break
+                    starts.append(start)
+            case "week":
+                while True:
+                    start = start + dt.timedelta(days=7)
+                    if (end and start > end):
+                        break
+                    if (number is not None and (number := number - 1) < 0):
+                        break
+                    starts.append(start)
+            case "month":
+                while True:
+                    if start.month == 12:
+                        month = 1
+                        year = start.year + 1
+                    else:
+                        month = start.month + 1
+                        year = start.year
+                    day = source.start.day # Original day used if possible.
+                    while True:           # Watch out for shorter months.
+                        try:
+                            start = dt.datetime(year, month, day, hour=start.hour,
+                                                minute=start.minute,
+                                                tzinfo=start.tzinfo)
+                        except ValueError:
+                            day -= 1
+                        else:
+                            break
+                    if (end and start > end):
+                        break
+                    if (number is not None and (number := number - 1) < 0):
+                        break
+                    starts.append(start)
+            case "year":
+                while True:
+                    day = source.start.day # Original day used if possible.
+                    while True: # Watch out for leap year.
+                        try:
+                            start = dt.datetime(start.year+1, start.month,
+                                                day, hour=start.hour,
+                                                minute=start.minute,
+                                                tzinfo=start.tzinfo)
+                        except ValueError: # No such day for the month.
+                            day -= 1
+                        else:
+                            break
+                    if (end and start > end):
+                        break
+                    if (number is not None and (number := number - 1) < 0):
+                        break
+                    starts.append(start)
+        for start in starts:
+            event = items.Event()
+            event.title = title.strip()
+            event.start = copy.copy(start)
+            event.end = start + (source.end - source.start)
+            event.text = f"{source.text}\n\nRecurring copy of [[{source.id}]]."
+            event.tags = source.tags
+            event.category = source.category
+            event.write()
+        add_toast(session, f"Created {len(starts)} recurring events.", "success")
+        if not starts:
+            return components.redirect(source.url)
+    else:
+        event = items.Event()
+        event.title = title.strip()
+        event.start = copy.copy(source.start)
+        event.end = copy.copy(source.end)
+        event.text = source.text
+        event.tags = source.tags
+        event.category = source.category
+        event.write()
     return components.redirect(event.url)
 
 

@@ -147,6 +147,7 @@ def post(source: items.File, title: str):
     note = items.Note()
     note.title = title.strip()
     note.text = source.text
+    note.tags = source.tags
     note.write()
     return components.redirect(note.url)
 

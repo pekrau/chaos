@@ -735,6 +735,7 @@ def post(source: items.Database, title: str):
     database = items.Database()
     database.title = title.strip() or databasename.stem
     database.text = source.text
+    database.tags = source.tags
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
     filename = database.id + filename.suffix

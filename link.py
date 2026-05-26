@@ -159,6 +159,7 @@ def post(source: items.File, title: str):
     link.title = title.strip()
     link.href = source.href
     link.text = source.text
+    link.tags = source.tags
     link.write()
     return components.redirect(link.url)
 

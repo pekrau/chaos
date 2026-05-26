@@ -199,6 +199,7 @@ def post(source: items.File, title: str):
     file = items.File()
     file.title = title.strip() or filename.stem
     file.text = source.text
+    file.tags = source.tags
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
     filename = file.id + filename.suffix

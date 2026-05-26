@@ -275,6 +275,7 @@ def post(source: items.File, title: str):
     graphic = items.Graphic()
     graphic.title = title.strip()
     graphic.text = source.text
+    graphic.tags = source.tags
     graphic.frontmatter["graphic"] = source.graphic
     graphic.frontmatter["specification"] = source.specification
     graphic.write()

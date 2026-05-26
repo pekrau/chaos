@@ -222,6 +222,7 @@ def post(source: items.File, title: str):
     image = items.Image()
     image.title = title.strip()
     image.text = source.text
+    image.tags = source.tags
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
     filename = image.id + filename.suffix

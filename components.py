@@ -9,6 +9,7 @@ from fasthtml.common import *
 import constants
 import errors
 import items
+import markdown
 import utils
 
 
@@ -323,7 +324,7 @@ def get_header_item_delete(item):
 
 
 def get_text_card(item, header=None):
-    if html := item.html:
+    if html := markdown.to_html(item.text):
         return Card(header or "", NotStr(html))
     elif header:
         return Card(header)

@@ -15,7 +15,6 @@ import yaml
 
 import constants
 import errors
-import markdown
 import utils
 
 # Lookup of item types.
@@ -90,13 +89,6 @@ class Item:
                         break
                     n += 1
             lookup[self.id] = self
-
-    @property
-    def html(self):
-        if self.text:
-            return markdown.to_html(self.text)
-        else:
-            return None
 
     @property
     def size(self):

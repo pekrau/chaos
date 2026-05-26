@@ -99,6 +99,8 @@ vegaEmbed("#chaos_graphic{ordinal}", specification, {{downloadFileName: "filenam
 
 def to_html(text):
     "Use a fresh converter instance for each invocation."
+    if not text:
+        return ""
     converter = marko.Markdown(
         extensions=[
             marko.helpers.MarkoExtension(

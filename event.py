@@ -12,6 +12,7 @@ import yaml
 import components
 import constants
 import items
+import markdown
 import utils
 
 app, rt = components.get_app_rt()
@@ -998,7 +999,7 @@ def get_vertical_display(start, end, subevents):
                                         cls="black",
                                     ),
                                     Br(),
-                                    NotStr(subevent.html or ""),
+                                    NotStr(markdown.to_html(subevent.text)),
                                     cls=get_event_classes(
                                         subevent, start, end, vertical=True
                                     ),

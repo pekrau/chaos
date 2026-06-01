@@ -259,7 +259,7 @@ def get_header_item_view(item, copy=True, operations=None):
         Nav(
             Ul(
                 Li(get_nav_menu(item, copy=copy, operations=operations)),
-                Li(get_item_icon(item), item),
+                Li(get_item_icon(item), item.title),
             ),
             Ul(
                 Li(

@@ -953,7 +953,7 @@ def get_week_rows(weekdays, events, offset=True, full=True):
                     Td(
                         Div(
                             A(
-                                event.display(year=start.year),
+                                event.title,
                                 href=event.url,
                                 cls="black",
                             ),

@@ -274,7 +274,6 @@ def get_header_item_view(item, copy=True, operations=None):
                     ),
                     cls="slim"
                 ),
-                Li(A(get_edit_icon(), href=f"{item.url}/edit"), cls="slim"),
                 Li(get_to_clipboard(item), cls="slim"),
                 Li(get_search_field()),
             ),

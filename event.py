@@ -304,7 +304,13 @@ def get(event: items.Item):
                 ),
                 Fieldset(
                     Legend("Recurring every..."),
-                    Input(type="radio", id="recur_never", name="recur", checked=True, value=""),
+                    Input(
+                        type="radio",
+                        id="recur_never",
+                        name="recur",
+                        checked=True,
+                        value="",
+                    ),
                     Label("Never", htmlFor="recur_never"),
                     Input(type="radio", id="recur_day", name="recur", value="day"),
                     Label("Day", htmlFor="recur_day"),
@@ -337,16 +343,21 @@ def get(event: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(session, source: items.File, title: str, recur: str=None, end: str=None, number: int=None):
+def post(
+    session,
+    source: items.File,
+    title: str,
+    recur: str = None,
+    end: str = None,
+    number: int = None,
+):
     "Actually copy the event, possibly several recurring times."
     assert isinstance(source, items.Event)
     ic(recur, end, number)
     if recur and (end or number):
         if end:
             end = dt.datetime.combine(
-                dt.date.fromisoformat(end),
-                dt.time(),
-                tzinfo=constants.TIMEZONE
+                dt.date.fromisoformat(end), dt.time(), tzinfo=constants.TIMEZONE
             )
         start = copy.copy(source.start)
         starts = []
@@ -354,17 +365,17 @@ def post(session, source: items.File, title: str, recur: str=None, end: str=None
             case "day":
                 while True:
                     start = start + dt.timedelta(days=1)
-                    if (end and start > end):
+                    if end and start > end:
                         break
-                    if (number is not None and (number := number - 1) < 0):
+                    if number is not None and (number := number - 1) < 0:
                         break
                     starts.append(start)
             case "week":
                 while True:
                     start = start + dt.timedelta(days=7)
-                    if (end and start > end):
+                    if end and start > end:
                         break
-                    if (number is not None and (number := number - 1) < 0):
+                    if number is not None and (number := number - 1) < 0:
                         break
                     starts.append(start)
             case "month":
@@ -375,37 +386,46 @@ def post(session, source: items.File, title: str, recur: str=None, end: str=None
                     else:
                         month = start.month + 1
                         year = start.year
-                    day = source.start.day # Original day used if possible.
-                    while True:           # Watch out for shorter months.
+                    day = source.start.day  # Original day used if possible.
+                    while True:  # Watch out for shorter months.
                         try:
-                            start = dt.datetime(year, month, day, hour=start.hour,
-                                                minute=start.minute,
-                                                tzinfo=start.tzinfo)
+                            start = dt.datetime(
+                                year,
+                                month,
+                                day,
+                                hour=start.hour,
+                                minute=start.minute,
+                                tzinfo=start.tzinfo,
+                            )
                         except ValueError:
                             day -= 1
                         else:
                             break
-                    if (end and start > end):
+                    if end and start > end:
                         break
-                    if (number is not None and (number := number - 1) < 0):
+                    if number is not None and (number := number - 1) < 0:
                         break
                     starts.append(start)
             case "year":
                 while True:
-                    day = source.start.day # Original day used if possible.
-                    while True: # Watch out for leap year.
+                    day = source.start.day  # Original day used if possible.
+                    while True:  # Watch out for leap year.
                         try:
-                            start = dt.datetime(start.year+1, start.month,
-                                                day, hour=start.hour,
-                                                minute=start.minute,
-                                                tzinfo=start.tzinfo)
-                        except ValueError: # No such day for the month.
+                            start = dt.datetime(
+                                start.year + 1,
+                                start.month,
+                                day,
+                                hour=start.hour,
+                                minute=start.minute,
+                                tzinfo=start.tzinfo,
+                            )
+                        except ValueError:  # No such day for the month.
                             day -= 1
                         else:
                             break
-                    if (end and start > end):
+                    if end and start > end:
                         break
-                    if (number is not None and (number := number - 1) < 0):
+                    if number is not None and (number := number - 1) < 0:
                         break
                     starts.append(start)
         for start in starts:
@@ -771,7 +791,9 @@ def get(year: int, month: int, day: int):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_event_icon(), title, cls="today" if today else ""),
+                    Li(
+                        components.get_event_icon(), title, cls="today" if today else ""
+                    ),
                 ),
                 Ul(
                     Li(components.get_search_field()),

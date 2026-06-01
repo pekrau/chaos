@@ -205,12 +205,6 @@ def get_nav_menu(item=None, copy=True, operations=None, icon=None):
         if copy:
             links.append(A("Copy...", href=f"{item.url}/copy"))
         links.append(A("Delete...", href=f"{item.url}/delete"))
-        if item.pinned:
-            links.append(
-                A(f"Unpin {item.type}", href=f"/unpin/{item.id}", title="Unpin")
-            )
-        else:
-            links.append(A(f"Pin {item.type}", href=f"/pin/{item.id}", title="Pin"))
     if operations is not None:
         links.extend(operations)
     links.append(A("Today", href="/event/day/"))
@@ -268,7 +262,20 @@ def get_header_item_view(item, copy=True, operations=None):
                 Li(get_item_icon(item), item),
             ),
             Ul(
-                Li(A(get_edit_icon(), href=f"{item.url}/edit")),
+                Li(
+                    A(
+                        get_icon("pin-angle-fill.svg", title="Unpin"),
+                        href=f"/unpin/{item.id}",
+                        cls="slim",
+                    )
+                    if item.pinned
+                    else A(
+                        get_icon("pin-angle.svg", title="Pin"),
+                        href=f"/pin/{item.id}",
+                        cls="slim",
+                    )
+                ),
+                Li(A(get_edit_icon(), href=f"{item.url}/edit", cls="slim")),
                 Li(get_to_clipboard(item)),
                 Li(get_search_field()),
             ),

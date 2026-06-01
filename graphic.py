@@ -197,8 +197,7 @@ def post(
     graphic: items.Item,
     title: str,
     text: str,
-
-        specification: str,
+    specification: str,
     tags: list[str] = None,
 ):
     "Actually edit the graphic."

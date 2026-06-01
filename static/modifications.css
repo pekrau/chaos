@@ -119,15 +119,15 @@ a.nomargin {
     margin: 0px;
 }
 
-a.slim {
-    padding-left: 2px;
-    padding-right: 2px;
-}
-
 a.button {
     border: 1px solid #ddd;
     padding: 2px 8px;
     margin: 6px;
+}
+
+li.slim {
+    padding-left: 0px;
+    padding-right: 0px;
 }
 
 table.compressed > tbody > tr > td {

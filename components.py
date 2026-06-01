@@ -266,17 +266,16 @@ def get_header_item_view(item, copy=True, operations=None):
                     A(
                         get_icon("pin-angle-fill.svg", title="Unpin"),
                         href=f"/unpin/{item.id}",
-                        cls="slim",
                     )
                     if item.pinned
                     else A(
                         get_icon("pin-angle.svg", title="Pin"),
                         href=f"/pin/{item.id}",
-                        cls="slim",
-                    )
+                    ),
+                    cls="slim"
                 ),
-                Li(A(get_edit_icon(), href=f"{item.url}/edit", cls="slim")),
-                Li(get_to_clipboard(item)),
+                Li(A(get_edit_icon(), href=f"{item.url}/edit"), cls="slim"),
+                Li(get_to_clipboard(item), cls="slim"),
                 Li(get_search_field()),
             ),
         ),

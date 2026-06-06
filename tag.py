@@ -116,14 +116,13 @@ def post(tag: items.Item, title: str, text: str, tags: list[str] = None):
 def get(tag: items.Item):
     "Form for making a copy of the tag."
     assert isinstance(tag, items.Tag)
-    title = f"Copy '{tag}'"
     return (
-        Title(title),
+        Title(f"Copy '{tag}'"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_tag_icon(), title),
+                    Li("Copy ", components.get_tag_icon(), tag),
                 ),
             ),
             cls="container",

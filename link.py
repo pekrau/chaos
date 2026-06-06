@@ -120,14 +120,13 @@ def post(link: items.Item, title: str, href: str, text: str, tags: list[str] = N
 def get(link: items.Item):
     "Form for making a copy of the link."
     assert isinstance(link, items.Link)
-    title = f"Copy '{link}'"
     return (
-        Title(title),
+        Title(f"Copy '{link}'"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_link_icon(), title),
+                    Li("Copy ", components.get_link_icon(), link),
                 ),
             ),
             cls="container",

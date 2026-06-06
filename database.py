@@ -696,14 +696,13 @@ async def post(database: items.Item, title: str, text: str, tags: list[str] = No
 def get(database: items.Item):
     "Form for making a copy of the database."
     assert isinstance(database, items.Database)
-    title = f"Copy '{database}'"
     return (
-        Title(title),
+        Title(f"Copy '{database}'"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_database_icon(), title),
+                    Li("Copy ", components.get_database_icon(), database),
                 ),
             ),
             cls="container",

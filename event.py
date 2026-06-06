@@ -281,14 +281,13 @@ def post(
 def get(event: items.Item):
     "Form for making a copy of the event."
     assert isinstance(event, items.Event)
-    title = f"Copy '{event}'"
     return (
-        Title(title),
+        Title(f"Copy '{event}'"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_event_icon(), title),
+                    Li("Copy ", components.get_event_icon(), event),
                 ),
             ),
             cls="container",
@@ -324,7 +323,7 @@ def get(event: items.Item):
                 Fieldset(
                     Label(
                         "Last day",
-                        Input(type="date", name="end_date"),
+                        Input(type="date", name="last_date"),
                     ),
                     Label(
                         "Number of times",
@@ -348,16 +347,16 @@ def post(
     source: items.File,
     title: str,
     recur: str = None,
-    end: str = None,
-    number: int = None,
+    last_date: str = None,
+    number: int = 0,
 ):
     "Actually copy the event, possibly several recurring times."
     assert isinstance(source, items.Event)
-    ic(recur, end, number)
-    if recur and (end or number):
-        if end:
+    number = number or None     # Zero means 'no value given'.
+    if recur and (last_date or number):
+        if last_date:
             end = dt.datetime.combine(
-                dt.date.fromisoformat(end), dt.time(), tzinfo=constants.TIMEZONE
+                dt.date.fromisoformat(last_date), dt.time(), tzinfo=constants.TIMEZONE
             )
         start = copy.copy(source.start)
         starts = []

@@ -109,14 +109,13 @@ def post(note: items.Item, title: str, text: str, tags: list[str] = None):
 def get(note: items.Item):
     "Form for making a copy of the note."
     assert isinstance(note, items.Note)
-    title = f"Copy '{note}'"
     return (
-        Title(title),
+        Title(f"Copy '{note}'"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_note_icon(), title),
+                    Li("Copy ", components.get_note_icon(), note),
                 ),
             ),
             cls="container",

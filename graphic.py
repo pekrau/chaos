@@ -75,7 +75,7 @@ def post(
                 raise errors.Error(str(error))
 
         case constants.SVG:
-            try:
+            try:                # Compact representation; no indentation.
                 xml = minixml.parse(specification.strip())
                 xml.repr_indent = None
                 specification = repr(xml)
@@ -158,6 +158,7 @@ def get(graphic: items.Item):
             )
 
         case constants.SVG:
+            # Add indentation to the XML representation.
             specification = repr(minixml.parse(graphic.specification))
 
         case _:
@@ -214,7 +215,7 @@ def post(
                 raise errors.Error(str(error))
 
         case constants.SVG:
-            try:
+            try:                # Compact representation; no indentation.
                 xml = minixml.parse(specification.strip())
                 xml.repr_indent = None
                 specification = repr(xml)
@@ -236,14 +237,13 @@ def post(
 def get(graphic: items.Item):
     "Form for making a copy of the graphic."
     assert isinstance(graphic, items.Graphic)
-    title = f"Copy '{graphic}'"
     return (
-        Title(title),
+        Title(f"Copy '{graphic}'"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_graphic_icon(), title),
+                    Li("Copy ", components.get_graphic_icon(), graphic),
                 ),
             ),
             cls="container",
@@ -257,6 +257,14 @@ def get(graphic: items.Item):
                     placeholder="Title...",
                     required=True,
                 ),
+                Fieldset(
+                    Label(
+                        Input(type="checkbox", name="convert", value="image"),
+                        "Convert to item of type 'image'."
+                    )
+                )
+                if graphic.graphic == constants.SVG
+                else "",
                 Input(type="submit", value="Copy graphic"),
                 action=f"{graphic.url}/copy",
                 method="POST",
@@ -268,17 +276,28 @@ def get(graphic: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(source: items.File, title: str):
+def post(source: items.File, title: str, convert: str = None):
     "Actually copy the graphic."
     assert isinstance(source, items.Graphic)
-    graphic = items.Graphic()
-    graphic.title = title.strip()
-    graphic.text = source.text
-    graphic.tags = source.tags
-    graphic.frontmatter["graphic"] = source.graphic
-    graphic.frontmatter["specification"] = source.specification
-    graphic.write()
-    return components.redirect(graphic.url)
+    if convert == "image":
+        result = items.Image()
+        result.title = title.strip()
+        filename = f"{result.id}.svg"
+        try:
+            with open(f"{constants.DATA_DIR}/{filename}", "w") as outfile:
+                outfile.write(source.specification)
+        except OSError as error:
+            raise errors.Error(error)
+        result.filename = filename
+    else:
+        result = items.Graphic()
+        result.title = title.strip()
+        result.frontmatter["graphic"] = source.graphic
+        result.frontmatter["specification"] = source.specification
+    result.text = source.text
+    result.tags = source.tags
+    result.write()
+    return components.redirect(result.url)
 
 
 @rt("/{graphic:Item}/delete")

@@ -65,12 +65,12 @@ async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None
     image.title = title.strip() or filename.stem
     filecontent = await upfile.read()
     filename = image.id + ext
-    image.filename = filename
     try:
         with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
+    image.filename = filename
     image.text = text.strip()
     image.tags = tags
     image.write()
@@ -204,6 +204,14 @@ def get(image: items.Item):
                     placeholder="Title...",
                     required=True,
                 ),
+                Fieldset(
+                    Label(
+                        Input(type="checkbox", name="convert", value="graphic"),
+                        "Convert to item of type 'graphic'."
+                    )
+                )
+                if image.file_mimetype == constants.SVG_MIMETYPE
+                else "",
                 Input(type="submit", value="Copy"),
                 action=f"{image.url}/copy",
                 method="POST",
@@ -215,25 +223,30 @@ def get(image: items.Item):
 
 
 @rt("/{source:Item}/copy")
-def post(source: items.File, title: str):
+def post(source: items.File, title: str, convert: str = None):
     "Actually copy the image."
     assert isinstance(source, items.Image)
-    filename = pathlib.Path(source.filename)
-    image = items.Image()
-    image.title = title.strip()
-    image.text = source.text
-    image.tags = source.tags
-    with open(source.filepath, "rb") as infile:
-        filecontent = infile.read()
-    filename = image.id + filename.suffix
-    image.filename = filename
-    try:
-        with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
-            outfile.write(filecontent)
-    except OSError as error:
-        raise errors.Error(error)
-    image.write()
-    return components.redirect(image.url)
+    if convert == "graphic":
+        result = items.Graphic()
+        result.title = title.strip()
+        result.frontmatter["graphic"] = constants.SVG
+        result.frontmatter["specification"] = source.filepath.read_text()
+    else:
+        result = items.Image()
+        result.title = title.strip()
+        with open(source.filepath, "rb") as infile:
+            filecontent = infile.read()
+        filename = result.id + source.filename.suffix
+        result.filename = filename
+        try:
+            with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
+                outfile.write(filecontent)
+        except OSError as error:
+            raise errors.Error(error)
+    result.text = source.text
+    result.tags = source.tags
+    result.write()
+    return components.redirect(result.url)
 
 
 @rt("/{image:Item}/delete")

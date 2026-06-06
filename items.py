@@ -942,28 +942,32 @@ def read():
     except IOError:
         state = dict(pinned=[], recent=[])
         write_state()
-
     lookup.clear()
     for path in constants.DATA_DIR.iterdir():
-        if not path.suffix == ".md":
-            continue
-        content = path.read_text()
-        m = constants.FRONTMATTER.match(content)
-        if not m:
-            continue
-        frontmatter = yaml.safe_load(m.group(1))
-        # Convert tags from YAML list to set.
-        try:
-            frontmatter["tags"] = set(frontmatter["tags"])
-        except KeyError:
-            pass
-        text = content[m.start(2) :]
-        item = TYPES[frontmatter["type"]](path)
-        item.frontmatter.update(frontmatter)
-        item.text = text
-        lookup[item.id] = item
-
+        if item := read_item(path):
+            lookup[item.id] = item
     setup_pointers()
+
+
+def read_item(path):
+    "Read the Markdown file and return the item."
+    if path.suffix != ".md":
+        return None
+    content = path.read_text()
+    m = constants.FRONTMATTER.match(content)
+    if not m:
+        return None
+    frontmatter = yaml.safe_load(m.group(1))
+    # Convert tags from YAML list to set.
+    try:
+        frontmatter["tags"] = set(frontmatter["tags"])
+    except KeyError:
+        pass
+    text = content[m.start(2) :]
+    item = TYPES[frontmatter["type"]](path)
+    item.frontmatter.update(frontmatter)
+    item.text = text
+    return item
 
 
 def setup_pointers():

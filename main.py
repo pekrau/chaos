@@ -510,13 +510,11 @@ def get():
         ),
     )
     software = Table(
-        Thead(
-            Tr(
-                Th(A("chaos", href=constants.GITHUB_URL, target="_blank")),
-                Th(constants.__version__, cls="right"),
-            ),
-        ),
         Tbody(
+            Tr(
+                Td(A("chaos", href=constants.GITHUB_URL, target="_blank")),
+                Td(constants.__version__, cls="right"),
+            ),
             Tr(
                 Td(A("Python", href="https://www.python.org/", target="_blank")),
                 Td(f"{'.'.join([str(v) for v in sys.version_info[0:3]])}", cls="right"),

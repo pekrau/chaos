@@ -198,14 +198,14 @@ def get_edit_icon(title="Edit"):
     return get_icon("pencil-square.svg", title=title)
 
 
-def get_nav_menu(item=None, copy=True, operations=None, icon=None):
+def get_nav_menu(item=None, copy=True, operations=None):
     links = [A("Home", href="/")]
     if item is not None:
         links.append(A("Edit...", href=f"{item.url}/edit"))
         if copy:
             links.append(A("Copy...", href=f"{item.url}/copy"))
         links.append(A("Delete...", href=f"{item.url}/delete"))
-    if operations is not None:
+    if operations:
         links.extend(operations)
     links.append(A("Today", href="/event/day/"))
     links.append(A("Add...", href="/add/"))

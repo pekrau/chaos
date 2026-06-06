@@ -160,14 +160,13 @@ async def post(
 def get(file: items.Item):
     "Form for making a copy of the file."
     assert isinstance(file, items.File)
-    title = f"Copy '{file}'"
     return (
-        Title(title),
+        Title(f"Copy '{file}'"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_file_icon(), title),
+                    Li("Copy ", components.get_file_icon(), file),
                 ),
             ),
             cls="container",

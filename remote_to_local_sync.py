@@ -37,10 +37,17 @@ def update(url, password, target_dir):
     items.read()
     local_items = items.get_all_files()
 
-    # Download the set of files with different modified timestamps from the remote.
+    # Download the set of files with different 'modified' from the remote.
     download_items = set()
-    for name, modified in remote_items.items():
-        if (name not in local_items) or (local_items[name] != modified):
+    for name, info in remote_items.items():
+        if isinstance(info, dict):
+            modified = info["modified"]
+            size = info["size"]
+        else:
+            modified = info
+            size = None
+        # XXX check for size!
+        if (name not in local_items) or (local_items[name]["modified"] != modified):
             download_items.add(name)
 
     if download_items:

@@ -9,6 +9,7 @@ import os
 import pathlib
 import re
 import sqlite3
+import tarfile
 
 import filetype
 import yaml
@@ -186,6 +187,8 @@ class Item:
         Setup pointers between items again; inefficient, but defensive and safe.
         """
         global lookup, state
+        with tarfile.open(constants.TRASH_FILE, mode="a") as trash:
+            trash.add(self.path, arcname=self.id)
         self.path.unlink()
         lookup.pop(self.id)
         try:
@@ -600,16 +603,16 @@ class _GenericFile(Item):
 
     @property
     def ext(self):
-        return self.filepath.suffix.lstrip(".")
+        return self.filename.suffix.lstrip(".")
 
     @property
     def file_mimetype(self):
         """Return MIME type, or None if not recognized.
         Determined primarily from the file data, from the file extension as fall-back.
         """
-        kind = filetype.guess(self.filepath)
+        kind = filetype.guess(self.filepath)  # Reads the file; needs absolute filename.
         if kind is None:
-            return mimetypes.guess_type(self.filepath)[0]
+            return mimetypes.guess_type(self.filename)[0]
         # Sqlite3 special case; convert to the mimetype used in this package.
         elif kind.mime == "application/x-sqlite3":
             return constants.SQLITE_MIMETYPE
@@ -628,6 +631,8 @@ class _GenericFile(Item):
 
     def delete(self):
         "Delete the item and file from the file system and remove from the lookup."
+        with tarfile.open(constants.TRASH_FILE, mode="a") as trash:
+            trash.add(self.filepath, arcname=self.filename)
         self.filepath.unlink()
         super().delete()
 
@@ -1021,7 +1026,7 @@ def get_events_within(start, end):
 
 
 def get_all_files():
-    "Get a map of item paths and filepaths with their modified timestamps."
+    "Get a map of item paths and filepaths with their 'modified' and 'size' values."
     global lookup
     result = {
         constants.STATE_FILE.name: utils.timestamp_utc(
@@ -1030,9 +1035,11 @@ def get_all_files():
     }
     result = {}
     for item in lookup.values():
-        result[item.id] = item.modified
+        result[item.id] = dict(modified=item.modified, size=item.size)
         if isinstance(item, (File, Image)):
-            result[str(item.filename)] = item.file_modified
+            result[str(item.filename)] = dict(
+                modified=item.file_modified, size=item.file_size
+            )
     return result
 
 

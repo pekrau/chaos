@@ -5,8 +5,10 @@ databases, graphics, books and articles.
 import itertools
 import locale
 import os
+import pathlib
 import shutil
 import sys
+import tarfile
 
 import bibtexparser
 import fasthtml
@@ -460,6 +462,14 @@ def get():
             disk_usage += os.path.getsize(fp)
     disk_free = shutil.disk_usage(constants.DATA_DIR).free
     statistics = items.get_statistics()
+    if constants.TRASH_FILE.exists():
+        with tarfile.open(constants.TRASH_FILE, mode="r") as trash:
+            trash_count = 0
+            for name in trash.getnames():
+                if not pathlib.Path(name).suffix:
+                    trash_count += 1
+    else:
+        trash_count = 0
     usage = Table(
         Thead(Tr(Th("Resource usage", colspan=2))),
         Tbody(
@@ -507,6 +517,10 @@ def get():
                 )
                 for key in statistics
             ],
+            Tr(
+                Td("# items in trash"),
+                Td(A(trash_count, href="/system/trash"), cls="right"),
+            ),
         ),
     )
     software = Table(
@@ -596,6 +610,109 @@ def post():
     "Reread all items from disk."
     items.read()
     return components.redirect()
+
+
+@rt("/system/trash")
+def get():
+    "List items in trash."
+    entries = []
+    attachment = None
+    total_count = 0
+    total_size = 0
+    if constants.TRASH_FILE.exists():
+        with tarfile.open(constants.TRASH_FILE, mode="r") as trash:
+            while True:
+                member = trash.next()
+                if member is None:
+                    break
+                total_size += member.size
+                name = pathlib.Path(member.name)
+                if name.suffix:
+                    attachment = (name.suffix, member.size)
+                elif attachment:
+                    total_count += 1
+                    entries.append(
+                        dict(
+                            name=member.name,
+                            size=member.size,
+                            title=f"{member.name} ({member.size} bytes) + {attachment[0]} ({attachment[1]} bytes)",
+                        )
+                    )
+                    attachment = None
+                else:
+                    total_count += 1
+                    entries.append(
+                        dict(
+                            name=member.name,
+                            size=member.size,
+                            title=f"{member.name} ({member.size} bytes)",
+                        )
+                    )
+    return (
+        Title("Trash"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li("Trash"),
+                ),
+                Ul(
+                    Li(components.get_search_field()),
+                ),
+                cls="main",
+            ),
+            cls="container",
+        ),
+        Main(
+            Card(
+                Header(f"{total_count} items, {total_size} bytes in trash."),
+                Body(
+                    Form(
+                        Input(type="submit", value="Purge all items"),
+                        action="/system/purge",
+                        method="POST",
+                    ),
+                ),
+            ),
+            Card(
+                Header("Retrieve items"),
+                Body(
+                    Form(
+                        Fieldset(
+                            *[
+                                Label(
+                                    Input(
+                                        type="checkbox", name="names", value=e["name"]
+                                    ),
+                                    e["title"],
+                                )
+                                for e in entries
+                            ],
+                        ),
+                        Input(type="submit", value="Retrieve"),
+                        action="/system/trash",
+                        method="POST",
+                    ),
+                ),
+            ),
+            cls="container",
+        ),
+    )
+
+
+@rt("/system/trash")
+def post(names: list[str] = None):
+    "List items in trash."
+    for name in names:
+        XXX
+    return components.redirect("/system/trash")
+
+
+@rt("/system/purge")
+def post():
+    "Empty the trash; delete the file."
+    constants.TRASH_FILE.unlink()
+    return components.redirect("/system/trash")
 
 
 @rt("/logout")

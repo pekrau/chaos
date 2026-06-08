@@ -204,14 +204,16 @@ def get(image: items.Item):
                     placeholder="Title...",
                     required=True,
                 ),
-                Fieldset(
-                    Label(
-                        Input(type="checkbox", name="convert", value="graphic"),
-                        "Convert to item of type 'graphic'."
+                (
+                    Fieldset(
+                        Label(
+                            Input(type="checkbox", name="convert", value="graphic"),
+                            "Convert to item of type 'graphic'.",
+                        )
                     )
-                )
-                if image.file_mimetype == constants.SVG_MIMETYPE
-                else "",
+                    if image.file_mimetype == constants.SVG_MIMETYPE
+                    else ""
+                ),
                 Input(type="submit", value="Copy"),
                 action=f"{image.url}/copy",
                 method="POST",

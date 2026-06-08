@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 7, 6)
+VERSION = (1, 8, 0)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -21,6 +21,7 @@ if not DATA_DIR.exists():
     raise OSError(f"DATA_DIR {DATA_DIR} does not exist")
 
 STATE_FILE = DATA_DIR / ".state.yaml"
+TRASH_FILE = DATA_DIR / ".trash.tar"
 
 FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 

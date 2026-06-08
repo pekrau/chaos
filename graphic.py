@@ -75,7 +75,7 @@ def post(
                 raise errors.Error(str(error))
 
         case constants.SVG:
-            try:                # Compact representation; no indentation.
+            try:  # Compact representation; no indentation.
                 xml = minixml.parse(specification.strip())
                 xml.repr_indent = None
                 specification = repr(xml)
@@ -215,7 +215,7 @@ def post(
                 raise errors.Error(str(error))
 
         case constants.SVG:
-            try:                # Compact representation; no indentation.
+            try:  # Compact representation; no indentation.
                 xml = minixml.parse(specification.strip())
                 xml.repr_indent = None
                 specification = repr(xml)
@@ -257,14 +257,16 @@ def get(graphic: items.Item):
                     placeholder="Title...",
                     required=True,
                 ),
-                Fieldset(
-                    Label(
-                        Input(type="checkbox", name="convert", value="image"),
-                        "Convert to item of type 'image'."
+                (
+                    Fieldset(
+                        Label(
+                            Input(type="checkbox", name="convert", value="image"),
+                            "Convert to item of type 'image'.",
+                        )
                     )
-                )
-                if graphic.graphic == constants.SVG
-                else "",
+                    if graphic.graphic == constants.SVG
+                    else ""
+                ),
                 Input(type="submit", value="Copy graphic"),
                 action=f"{graphic.url}/copy",
                 method="POST",

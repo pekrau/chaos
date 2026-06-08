@@ -352,19 +352,21 @@ def post(
 ):
     "Actually copy the event, possibly several recurring times."
     assert isinstance(source, items.Event)
-    number = number or None     # Zero means 'no value given'.
+    number = number or None  # Zero means 'no value given'.
     if recur and (last_date or number):
         if last_date:
             end = dt.datetime.combine(
                 dt.date.fromisoformat(last_date), dt.time(), tzinfo=constants.TIMEZONE
             )
+        else:
+            end = None
         start = copy.copy(source.start)
         starts = []
         match recur:
             case "day":
                 while True:
                     start = start + dt.timedelta(days=1)
-                    if end and start > end:
+                    if end is not None and start > end:
                         break
                     if number is not None and (number := number - 1) < 0:
                         break
@@ -372,7 +374,7 @@ def post(
             case "week":
                 while True:
                     start = start + dt.timedelta(days=7)
-                    if end and start > end:
+                    if end is not None and start > end:
                         break
                     if number is not None and (number := number - 1) < 0:
                         break
@@ -400,7 +402,7 @@ def post(
                             day -= 1
                         else:
                             break
-                    if end and start > end:
+                    if end is not None and start > end:
                         break
                     if number is not None and (number := number - 1) < 0:
                         break
@@ -422,7 +424,7 @@ def post(
                             day -= 1
                         else:
                             break
-                    if end and start > end:
+                    if end is not None and start > end:
                         break
                     if number is not None and (number := number - 1) < 0:
                         break

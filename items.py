@@ -8,8 +8,8 @@ import mimetypes
 import os
 import pathlib
 import re
+import shutil
 import sqlite3
-import tarfile
 
 import filetype
 import yaml
@@ -78,17 +78,9 @@ class Item:
     def title(self, title):
         "Set the title. If the path has not been set, set it to a unique value."
         global lookup
-        self.frontmatter["title"] = title or "no title"
+        self.frontmatter["title"] = title.strip() or "no title"
         if self.path is None:
-            filename = utils.normalize(title)
-            self._path = constants.DATA_DIR / f"{filename}.md"
-            if self.id in lookup:
-                n = 2
-                while True:
-                    self._path = constants.DATA_DIR / f"{filename}-{n}.md"
-                    if self.id not in lookup:
-                        break
-                    n += 1
+            self._path = constants.DATA_DIR / f"{get_id(utils.normalize(title))}.md"
             lookup[self.id] = self
 
     @property
@@ -161,10 +153,13 @@ class Item:
             reverse=True,
         )
 
-    def write(self):
+    def write(self, stealth=False):
         """Write the item to file.
         Setup pointers between items again; inefficient, but defensive and safe.
+        If 'stealth', then do not change 'modified', nor do setup pointers.
         """
+        if stealth:
+            stat = self.path.stat()
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = copy.deepcopy(self.frontmatter)
@@ -178,18 +173,20 @@ class Item:
                 outfile.write("---\n")
             if self.text:
                 outfile.write(self.text)
-        setup_pointers()
+        if stealth:
+            os.utime(self.path, times=(stat.st_atime, stat.st_mtime))
+        else:
+            setup_pointers()
 
     def delete(self):
-        """Delete the item from the file system.
+        """Delete the item from the file system; move to trash.
         Remove from the lookup.
         Remove from pinned and recent, if present.
         Setup pointers between items again; inefficient, but defensive and safe.
         """
         global lookup, state
-        with tarfile.open(constants.TRASH_FILE, mode="a") as trash:
-            trash.add(self.path, arcname=self.id)
-        self.path.unlink()
+        constants.TRASH_DIR.mkdir(exist_ok=True)
+        shutil.move(self.path, constants.TRASH_DIR / self.id)
         lookup.pop(self.id)
         try:
             state["pinned"].remove(self.id)
@@ -585,12 +582,17 @@ class _GenericFile(Item):
     "Generic file item class."
 
     @property
-    def filename(self):
-        return pathlib.Path(self.frontmatter["filename"])
+    def ext(self):
+        "The extension of the filename; signifies the MIME type."
+        return self.frontmatter["ext"]
 
-    @filename.setter
-    def filename(self, value):
-        self.frontmatter["filename"] = value
+    @ext.setter
+    def ext(self, value):
+        self.frontmatter["ext"] = value
+
+    @property
+    def filename(self):
+        return pathlib.Path(self.id + self.ext)
 
     @property
     def filepath(self):
@@ -602,18 +604,14 @@ class _GenericFile(Item):
         return self.filepath.stat().st_size
 
     @property
-    def ext(self):
-        return self.filename.suffix.lstrip(".")
-
-    @property
-    def file_mimetype(self):
+    def mimetype(self):
         """Return MIME type, or None if not recognized.
         Determined primarily from the file data, from the file extension as fall-back.
         """
         kind = filetype.guess(self.filepath)  # Reads the file; needs absolute filename.
         if kind is None:
-            return mimetypes.guess_type(self.filename)[0]
-        # Sqlite3 special case; convert to the mimetype used in this package.
+            return mimetypes.guess_type(self.filename)[0]  # Needs filename.
+        # Sqlite3 special case; convert to the MIME type used in this package.
         elif kind.mime == "application/x-sqlite3":
             return constants.SQLITE_MIMETYPE
         else:
@@ -627,13 +625,12 @@ class _GenericFile(Item):
     @property
     def url_file(self):
         "Return the URL for the file content."
-        return self.url + self.filename.suffix
+        return self.url + self.ext
 
     def delete(self):
         "Delete the item and file from the file system and remove from the lookup."
-        with tarfile.open(constants.TRASH_FILE, mode="a") as trash:
-            trash.add(self.filepath, arcname=self.filename)
-        self.filepath.unlink()
+        constants.TRASH_DIR.mkdir(exist_ok=True)
+        shutil.move(self.filepath, constants.TRASH_DIR / self.filename)
         super().delete()
 
 
@@ -878,6 +875,17 @@ class Article(_GenericReference):
         self.frontmatter["pmid"] = value
 
 
+def get_id(stem):
+    "Get a unique id given the stem; add suffix if necessary."
+    global lookup
+    result = stem
+    n = 1
+    while result in lookup:
+        n += 1
+        result = f"{stem}-{n}"
+    return result
+
+
 def get(itemid):
     "Get the item from the global lookup given its identifier."
     global lookup
@@ -972,6 +980,12 @@ def read_item(path):
     item = TYPES[frontmatter["type"]](path)
     item.frontmatter.update(frontmatter)
     item.text = text
+    # Fix for change in MD file contents. Keep this for backward compatibility!
+    # Remove 'filename' and add 'ext'; for Image, File and Database items.
+    if filename := item.frontmatter.pop("filename", None):
+        filename = pathlib.Path(filename)
+        item.ext = filename.suffix
+        item.write(stealth=True)
     return item
 
 

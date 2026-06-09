@@ -152,7 +152,7 @@ def post(
             else:
                 article.text = abstract
     else:
-        article.title = title.strip() or "no title"
+        article.title = title
         article.authors = authors
         article.journal = journal
         article.volume = volume or None
@@ -300,7 +300,7 @@ def post(
 ):
     "Actually edit the article."
     assert isinstance(article, items.Article)
-    article.title = title.strip()
+    article.title = title
     article.authors = authors
     article.journal = journal
     article.volume = volume
@@ -322,7 +322,7 @@ def get(article: items.Item):
     return (
         *components.get_header_item_delete(article),
         Main(
-            H3("Really delete the article? All data will be lost."),
+            H3("Really delete the article?"),
             Form(
                 Input(type="submit", value="Yes, delete"),
                 action=f"{article.url}/delete",

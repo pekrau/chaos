@@ -155,7 +155,7 @@ def post(
         book.language = entry.get("language")
         book.isbn = entry.get("isbn")
     else:
-        book.title = title.strip() or "no title"
+        book.title = title
         book.authors = authors
         book.year = year
         book.publisher = publisher or None
@@ -295,7 +295,7 @@ def post(
 ):
     "Actually edit the book."
     assert isinstance(book, items.Book)
-    book.title = title.strip() or "no title"
+    book.title = title
     book.authors = authors
     book.year = year
     book.publisher = publisher
@@ -315,7 +315,7 @@ def get(book: items.Item):
     return (
         *components.get_header_item_delete(book),
         Main(
-            H3("Really delete the book? All data will be lost."),
+            H3("Really delete the book?"),
             Form(
                 Input(type="submit", value="Yes, delete"),
                 action=f"{book.url}/delete",

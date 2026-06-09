@@ -45,7 +45,7 @@ def get():
 def post(title: str, href: str, text: str, tags: list[str] = None):
     "Actually add the link."
     link = items.Link()
-    link.title = title.strip() or "no title"
+    link.title = title
     link.href = href.strip() or "/"
     link.text = text.strip()
     link.tags = tags
@@ -108,7 +108,7 @@ def get(link: items.Item):
 def post(link: items.Item, title: str, href: str, text: str, tags: list[str] = None):
     "Actually edit the link."
     assert isinstance(link, items.Link)
-    link.title = title.strip()
+    link.title = title
     link.href = href.strip() or "/"
     link.text = text.strip()
     link.tags = tags
@@ -155,7 +155,7 @@ def post(source: items.File, title: str):
     "Actually copy the link."
     assert isinstance(source, items.Link)
     link = items.Link()
-    link.title = title.strip()
+    link.title = title
     link.href = source.href
     link.text = source.text
     link.tags = source.tags
@@ -170,7 +170,7 @@ def get(link: items.Item):
     return (
         *components.get_header_item_delete(link),
         Main(
-            H3("Really delete the link? All data will be lost."),
+            H3("Really delete the link?"),
             Form(
                 Input(type="submit", value="Yes, delete"),
                 action=f"{link.url}/delete",

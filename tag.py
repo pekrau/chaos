@@ -48,7 +48,7 @@ def post(title: str, text: str, id: str = "", tags: list[str] = None):
         items.lookup[tag.id] = tag
     else:
         tag = items.Tag()
-    tag.title = title.strip() or "no title"
+    tag.title = title
     tag.text = text.strip()
     tag.tags = tags
     tag.write()
@@ -105,7 +105,7 @@ def get(tag: items.Item):
 def post(tag: items.Item, title: str, text: str, tags: list[str] = None):
     "Actually edit the tag."
     assert isinstance(tag, items.Tag)
-    tag.title = title.strip()
+    tag.title = title
     tag.text = text.strip()
     tag.tags = tags
     tag.write()
@@ -151,7 +151,7 @@ def post(source: items.File, title: str):
     "Actually copy the tag."
     assert isinstance(source, items.Tag)
     tag = items.Tag()
-    tag.title = title.strip()
+    tag.title = title
     tag.text = source.text
     tag.write()
     return components.redirect(tag.url)
@@ -164,7 +164,7 @@ def get(tag: items.Item):
     return (
         *components.get_header_item_delete(tag),
         Main(
-            H3("Really delete the tag? All data will be lost."),
+            H3("Really delete the tag?"),
             Form(
                 Input(type="submit", value="Yes, delete"),
                 action=f"{tag.url}/delete",

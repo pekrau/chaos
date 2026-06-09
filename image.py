@@ -63,14 +63,13 @@ async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None
         raise errors.Error("Upload of Markdown file is disallowed.")
     image = items.Image()
     image.title = title.strip() or filename.stem
+    image.ext = ext
     filecontent = await upfile.read()
-    filename = image.id + ext
     try:
-        with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
+        with open(f"{constants.DATA_DIR}/{image.filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
-    image.filename = filename
     image.text = text.strip()
     image.tags = tags
     image.write()
@@ -166,14 +165,14 @@ async def post(
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
             raise errors.Error("Upload of Markdown file is disallowed.")
+        image.ext = ext  # The MIME type may change on image update.
         filecontent = await upfile.read()
-        filename = image.id + ext  # The mimetype may change on file contents update.
         try:
-            with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
+            with open(f"{constants.DATA_DIR}/{image.filename}", "wb") as outfile:
                 outfile.write(filecontent)
         except OSError as error:
             raise errors.Error(error)
-    image.title = title.strip()
+    image.title = title
     image.text = text.strip()
     image.tags = tags
     image.write()
@@ -211,7 +210,7 @@ def get(image: items.Item):
                             "Convert to item of type 'graphic'.",
                         )
                     )
-                    if image.file_mimetype == constants.SVG_MIMETYPE
+                    if image.mimetype == constants.SVG_MIMETYPE
                     else ""
                 ),
                 Input(type="submit", value="Copy"),
@@ -230,18 +229,17 @@ def post(source: items.File, title: str, convert: str = None):
     assert isinstance(source, items.Image)
     if convert == "graphic":
         result = items.Graphic()
-        result.title = title.strip()
+        result.title = title
         result.frontmatter["graphic"] = constants.SVG
         result.frontmatter["specification"] = source.filepath.read_text()
     else:
         result = items.Image()
-        result.title = title.strip()
+        result.title = title
+        result.ext = source.ext
         with open(source.filepath, "rb") as infile:
             filecontent = infile.read()
-        filename = result.id + source.filename.suffix
-        result.filename = filename
         try:
-            with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
+            with open(f"{constants.DATA_DIR}/{result.filename}", "wb") as outfile:
                 outfile.write(filecontent)
         except OSError as error:
             raise errors.Error(error)
@@ -258,7 +256,7 @@ def get(image: items.Item):
     return (
         *components.get_header_item_delete(image),
         Main(
-            H3("Really delete the image? All data will be lost."),
+            H3("Really delete the image?"),
             Form(
                 Input(type="submit", value="Yes, delete"),
                 action=f"{image.url}/delete",

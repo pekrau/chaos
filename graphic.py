@@ -62,7 +62,7 @@ def post(
 ):
     "Actually add the graphic."
     graphic = items.Graphic()
-    graphic.title = title.strip() or "no title"
+    graphic.title = title
 
     match graphic_type:
 
@@ -226,7 +226,7 @@ def post(
             raise errors.Error("unknown graphic type.")
 
     graphic.frontmatter["specification"] = specification
-    graphic.title = title.strip()
+    graphic.title = title
     graphic.text = text.strip()
     graphic.tags = tags
     graphic.write()
@@ -283,7 +283,7 @@ def post(source: items.File, title: str, convert: str = None):
     assert isinstance(source, items.Graphic)
     if convert == "image":
         result = items.Image()
-        result.title = title.strip()
+        result.title = title
         filename = f"{result.id}.svg"
         try:
             with open(f"{constants.DATA_DIR}/{filename}", "w") as outfile:
@@ -293,7 +293,7 @@ def post(source: items.File, title: str, convert: str = None):
         result.filename = filename
     else:
         result = items.Graphic()
-        result.title = title.strip()
+        result.title = title
         result.frontmatter["graphic"] = source.graphic
         result.frontmatter["specification"] = source.specification
     result.text = source.text
@@ -309,7 +309,7 @@ def get(graphic: items.Item):
     return (
         *components.get_header_item_delete(graphic),
         Main(
-            H3("Really delete the graphic? All data will be lost."),
+            H3("Really delete the graphic?"),
             Form(
                 Input(type="submit", value="Yes, delete"),
                 action=f"{graphic.url}/delete",

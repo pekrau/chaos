@@ -102,7 +102,7 @@ def post(
 ):
     "Actually add an event."
     event = items.Event()
-    event.title = title.strip() or "no title"
+    event.title = title
     event.text = text.strip()
     event.set_start(start_date, start_time)
     event.set_end(end_date, end_time)
@@ -266,7 +266,7 @@ def post(
 ):
     "Actually edit the event."
     assert isinstance(event, items.Event)
-    event.title = title.strip()
+    event.title = title
     event.text = text.strip()
     event.set_start(start_date, start_time)
     event.set_end(end_date, end_time)
@@ -431,7 +431,7 @@ def post(
                     starts.append(start)
         for start in starts:
             event = items.Event()
-            event.title = title.strip()
+            event.title = title
             event.start = copy.copy(start)
             event.end = start + (source.end - source.start)
             event.text = f"{source.text}\n\nRecurring copy of [[{source.id}]]."
@@ -443,7 +443,7 @@ def post(
             return components.redirect(source.url)
     else:
         event = items.Event()
-        event.title = title.strip()
+        event.title = title
         event.start = copy.copy(source.start)
         event.end = copy.copy(source.end)
         event.text = source.text
@@ -460,7 +460,7 @@ def get(event: items.Item):
     return (
         *components.get_header_item_delete(event),
         Main(
-            H3("Really delete the event? All data will be lost."),
+            H3("Really delete the event?"),
             Form(
                 Input(type="submit", value="Yes, delete"),
                 action=f"{event.url}/delete",

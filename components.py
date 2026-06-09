@@ -112,7 +112,7 @@ def get_chaos_icon():
 
 def get_item_icon(item):
     if item.type == "file":
-        return get_file_icon(item.file_mimetype)
+        return get_file_icon(item.mimetype)
     else:
         return get_type_icon(item.type)
 
@@ -376,11 +376,13 @@ def get_items_display(items, title=None, page=None, gallery=False, name="page"):
     total_items = len(items)
 
     if total_items == 0:
-        total_pages = 0
-        number = "No items"
+        if title is None:
+            return Card("No items", cls="right")
+        else:
+            return Card(NotStr(title), Div("No items", cls="right"), cls="grid")
 
     # All items in one single page.
-    elif page is None:
+    if page is None:
         total_pages = 1
         number = f"{total_items} items"
 
@@ -600,14 +602,14 @@ def get_item_link(item, full=True, cls=None):
         case "file":
             if full:
                 return Span(
-                    A(get_file_icon(item.file_mimetype), item, href=item.url),
+                    A(get_file_icon(item.mimetype), item, href=item.url),
                     ", ",
                     A(f"[{item.ext}]", href=item.url_file, cls="contrast"),
                     cls=cls,
                 )
             else:
                 return A(
-                    get_file_icon(item.file_mimetype),
+                    get_file_icon(item.mimetype),
                     item,
                     href=item.url,
                     cls=cls,
@@ -624,13 +626,14 @@ def get_item_link(item, full=True, cls=None):
             raise NotImplementedError
 
 
-def get_title_input(title="", required=True):
+def get_title_input(title="", required=True, autofocus=False):
     return Input(
         type="text",
         name="title",
         value=title,
         placeholder="Title...",
         required=required,
+        autofocus=autofocus,
     )
 
 

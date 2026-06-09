@@ -21,7 +21,7 @@ if not DATA_DIR.exists():
     raise OSError(f"DATA_DIR {DATA_DIR} does not exist")
 
 STATE_FILE = DATA_DIR / ".state.yaml"
-TRASH_FILE = DATA_DIR / ".trash.tar"
+TRASH_DIR = DATA_DIR / "trash"
 
 FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 

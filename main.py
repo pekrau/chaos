@@ -8,7 +8,6 @@ import os
 import pathlib
 import shutil
 import sys
-import tarfile
 
 import bibtexparser
 import fasthtml
@@ -284,145 +283,151 @@ def get(
         ),
         Main(
             Form(
-                Input(
-                    type="text",
-                    name="term",
-                    placeholder="Search...",
-                    value=term or "",
-                ),
-                Fieldset(
-                    Details(
-                        Summary("Filter by type..."),
-                        Ul(
-                            *[
-                                Li(
-                                    Label(
-                                        Input(
-                                            type="radio",
-                                            name="type",
-                                            value=t,
-                                            checked=t == type
-                                            or (t == "Any" and not type),
-                                        ),
-                                        t.capitalize(),
-                                    )
-                                )
-                                for t in ["Any"] + list(items.TYPES)
-                            ]
-                        ),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Filter by tags..."),
-                        Ul(
-                            *[
-                                Li(
-                                    Label(
-                                        Input(
-                                            type="checkbox",
-                                            name="tags",
-                                            value=t.id,
-                                            checked=t.id in tags,
-                                        ),
-                                        t.title,
-                                    )
-                                )
-                                for t in items.get_items(
-                                    type="tag", key=lambda t: t.title.casefold()
-                                )
-                            ]
-                        ),
-                        cls="dropdown",
-                    ),
-                    Details(
-                        Summary("Order by..."),
-                        Ul(
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="order",
-                                        value="term_desc",
-                                        checked=order == "term_desc" or not order,
-                                    ),
-                                    "Term score, descending",
-                                )
-                            ),
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="order",
-                                        value="age_asc",
-                                        checked=order == "age_asc",
-                                    ),
-                                    "Age, ascending",
-                                )
-                            ),
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="order",
-                                        value="age_desc",
-                                        checked=order == "age_desc",
-                                    ),
-                                    "Age, descending",
-                                )
-                            ),
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="order",
-                                        value="lex_asc",
-                                        checked=order == "lex_asc",
-                                    ),
-                                    "Lexicographically, ascending",
-                                )
-                            ),
-                            Li(
-                                Label(
-                                    Input(
-                                        type="radio",
-                                        name="order",
-                                        value="lex_desc",
-                                        checked=order == "lex_desc",
-                                    ),
-                                    "Lexicographically, descending",
-                                )
-                            ),
-                        ),
-                        cls="dropdown",
-                    ),
-                    Fieldset(
-                        Label(
-                            Input(
-                                type="radio",
-                                name="display",
-                                value="list",
-                                checked=display == "list" or not display,
-                            ),
-                            "List",
-                        ),
-                        Label(
-                            Input(
-                                type="radio",
-                                name="display",
-                                value="gallery",
-                                checked=display == "gallery",
-                            ),
-                            "Gallery",
-                        ),
-                    ),
-                    Input(type="submit", value="Search"),
-                    cls="grid",
-                ),
                 components.get_items_display(
                     result,
-                    title="Search results",
+                    title="Results",
                     page=page,
                     gallery=display.lower() == "gallery",
+                ),
+                Card(
+                    Header("Criteria"),
+                    Body(
+                        Input(
+                            type="text",
+                            name="term",
+                            placeholder="Search...",
+                            value=term or "",
+                        ),
+                        Fieldset(
+                            Details(
+                                Summary("Filter by type..."),
+                                Ul(
+                                    *[
+                                        Li(
+                                            Label(
+                                                Input(
+                                                    type="radio",
+                                                    name="type",
+                                                    value=t,
+                                                    checked=t == type
+                                                    or (t == "Any" and not type),
+                                                ),
+                                                t.capitalize(),
+                                            )
+                                        )
+                                        for t in ["Any"] + list(items.TYPES)
+                                    ]
+                                ),
+                                cls="dropdown",
+                            ),
+                            Details(
+                                Summary("Filter by tags..."),
+                                Ul(
+                                    *[
+                                        Li(
+                                            Label(
+                                                Input(
+                                                    type="checkbox",
+                                                    name="tags",
+                                                    value=t.id,
+                                                    checked=t.id in tags,
+                                                ),
+                                                t.title,
+                                            )
+                                        )
+                                        for t in items.get_items(
+                                            type="tag", key=lambda t: t.title.casefold()
+                                        )
+                                    ]
+                                ),
+                                cls="dropdown",
+                            ),
+                            Details(
+                                Summary("Order by..."),
+                                Ul(
+                                    Li(
+                                        Label(
+                                            Input(
+                                                type="radio",
+                                                name="order",
+                                                value="term_desc",
+                                                checked=order == "term_desc"
+                                                or not order,
+                                            ),
+                                            "Term score, descending",
+                                        )
+                                    ),
+                                    Li(
+                                        Label(
+                                            Input(
+                                                type="radio",
+                                                name="order",
+                                                value="age_asc",
+                                                checked=order == "age_asc",
+                                            ),
+                                            "Age, ascending",
+                                        )
+                                    ),
+                                    Li(
+                                        Label(
+                                            Input(
+                                                type="radio",
+                                                name="order",
+                                                value="age_desc",
+                                                checked=order == "age_desc",
+                                            ),
+                                            "Age, descending",
+                                        )
+                                    ),
+                                    Li(
+                                        Label(
+                                            Input(
+                                                type="radio",
+                                                name="order",
+                                                value="lex_asc",
+                                                checked=order == "lex_asc",
+                                            ),
+                                            "Lexicographically, ascending",
+                                        )
+                                    ),
+                                    Li(
+                                        Label(
+                                            Input(
+                                                type="radio",
+                                                name="order",
+                                                value="lex_desc",
+                                                checked=order == "lex_desc",
+                                            ),
+                                            "Lexicographically, descending",
+                                        )
+                                    ),
+                                ),
+                                cls="dropdown",
+                            ),
+                            Fieldset(
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="display",
+                                        value="list",
+                                        checked=display == "list" or not display,
+                                    ),
+                                    "List",
+                                ),
+                                Label(
+                                    Input(
+                                        type="radio",
+                                        name="display",
+                                        value="gallery",
+                                        checked=display == "gallery",
+                                    ),
+                                    "Gallery",
+                                ),
+                            ),
+                            Input(type="submit", value="Search"),
+                            cls="grid",
+                        ),
+                    ),
                 ),
                 action="/search",
             ),
@@ -455,21 +460,16 @@ def get(item: items.Item):
 def get():
     "Display system information."
     disk_usage = 0
-    for dirpath, dirnames, filenames in os.walk(constants.DATA_DIR):
-        dp = Path(dirpath)
-        for filename in filenames:
-            fp = dp / filename
-            disk_usage += os.path.getsize(fp)
+    for filename in constants.DATA_DIR.iterdir():
+        disk_usage += os.path.getsize(constants.DATA_DIR / filename)
     disk_free = shutil.disk_usage(constants.DATA_DIR).free
     statistics = items.get_statistics()
-    if constants.TRASH_FILE.exists():
-        with tarfile.open(constants.TRASH_FILE, mode="r") as trash:
-            trash_count = 0
-            for name in trash.getnames():
-                if not pathlib.Path(name).suffix:
-                    trash_count += 1
-    else:
-        trash_count = 0
+    trash_count = 0
+    trash_usage = 0
+    for filename in constants.TRASH_DIR.iterdir():
+        trash_usage += os.path.getsize(constants.TRASH_DIR / filename)
+        if not filename.suffix:
+            trash_count += 1
     usage = Table(
         Thead(Tr(Th("Resource usage", colspan=2))),
         Tbody(
@@ -487,7 +487,7 @@ def get():
             Tr(
                 Td("Disk usage"),
                 Td(
-                    utils.numerical(disk_usage),
+                    f"{utils.numerical(disk_usage)} bytes",
                     Span(
                         f"{100 * disk_usage / (disk_usage + disk_free):.1f}%",
                         style="margin-left: 2em;",
@@ -498,7 +498,7 @@ def get():
             Tr(
                 Td("Disk free"),
                 Td(
-                    utils.numerical(disk_free),
+                    f"{utils.numerical(disk_free)} bytes",
                     Span(
                         f"{100 * disk_free / (disk_usage + disk_free):.1f}%",
                         style="margin-left: 2em;",
@@ -519,7 +519,17 @@ def get():
             ],
             Tr(
                 Td("# items in trash"),
-                Td(A(trash_count, href="/system/trash"), cls="right"),
+                Td(
+                    f"{utils.numerical(trash_usage)} bytes",
+                    Span(
+                        A(
+                            trash_count,
+                            href="/system/trash",
+                            style="margin-left: 2em;",
+                        ),
+                    ),
+                    cls="right",
+                ),
             ),
         ),
     )
@@ -615,39 +625,22 @@ def post():
 @rt("/system/trash")
 def get():
     "List items in trash."
-    entries = []
-    attachment = None
+    entries = {}
     total_count = 0
     total_size = 0
-    if constants.TRASH_FILE.exists():
-        with tarfile.open(constants.TRASH_FILE, mode="r") as trash:
-            while True:
-                member = trash.next()
-                if member is None:
-                    break
-                total_size += member.size
-                name = pathlib.Path(member.name)
-                if name.suffix:
-                    attachment = (name.suffix, member.size)
-                elif attachment:
-                    total_count += 1
-                    entries.append(
-                        dict(
-                            name=member.name,
-                            size=member.size,
-                            title=f"{member.name} ({member.size} bytes) + {attachment[0]} ({attachment[1]} bytes)",
-                        )
-                    )
-                    attachment = None
-                else:
-                    total_count += 1
-                    entries.append(
-                        dict(
-                            name=member.name,
-                            size=member.size,
-                            title=f"{member.name} ({member.size} bytes)",
-                        )
-                    )
+    for trashfile in sorted(constants.TRASH_DIR.iterdir()):
+        name = trashfile.name
+        size = trashfile.stat().st_size
+        total_size += size
+        if suffix := trashfile.suffix:
+            entry = entries[name[: -len(suffix)]]
+            entry["title"] = f"{entry['title']} + {suffix} ({size} bytes)"
+        else:
+            total_count += 1
+            entries[name] = dict(
+                size=size,
+                title=f"{name} ({size} bytes)",
+            )
     return (
         Title("Trash"),
         Header(
@@ -665,14 +658,18 @@ def get():
         ),
         Main(
             Card(
-                Header(f"{total_count} items, {total_size} bytes in trash."),
-                Body(
-                    Form(
-                        Input(type="submit", value="Purge all items"),
-                        action="/system/purge",
-                        method="POST",
+                Div(f"{total_count} items, {total_size} bytes"),
+                Form(
+                    Input(
+                        type="submit",
+                        value="Purge all items",
+                        aria_describedby="purge-helper",
                     ),
+                    Small("All data will be permanently lost.", id="purge-helper"),
+                    action="/system/purge",
+                    method="POST",
                 ),
+                cls="grid",
             ),
             Card(
                 Header("Retrieve items"),
@@ -681,12 +678,10 @@ def get():
                         Fieldset(
                             *[
                                 Label(
-                                    Input(
-                                        type="checkbox", name="names", value=e["name"]
-                                    ),
+                                    Input(type="checkbox", name="names", value=name),
                                     e["title"],
                                 )
-                                for e in entries
+                                for name, e in sorted(entries.items())
                             ],
                         ),
                         Input(type="submit", value="Retrieve"),
@@ -702,16 +697,24 @@ def get():
 
 @rt("/system/trash")
 def post(names: list[str] = None):
-    "List items in trash."
+    "Retrieve the given items from trash."
     for name in names:
-        XXX
+        path = constants.TRASH_DIR / name
+        itemid = items.get_id(name)
+        shutil.move(path, constants.DATA_DIR / f"{itemid}.md")
+        if filepaths := list(constants.TRASH_DIR.glob(f"{name}.*")):
+            source = filepaths[0]
+            target = constants.DATA_DIR/ filepaths[0].with_stem(itemid).name
+            shutil.move(source, target)
+    items.read()
     return components.redirect("/system/trash")
 
 
 @rt("/system/purge")
 def post():
     "Empty the trash; delete the file."
-    constants.TRASH_FILE.unlink()
+    for trashfile in constants.TRASH_DIR.iterdir():
+        trashfile.unlink()
     return components.redirect("/system/trash")
 
 

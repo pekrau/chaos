@@ -8,6 +8,7 @@ from http import HTTPStatus as HTTP
 import io
 import json
 import os
+import pathlib
 import sqlite3
 import urllib.parse
 
@@ -67,8 +68,8 @@ async def post(
 ):
     "Actually create the database."
     database = items.Database()
-    database.title = title.strip()
-    database.filename = database.id + ".sqlite"
+    database.title = title
+    database.ext = ".sqlite"
     if upfile.filename:
         try:
             with open(database.filepath, "wb") as outfile:
@@ -685,7 +686,7 @@ def get(database: items.Item):
 async def post(database: items.Item, title: str, text: str, tags: list[str] = None):
     "Actually edit the database."
     assert isinstance(database, items.Database)
-    database.title = title.strip()
+    database.title = title
     database.text = text.strip()
     database.tags = tags
     database.write()
@@ -730,17 +731,15 @@ def get(database: items.Item):
 def post(source: items.Database, title: str):
     "Actually copy the database."
     assert isinstance(source, items.Database)
-    databasename = pathlib.Path(source.databasename)
     database = items.Database()
-    database.title = title.strip() or databasename.stem
+    database.title = title
+    database.ext = source.ext
     database.text = source.text
     database.tags = source.tags
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
-    filename = database.id + filename.suffix
-    database.filename = filename
     try:
-        with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
+        with open(f"{constants.DATA_DIR}/{database.filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
@@ -807,7 +806,7 @@ def get(database: items.Item):
     return (
         *components.get_header_item_delete(database),
         Main(
-            H3("Really delete the database? All data will be lost."),
+            H3("Really delete the database?"),
             Form(
                 Input(type="submit", value="Yes, delete"),
                 action=f"{database.url}/delete",

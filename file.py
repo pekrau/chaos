@@ -52,11 +52,10 @@ async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None
         raise errors.Error("Upload of Markdown file is disallowed.")
     file = items.File()
     file.title = title.strip() or filename.stem
+    file.ext = ext
     filecontent = await upfile.read()
-    filename = file.id + ext
-    file.filename = filename
     try:
-        with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
+        with open(f"{constants.DATA_DIR}/{file.filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
@@ -142,14 +141,14 @@ async def post(
         ext = pathlib.Path(upfile.filename).suffix
         if ext == ".md":
             raise errors.Error("Upload of Markdown file is disallowed.")
+        file.ext = ext  # The MIME type may change on file update.
         filecontent = await upfile.read()
-        filename = file.id + ext  # The mimetype may change on file contents update.
         try:
-            with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
+            with open(f"{constants.DATA_DIR}/{file.filename}", "wb") as outfile:
                 outfile.write(filecontent)
         except OSError as error:
             raise errors.Error(error)
-    file.title = title.strip()
+    file.title = title
     file.text = text.strip()
     file.tags = tags
     file.write()
@@ -196,15 +195,14 @@ def post(source: items.File, title: str):
     assert isinstance(source, items.File)
     filename = pathlib.Path(source.filename)
     file = items.File()
-    file.title = title.strip() or filename.stem
+    file.title = title
+    file.ext = source.ext
     file.text = source.text
     file.tags = source.tags
     with open(source.filepath, "rb") as infile:
         filecontent = infile.read()
-    filename = file.id + filename.suffix
-    file.filename = filename
     try:
-        with open(f"{constants.DATA_DIR}/{filename}", "wb") as outfile:
+        with open(f"{constants.DATA_DIR}/{file.filename}", "wb") as outfile:
             outfile.write(filecontent)
     except OSError as error:
         raise errors.Error(error)
@@ -219,7 +217,7 @@ def get(file: items.Item):
     return (
         *components.get_header_item_delete(file),
         Main(
-            H3("Really delete the file? All data will be lost."),
+            H3("Really delete the file?"),
             Form(
                 Input(type="submit", value="Yes, delete"),
                 action=f"{file.url}/delete",

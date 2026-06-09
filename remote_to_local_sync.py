@@ -40,14 +40,13 @@ def update(url, password, target_dir):
     # Download the set of files with different 'modified' from the remote.
     download_items = set()
     for name, info in remote_items.items():
-        if isinstance(info, dict):
-            modified = info["modified"]
-            size = info["size"]
-        else:
-            modified = info
-            size = None
-        # XXX check for size!
-        if (name not in local_items) or (local_items[name]["modified"] != modified):
+        modified = info["modified"]
+        size = info["size"]
+        if (
+            (name not in local_items)
+            or (local_items[name]["modified"] != modified)
+            or (local_items[name]["size"] != size)
+        ):
             download_items.add(name)
 
     if download_items:

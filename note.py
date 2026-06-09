@@ -27,7 +27,7 @@ def get():
         ),
         Main(
             Form(
-                components.get_title_input(),
+                components.get_title_input(autofocus=True),
                 components.get_text_input(),
                 components.get_tags_input(),
                 Input(type="submit", value="Add"),
@@ -44,7 +44,7 @@ def get():
 def post(title: str, text: str, tags: list[str] = None):
     "Actually add the note."
     note = items.Note()
-    note.title = title.strip() or "no title"
+    note.title = title
     note.text = text.strip()
     note.tags = tags
     note.write()
@@ -98,7 +98,7 @@ def get(note: items.Item):
 def post(note: items.Item, title: str, text: str, tags: list[str] = None):
     "Actually edit the note."
     assert isinstance(note, items.Note)
-    note.title = title.strip()
+    note.title = title
     note.text = text.strip()
     note.tags = tags
     note.write()
@@ -144,7 +144,7 @@ def post(source: items.File, title: str):
     "Actually copy the note."
     assert isinstance(source, items.Note)
     note = items.Note()
-    note.title = title.strip()
+    note.title = title
     note.text = source.text
     note.tags = source.tags
     note.write()
@@ -158,7 +158,7 @@ def get(note: items.Item):
     return (
         *components.get_header_item_edit(note),
         Main(
-            H3("Really delete the note? All data will be lost."),
+            H3("Really delete the note?"),
             Form(
                 Input(type="submit", value="Yes, delete"),
                 action=f"{note.url}/delete",

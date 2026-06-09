@@ -185,7 +185,6 @@ class Item:
         Setup pointers between items again; inefficient, but defensive and safe.
         """
         global lookup, state
-        constants.TRASH_DIR.mkdir(exist_ok=True)
         shutil.move(self.path, constants.TRASH_DIR / self.id)
         lookup.pop(self.id)
         try:
@@ -293,18 +292,6 @@ class Event(Item):
         else:
             raise ValueError("invalid datetime value")
 
-    def set_start(self, date, time):
-        if time:
-            self.frontmatter["start"] = dt.datetime.combine(
-                dt.date.fromisoformat(date),
-                dt.time.fromisoformat(time),
-                tzinfo=constants.TIMEZONE,
-            )
-        else:
-            self.frontmatter["start"] = dt.datetime.fromisoformat(date).replace(
-                tzinfo=constants.TIMEZONE
-            )
-
     @property
     def end(self):
         return self.frontmatter["end"]
@@ -320,29 +307,42 @@ class Event(Item):
         else:
             raise ValueError("invalid datetime value")
 
-    def set_end(self, date, time):
-        if date:
-            if time and time != "00:00":
-                self.frontmatter["end"] = dt.datetime.combine(
-                    dt.date.fromisoformat(date),
-                    dt.time.fromisoformat(time),
+    def set(self, start_date, start_time, end_date, end_time):
+        "Set the start and end from string values in ISO format."
+        if start_time:
+            self.start = dt.datetime.combine(
+                dt.date.fromisoformat(start_date),
+                dt.time.fromisoformat(start_time),
+                tzinfo=constants.TIMEZONE,
+            )
+        else:
+            self.start = dt.datetime.fromisoformat(start_date).replace(
+                tzinfo=constants.TIMEZONE
+            )
+        if end_date:
+            if end_time and end_time != "00:00":
+                self.end = dt.datetime.combine(
+                    dt.date.fromisoformat(end_date),
+                    dt.time.fromisoformat(end_time),
                     tzinfo=constants.TIMEZONE,
                 )
             else:
-                end = dt.datetime.fromisoformat(date).replace(tzinfo=constants.TIMEZONE)
+                end = dt.datetime.fromisoformat(end_date).replace(
+                    tzinfo=constants.TIMEZONE
+                )
                 if self.start.hour == 0 and self.start.minute == 0:
-                    end = end + dt.timedelta(days=1)
-                self.frontmatter["end"] = end
-        elif time:
-            self.frontmatter["end"] = dt.datetime.combine(
+                    end = max(self.start, end) + dt.timedelta(days=1)
+                self.end = end
+        elif end_time:
+            self.end = dt.datetime.combine(
                 self.start,
-                dt.time.fromisoformat(time),
+                dt.time.fromisoformat(end_time),
                 tzinfo=constants.TIMEZONE,
             )
         elif self.start.hour == 0 and self.start.minute == 0:
-            self.frontmatter["end"] = self.start + dt.timedelta(days=1)
+            self.end = self.start + dt.timedelta(days=1)
         else:
-            self.frontmatter["end"] = self.start + dt.timedelta(seconds=3600)
+            self.end = self.start + dt.timedelta(seconds=3600)
 
     @property
     def whole_days(self):
@@ -629,7 +629,6 @@ class _GenericFile(Item):
 
     def delete(self):
         "Delete the item and file from the file system and remove from the lookup."
-        constants.TRASH_DIR.mkdir(exist_ok=True)
         shutil.move(self.filepath, constants.TRASH_DIR / self.filename)
         super().delete()
 
@@ -980,12 +979,14 @@ def read_item(path):
     item = TYPES[frontmatter["type"]](path)
     item.frontmatter.update(frontmatter)
     item.text = text
+    # ------------------------------
     # Fix for change in MD file contents. Keep this for backward compatibility!
     # Remove 'filename' and add 'ext'; for Image, File and Database items.
     if filename := item.frontmatter.pop("filename", None):
         filename = pathlib.Path(filename)
         item.ext = filename.suffix
         item.write(stealth=True)
+    # ------------------------------
     return item
 
 

@@ -104,8 +104,7 @@ def post(
     event = items.Event()
     event.title = title
     event.text = text.strip()
-    event.set_start(start_date, start_time)
-    event.set_end(end_date, end_time)
+    event.set(start_date, start_time, end_date, end_time)
     event.check()
     event.tags = tags
     event.category = category
@@ -268,8 +267,7 @@ def post(
     assert isinstance(event, items.Event)
     event.title = title
     event.text = text.strip()
-    event.set_start(start_date, start_time)
-    event.set_end(end_date, end_time)
+    event.set(start_date, start_time, end_date, end_time)
     event.check()
     event.tags = tags
     event.category = category
@@ -441,6 +439,8 @@ def post(
         add_toast(session, f"Created {len(starts)} recurring events.", "success")
         if not starts:
             return components.redirect(source.url)
+
+    # Not recurring.
     else:
         event = items.Event()
         event.title = title

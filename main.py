@@ -64,6 +64,7 @@ app, rt = components.get_app_rt(
     ]
 )
 
+constants.TRASH_DIR.mkdir(exist_ok=True)
 items.read()
 
 
@@ -704,7 +705,7 @@ def post(names: list[str] = None):
         shutil.move(path, constants.DATA_DIR / f"{itemid}.md")
         if filepaths := list(constants.TRASH_DIR.glob(f"{name}.*")):
             source = filepaths[0]
-            target = constants.DATA_DIR/ filepaths[0].with_stem(itemid).name
+            target = constants.DATA_DIR / filepaths[0].with_stem(itemid).name
             shutil.move(source, target)
     items.read()
     return components.redirect("/system/trash")

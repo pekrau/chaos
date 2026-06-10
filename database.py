@@ -41,7 +41,7 @@ def get():
         ),
         Main(
             Form(
-                components.get_title_input(),
+                components.get_title_input(autofocus=True),
                 Label(
                     "Optional Sqlite3 database binary file.",
                     Input(

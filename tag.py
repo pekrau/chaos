@@ -27,7 +27,7 @@ def get():
         ),
         Main(
             Form(
-                components.get_title_input(),
+                components.get_title_input(autofocus=True),
                 components.get_text_input(),
                 components.get_tags_input(),
                 Input(type="submit", value="Add"),

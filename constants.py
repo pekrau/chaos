@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 8, 0)
+VERSION = (1, 8, 1)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -76,7 +76,7 @@ VEGA_LITE_LIBRARIES = [
 ]
 GRAPHIC_TYPES = [SVG, VEGA_LITE]
 
-EVENT_CATEGORIES = [
+EVENT_CATEGORIES = [  # These need entries for colors in 'modifications.css'
     "standard",
     "important",
     "critical",

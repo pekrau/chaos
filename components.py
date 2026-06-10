@@ -448,7 +448,7 @@ def get_items_display(items, title=None, page=None, gallery=False, name="page"):
                                 )
                             ],
                         ),
-                        Td(item.age, cls="nobr right"),
+                        Td(item.age, cls="nobr right top"),
                         Td(get_to_clipboard(item), cls="minwidth top"),
                     )
                     for item in items

@@ -52,7 +52,7 @@
 }
 
 .standard {
-    background-color: #edede9;
+    background-color: #c1fba4;
 }
 
 .important {
@@ -76,8 +76,9 @@
 }
 
 .other {
-    background-color: #c1fba4;
+    background-color: #edede9;
 }
+
 .today {
     border-style: dotted;
     border-width: 6px  !important;
@@ -130,6 +131,10 @@ li.slim {
     padding-right: 0px;
 }
 
+th.night {
+    background-color: lightgrey;
+}
+
 table.compressed > tbody > tr > td {
     padding-top: 2px;
     padding-bottom: 0px;
@@ -142,11 +147,15 @@ table.days > tbody > tr > td, th {
     padding: 2px 0px 0px;
 }
 
-table.vertical > tbody > tr > td {
+table.vertical {
+    width: auto;
+}
+
+table.vertical > tbody > tr > td, th {
     height: 2em;
     vertical-align: top;
     border-width: 0px;
-    padding: 2px 4px 0px 0px;
+    padding: 2px 4px;
 }
 
 select.slim {

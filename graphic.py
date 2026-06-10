@@ -30,7 +30,7 @@ def get():
         ),
         Main(
             Form(
-                components.get_title_input(),
+                components.get_title_input(autofocus=True),
                 Select(
                     Option(
                         "Select graphic type", selected=True, disabled=True, value=""

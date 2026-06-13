@@ -30,6 +30,7 @@ def update(item):
     finally:
         item.write(refresh=False)
         os.utime(item.path, times=times)
+        print("updated", item)
 
 
 def migrate():

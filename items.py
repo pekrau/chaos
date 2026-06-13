@@ -1037,10 +1037,10 @@ def get_items(type=None):
     "Get all items, or of a given type."
     global lookup
     if type is None:
-        return lookup.values()
+        return list(lookup.values())
     else:
         type = type.lower()
-        return (i for i in lookup.values() if i.type == type)
+        return [i for i in lookup.values() if i.type == type]
 
 
 def get_all_files():

@@ -41,7 +41,7 @@ def get(date: str = None):
                         Input(
                             type="date",
                             name="start_date",
-                            value=date or "",
+                            value=date or dt.date.today(),
                             required=True,
                         ),
                     ),
@@ -53,11 +53,65 @@ def get(date: str = None):
                         ),
                     ),
                     Label(
+                        "Category",
+                        Select(
+                            *[Option(c, cls=c) for c in constants.EVENT_CATEGORIES],
+                            name="category",
+                        ),
+                    ),
+                    cls="grid",
+                ),
+                Fieldset(
+                    Label(
+                        "Weeks",
+                        Input(
+                            type="number",
+                            name="weeks",
+                            value=0,
+                            step=1,
+                            min=0,
+                        ),
+                    ),
+                    Label(
+                        "Days",
+                        Input(
+                            type="number",
+                            name="days",
+                            value=0,
+                            step=1,
+                            min=0,
+                        ),
+                    ),
+                    Label(
+                        "Hours",
+                        Input(
+                            type="number",
+                            name="hours",
+                            value=0,
+                            step=1,
+                            min=0,
+                            max=23,
+                        ),
+                    ),
+                    Label(
+                        "Minutes",
+                        Input(
+                            type="nuber",
+                            name="minutes",
+                            value=0,
+                            step=1,
+                            min=0,
+                            max=60,
+                        ),
+                    ),
+                    cls="grid",
+                ),
+                Fieldset(
+                    Label(
                         "End date",
                         Input(
                             type="date",
                             name="end_date",
-                            value=date or "",
                         ),
                     ),
                     Label(
@@ -67,14 +121,7 @@ def get(date: str = None):
                             name="end_time",
                         ),
                     ),
-                    Label(
-                        "Category",
-                        Select(
-                            Option("", disable=True, selected=True),
-                            *[Option(c, cls=c) for c in constants.EVENT_CATEGORIES],
-                            name="category",
-                        ),
-                    ),
+                    Div(),
                     cls="grid",
                 ),
                 components.get_text_input(),
@@ -94,17 +141,21 @@ def post(
     title: str,
     start_date: str,
     text: str,
+    weeks: int = 0,
+    days: int = 0,
+    hours: int = 0,
+    minutes: int = 0,
     tags: list[str] = None,
+    category: str = None,
     start_time: str = None,
     end_date: str = None,
     end_time: str = None,
-    category: str = None,
 ):
     "Actually add an event."
     event = items.Event()
     event.title = title
     event.text = text.strip()
-    event.set(start_date, start_time, end_date, end_time)
+    event.set(start_date, start_time, weeks, days, hours, minutes, end_date, end_time)
     event.check()
     event.tags = tags
     event.category = category
@@ -116,24 +167,31 @@ def post(
 def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     "View the event."
     assert isinstance(event, items.Event)
-    subevents = set(items.get_events_within(event.start, event.end))
+    subevents = set(
+        [e for e in items.get_items("event") if e.within(event.start, event.end)]
+    )
     subevents.remove(event)
     subevents = sorted(subevents, key=lambda e: (len(e), e.start), reverse=True)
-    superevents = set(items.get_events_overlapping(event.start, event.end))
+    # superevents = set(get_events_overlapping(event.start, event.end))
+    superevents = set(
+        [e for e in items.get_items("event") if e.overlap_days(event.start, event.end)]
+    )
     superevents.remove(event)
     superevents = set(superevents).difference(subevents)
     superevents = sorted(superevents, key=lambda e: (len(e), e.start), reverse=True)
     return (
         Title(event),
         components.get_clipboard_script(),
-        components.get_header_item_view(event),
+        components.get_header_item_view(
+            event, operations=[A("Create recurring...", href=f"{event.url}/recurring")]
+        ),
         Main(
             components.get_text_card(
                 event,
                 header=Header(
                     Div(
                         Strong(event.display(date=True)),
-                        f" ({event.duration()})",
+                        f" ({event.str_duration})",
                         cls="center",
                     ),
                     Div(
@@ -175,7 +233,11 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                 if subevents
                 else ""
             ),
-            components.get_items_display(superevents, title="Overlaps"),
+            (
+                components.get_items_display(superevents, title="Overlaps")
+                if superevents
+                else ""
+            ),
             Form(
                 components.get_refs_card(event, refs_page),
                 components.get_tags_card(event, tags_page),
@@ -271,7 +333,8 @@ def post(
     assert isinstance(event, items.Event)
     event.title = title
     event.text = text.strip()
-    event.set(start_date, start_time, end_date, end_time)
+    # XXX fix!
+    event.set(start_date, start_time, 0, 0, 0, 0, end_date, end_time)
     event.check()
     event.tags = tags
     event.category = category
@@ -303,36 +366,6 @@ def get(event: items.Item):
                     placeholder="Title...",
                     required=True,
                 ),
-                Fieldset(
-                    Legend("Recurring every..."),
-                    Input(
-                        type="radio",
-                        id="recur_never",
-                        name="recur",
-                        checked=True,
-                        value="",
-                    ),
-                    Label("Never", htmlFor="recur_never"),
-                    Input(type="radio", id="recur_day", name="recur", value="day"),
-                    Label("Day", htmlFor="recur_day"),
-                    Input(type="radio", id="recur_week", name="recur", value="week"),
-                    Label("Week", htmlFor="recur_week"),
-                    Input(type="radio", id="recur_month", name="recur", value="month"),
-                    Label("Month", htmlFor="recur_month"),
-                    Input(type="radio", id="recur_year", name="recur", value="year"),
-                    Label("Year", htmlFor="recur_year"),
-                ),
-                Fieldset(
-                    Label(
-                        "Last day",
-                        Input(type="date", name="last_date"),
-                    ),
-                    Label(
-                        "Number of times",
-                        Input(type="number", name="number", min=1, step=1),
-                    ),
-                    cls="grid",
-                ),
                 Input(type="submit", value="Copy event"),
                 action=f"{event.url}/copy",
                 method="POST",
@@ -348,113 +381,194 @@ def post(
     session,
     source: items.File,
     title: str,
-    recur: str = None,
+):
+    "Actually copy the event."
+    assert isinstance(source, items.Event)
+    event = items.Event()
+    event.title = title
+    event.start = copy.copy(source.start)
+    event.end = copy.copy(source.end)
+    event.category = source.category
+    event.text = source.text
+    event.tags = source.tags
+    event.write()
+    return components.redirect(f"{event.url}/edit")
+
+
+@rt("/{event:Item}/recurring")
+def get(event: items.Item):
+    "Form for making recurring copies of the event."
+    assert isinstance(event, items.Event)
+    return (
+        Title(f"Recurring '{event}'"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li("Create recurring ", components.get_event_icon(), event),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            Form(
+                Fieldset(
+                    Legend("Recurring every..."),
+                    Input(
+                        type="radio", id="recurring_day", name="recurring", value="day"
+                    ),
+                    Label("Day", htmlFor="recurring_day"),
+                    Input(
+                        type="radio",
+                        id="recurring_2day",
+                        name="recurring",
+                        value="2day",
+                    ),
+                    Label("Two days", htmlFor="recurring_2day"),
+                    Input(
+                        type="radio",
+                        id="recurring_week",
+                        name="recurring",
+                        value="week",
+                    ),
+                    Label("Week", htmlFor="recurring_week"),
+                    Input(
+                        type="radio",
+                        id="recurring_2week",
+                        name="recurring",
+                        value="2week",
+                    ),
+                    Label("Two weeks", htmlFor="recurring_2week"),
+                    Input(
+                        type="radio",
+                        id="recurring_month",
+                        name="recurring",
+                        value="month",
+                    ),
+                    Label("Month", htmlFor="recurring_month"),
+                    Input(
+                        type="radio",
+                        id="recurring_2month",
+                        name="recurring",
+                        value="2month",
+                    ),
+                    Label("Two months", htmlFor="recurring_2month"),
+                    Input(
+                        type="radio",
+                        id="recurring_3month",
+                        name="recurring",
+                        value="3month",
+                    ),
+                    Label("Three months", htmlFor="recurring_3month"),
+                    Input(
+                        type="radio",
+                        id="recurring_year",
+                        name="recurring",
+                        value="year",
+                    ),
+                    Label("Year", htmlFor="recurring_year"),
+                ),
+                Fieldset(
+                    Label(
+                        "After",
+                        Input(type="date", value=event.date, disabled=True),
+                    ),
+                    Label(
+                        "Last day",
+                        Input(type="date", name="last_date"),
+                    ),
+                    Label(
+                        "Number of times",
+                        Input(type="number", name="number", min=1, step=1),
+                    ),
+                    cls="grid",
+                ),
+                Input(type="submit", value="Create events"),
+                action=f"{event.url}/recurring",
+                method="POST",
+            ),
+            components.get_cancel_form(event.url),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{source:Item}/recurring")
+def post(
+    session,
+    source: items.File,
+    recurring: str = None,
     last_date: str = None,
     number: int = 0,
 ):
-    "Actually copy the event, possibly several recurring times."
+    "Actually create the recurring events."
     assert isinstance(source, items.Event)
     number = number or None  # Zero means 'no value given'.
-    if recur and (last_date or number):
-        if last_date:
-            end = dt.datetime.combine(
-                dt.date.fromisoformat(last_date), dt.time(), tzinfo=constants.TIMEZONE
-            )
-        else:
-            end = None
-        start = copy.copy(source.start)
-        starts = []
-        match recur:
-            case "day":
-                while True:
-                    start = start + dt.timedelta(days=1)
-                    if end is not None and start > end:
-                        break
-                    if number is not None and (number := number - 1) < 0:
-                        break
-                    starts.append(start)
-            case "week":
-                while True:
-                    start = start + dt.timedelta(days=7)
-                    if end is not None and start > end:
-                        break
-                    if number is not None and (number := number - 1) < 0:
-                        break
-                    starts.append(start)
-            case "month":
-                while True:
-                    if start.month == 12:
-                        month = 1
-                        year = start.year + 1
-                    else:
-                        month = start.month + 1
-                        year = start.year
-                    day = source.start.day  # Original day used if possible.
-                    while True:  # Watch out for shorter months.
-                        try:
-                            start = dt.datetime(
-                                year,
-                                month,
-                                day,
-                                hour=start.hour,
-                                minute=start.minute,
-                                tzinfo=start.tzinfo,
-                            )
-                        except ValueError:
-                            day -= 1
-                        else:
-                            break
-                    if end is not None and start > end:
-                        break
-                    if number is not None and (number := number - 1) < 0:
-                        break
-                    starts.append(start)
-            case "year":
-                while True:
-                    day = source.start.day  # Original day used if possible.
-                    while True:  # Watch out for leap year.
-                        try:
-                            start = dt.datetime(
-                                start.year + 1,
-                                start.month,
-                                day,
-                                hour=start.hour,
-                                minute=start.minute,
-                                tzinfo=start.tzinfo,
-                            )
-                        except ValueError:  # No such day for the month.
-                            day -= 1
-                        else:
-                            break
-                    if end is not None and start > end:
-                        break
-                    if number is not None and (number := number - 1) < 0:
-                        break
-                    starts.append(start)
-        for start in starts:
-            event = items.Event()
-            event.title = title
-            event.start = copy.copy(start)
-            event.end = start + (source.end - source.start)
-            event.text = f"{source.text}\n\nRecurring copy of [[{source.id}]]."
-            event.tags = source.tags
-            event.category = source.category
-            event.write()
-        add_toast(session, f"Created {len(starts)} recurring events.", "success")
-        if not starts:
-            return components.redirect(source.url)
-
-    # Not recurring.
+    if last_date:
+        end = dt.datetime.combine(dt.date.fromisoformat(last_date), dt.time())
     else:
+        end = None
+    days = None
+    months = None
+    match recurring:
+        case "day":
+            days = dt.timedelta(days=1)
+        case "2day":
+            days = dt.timedelta(days=2)
+        case "week":
+            days = dt.timedelta(days=7)
+        case "2week":
+            days = dt.timedelta(days=14)
+        case "month":
+            months = 1
+        case "2month":
+            months = 2
+        case "3month":
+            months = 3
+        case "year":
+            months = 12
+        case _:
+            raise NotImplementedError
+
+    start = copy.copy(source.start)
+    month = start.month
+    year = start.year
+    starts = []
+    while True:
+        if days:
+            start = start + days
+        else:
+            month += months
+            if month > 12:
+                month = month % 12
+                year += 1
+            day = source.start.day  # Original day used if possible.
+            while True:  # Watch out for shorter months.
+                try:
+                    start = dt.datetime(
+                        year, month, day, hour=start.hour, minute=start.minute
+                    )
+                except ValueError:  # No such day in that month and year.
+                    day -= 1
+                else:
+                    break
+        if end is not None and start > end:
+            break
+        if number is not None and (number := number - 1) < 0:
+            break
+        starts.append(start)
+
+    for start in starts:
         event = items.Event()
-        event.title = title
-        event.start = copy.copy(source.start)
-        event.end = copy.copy(source.end)
-        event.text = source.text
+        event.title = source.title
+        event.start = copy.copy(start)
+        event.end = start + (source.end - source.start)
+        event.text = f"{source.text}\n\nRecurring copy of [[{source.id}]]."
         event.tags = source.tags
         event.category = source.category
         event.write()
-    return components.redirect(event.url)
+    add_toast(session, f"Created {len(starts)} recurring events.", "success")
+    return components.redirect(source.url)
 
 
 @rt("/{event:Item}/delete")
@@ -493,9 +607,9 @@ def get():
 @rt("/year/{year}")
 def get(year: int):
     "Display events during a specified year."
-    start = dt.datetime(year, 1, 1, tzinfo=constants.TIMEZONE)
-    end = dt.datetime(year + 1, 1, 1, tzinfo=constants.TIMEZONE)
-    events = [e for e in items.get_events_overlapping(start, end)]
+    start = dt.datetime(year, 1, 1)
+    end = dt.datetime(year + 1, 1, 1)
+    events = [e for e in items.get_items("event") if e.overlap_days(start, end)]
     rows = []
     for month in [utils.get_datetime(year, m) for m in range(1, 13)]:
         rows.append(
@@ -577,7 +691,7 @@ def get(year: int, month: int):
     last = utils.to_datetime(days[-1][-1]) + dt.timedelta(days=1)
     start = utils.get_datetime(year, month)
     prev = first - dt.timedelta(days=1)
-    events = items.get_events_overlapping(first, last)
+    events = [e for e in items.get_items("event") if e.overlap(first, last)]
     title = f"{start.strftime('%B %Y').capitalize()}"
     return (
         Title(title),
@@ -645,23 +759,17 @@ def get():
 @rt("/week/{year}-{week}")
 def get(year: int, week: int):
     "Display events during a specified week."
-    start = dt.datetime.strptime(f"{year}-{week}-1", "%G-%V-%u").replace(
-        tzinfo=constants.TIMEZONE
-    )
+    start = dt.datetime.strptime(f"{year}-{week}-1", "%G-%V-%u")
     try:
-        end = dt.datetime.strptime(f"{year}-{week+1}-1", "%G-%V-%u").replace(
-            tzinfo=constants.TIMEZONE
-        )
+        end = dt.datetime.strptime(f"{year}-{week+1}-1", "%G-%V-%u")
     except ValueError:
-        end = dt.datetime.strptime(f"{year+1}-{1}-1", "%G-%V-%u").replace(
-            tzinfo=constants.TIMEZONE
-        )
+        end = dt.datetime.strptime(f"{year+1}-{1}-1", "%G-%V-%u")
     prev = start - dt.timedelta(days=4)  # Thursday previous week.
     next = end + dt.timedelta(days=3)  # Thursday next week.
-    events = items.get_events_overlapping(start, end)
+    events = [e for e in items.get_items("event") if e.overlap_days(start, end)]
     weekdays = [start] + [start + dt.timedelta(days=day) for day in range(1, 7)]
     thursday = weekdays[3]
-    today_ordinal = dt.datetime.now(constants.TIMEZONE).toordinal()
+    today_ordinal = dt.datetime.now().toordinal()
     title = f"w{week} {year}"
     return (
         Title(title),
@@ -777,13 +885,13 @@ def get(year: int, month: int, day: int):
     next = thisday + dt.timedelta(days=1)
 
     # First events that extend over more than thisday, sorted by length.
-    # Then thisdays events, sorted by start time.
-    events = items.get_events_overlapping(thisday, next)
+    events = [e for e in items.get_items("event") if e.overlap(thisday, next)]
     beyond_thisday = sorted(
         [e for e in events if not e.within(thisday, next)],
         key=lambda e: len(e),
         reverse=True,
     )
+    # Then thisdays events, sorted by start time.
     just_thisday = sorted(
         [e for e in events if e.within(thisday, next)], key=lambda e: e.start
     )
@@ -871,7 +979,7 @@ def get(year: int, month: int, day: int):
 
 def get_month_table(year, month, events, full=True):
     "Generate the display the given events of a specified month."
-    today_ordinal = dt.datetime.now(constants.TIMEZONE).toordinal()
+    today_ordinal = dt.datetime.now().toordinal()
     monthdays = list(calendar.Calendar().monthdatescalendar(year, month))
     rows = [
         Tr(
@@ -998,7 +1106,7 @@ def get_vertical_display(start, end, events):
             hours = [
                 dt.datetime.combine(
                     dt.date(start.year, start.month, start.day),
-                    dt.time(hour=h, tzinfo=start.tzinfo),
+                    dt.time(hour=h),
                 )
                 for h in range(first_hour, last_hour)
             ]
@@ -1142,6 +1250,7 @@ def get_non_overlapping_days(events, candidates=None):
 
 def get_event_display(event, start, end, detail=3, vertical=False):
     "Return the display of the event at different levels of information."
+    ic(event.start, event.end, event.end - event.start, start, end)
     match detail:
         case 0:
             return A(

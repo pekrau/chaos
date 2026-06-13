@@ -246,7 +246,7 @@ def post(source: items.File, title: str, convert: str = None):
     result.text = source.text
     result.tags = source.tags
     result.write()
-    return components.redirect(result.url)
+    return components.redirect(f"{result.url}/edit")
 
 
 @rt("/{image:Item}/delete")

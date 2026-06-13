@@ -10,21 +10,21 @@ import webcolors
 import constants
 
 
-def timestamp_utc(timestamp):
-    "Convert timestamp to ISO format string in UTC time."
+def iso_utc_from_timestamp(timestamp):
+    "Convert timestamp to ISO format string in UTC timezone."
     return dt.datetime.fromtimestamp(timestamp, tz=dt.UTC).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_datetime(year, month, day=1):
     "Return the datetime instance for the given day."
-    return dt.datetime(year, month, day, tzinfo=constants.TIMEZONE)
+    return dt.datetime(year, month, day)
 
 
 def to_datetime(date, hour=0, minute=0):
     "Convert the date instance to datetime."
     if isinstance(date, dt.datetime):
         return date
-    return dt.datetime.combine(date, dt.time(hour, minute, tzinfo=constants.TIMEZONE))
+    return dt.datetime.combine(date, dt.time(hour, minute))
 
 
 def normalize(s):

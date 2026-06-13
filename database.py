@@ -744,7 +744,7 @@ def post(source: items.Database, title: str):
     except OSError as error:
         raise errors.Error(error)
     database.write()
-    return components.redirect(database.url)
+    return components.redirect(f"{database.url}/edit")
 
 
 @rt("/{database:Item}/view")

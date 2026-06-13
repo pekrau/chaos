@@ -207,7 +207,7 @@ def post(source: items.File, title: str):
     except OSError as error:
         raise errors.Error(error)
     file.write()
-    return components.redirect(file.url)
+    return components.redirect(f"{file.url}/edit")
 
 
 @rt("/{file:Item}/delete")

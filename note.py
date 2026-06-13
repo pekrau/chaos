@@ -148,7 +148,7 @@ def post(source: items.File, title: str):
     note.text = source.text
     note.tags = source.tags
     note.write()
-    return components.redirect(note.url)
+    return components.redirect(f"{note.url}/edit")
 
 
 @rt("/{note:Item}/delete")

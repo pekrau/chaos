@@ -153,8 +153,9 @@ def post(source: items.File, title: str):
     tag = items.Tag()
     tag.title = title
     tag.text = source.text
+    tag.tags = source.tags
     tag.write()
-    return components.redirect(tag.url)
+    return components.redirect(f"{tag.url}/edit")
 
 
 @rt("/{tag:Item}/delete")
@@ -182,3 +183,9 @@ def post(tag: items.Item):
     assert isinstance(tag, items.Tag)
     tag.delete()
     return components.redirect()
+
+
+def get_all_tags():
+    tags = items.get_items("tag")
+    tags.sort(key=lambda t: t.title.casefold())
+    return tags

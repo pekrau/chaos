@@ -204,9 +204,10 @@ def get_nav_menu(item=None, copy=True, operations=None):
         links.append(A("Edit...", href=f"{item.url}/edit"))
         if copy:
             links.append(A("Copy...", href=f"{item.url}/copy"))
-        links.append(A("Delete...", href=f"{item.url}/delete"))
     if operations:
         links.extend(operations)
+    if item is not None:
+        links.append(A("Delete...", href=f"{item.url}/delete"))
     links.append(A("Today", href="/event/day/"))
     links.append(A("Add...", href="/add/"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
@@ -649,12 +650,13 @@ def get_text_input(text=""):
 
 
 def get_tags_input(item_tags=frozenset(), tag=None):
+    from tag import get_all_tags  # Avoid circular import.
+
     if tag:
-        tags = [t for t in items.get_items("tag") if not t is tag]
+        tags = [t for t in get_all_tags() if not t is tag]
 
     else:
-        tags = items.get_items("tag")
-    tags.sort(key=lambda t: t.title.casefold())
+        tags = get_all_tags()
     return Details(
         Summary("Tags..."),
         Ul(

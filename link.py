@@ -160,7 +160,7 @@ def post(source: items.File, title: str):
     link.text = source.text
     link.tags = source.tags
     link.write()
-    return components.redirect(link.url)
+    return components.redirect(f"{link.url}/edit")
 
 
 @rt("/{link:Item}/delete")

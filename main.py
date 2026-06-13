@@ -17,6 +17,7 @@ import marko
 import psutil
 import yaml
 
+# For debugging.
 icecream.install()
 
 # This must be done before importing 'constants'.
@@ -27,6 +28,8 @@ if os.environ.get("CHAOS_DEVELOPMENT"):
         load_dotenv(stream=infile)
 else:
     load_dotenv()
+
+locale.setlocale(locale.LC_ALL, "")
 
 
 import bibtex
@@ -46,8 +49,6 @@ import article
 import api
 import utils
 
-locale.setlocale(locale.LC_ALL, "")
-
 app, rt = components.get_app_rt(
     routes=[
         Mount("/note", note.app),
@@ -65,6 +66,7 @@ app, rt = components.get_app_rt(
 )
 
 constants.TRASH_DIR.mkdir(exist_ok=True)
+
 items.read()
 
 
@@ -336,9 +338,7 @@ def get(
                                                 t.title,
                                             )
                                         )
-                                        for t in items.get_items(
-                                            type="tag", key=lambda t: t.title.casefold()
-                                        )
+                                        for t in tag.get_all_tags()
                                     ]
                                 ),
                                 cls="dropdown",

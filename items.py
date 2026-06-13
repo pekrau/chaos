@@ -90,12 +90,12 @@ class Item:
 
     @property
     def modified(self):
-        "Modified timestamp in UTC ISO format."
-        return utils.timestamp_utc(self.path.stat().st_mtime)
+        "Modified timestamp in ISO format in UTC timezone."
+        return utils.iso_utc_from_timestamp(self.path.stat().st_mtime)
 
     @property
     def modified_local(self):
-        "Modified timestamp in local ISO format."
+        "Modified timestamp in ISO format in local timezone. Seconds not shown."
         return dt.datetime.fromtimestamp(
             self.path.stat().st_mtime, tz=constants.TIMEZONE
         ).strftime("%Y-%m-%d %H:%M")
@@ -153,13 +153,10 @@ class Item:
             reverse=True,
         )
 
-    def write(self, stealth=False):
+    def write(self, refresh=True):
         """Write the item to file.
         Setup pointers between items again; inefficient, but defensive and safe.
-        If 'stealth', then do not change 'modified', nor do setup pointers.
         """
-        if stealth:
-            stat = self.path.stat()
         with self.path.open(mode="w") as outfile:
             if self.frontmatter:
                 frontmatter = copy.deepcopy(self.frontmatter)
@@ -173,9 +170,7 @@ class Item:
                 outfile.write("---\n")
             if self.text:
                 outfile.write(self.text)
-        if stealth:
-            os.utime(self.path, times=(stat.st_atime, stat.st_mtime))
-        else:
+        if refresh:
             setup_pointers()
 
     def delete(self):
@@ -209,13 +204,13 @@ class Item:
 
     @contextlib.contextmanager
     def patch(self):
-        "Allow patching of the item leaving the file timestamps unchanged."
+        "Allow patching of the item leaving the MD file timestamp unchanged."
         stat = self.path.stat()
         utime = (stat.st_atime, stat.st_mtime)
         try:
             yield self
         finally:
-            self.write()
+            self.write(refresh=False)
             os.utime(self.path, times=utime)
 
 
@@ -252,7 +247,7 @@ class Link(Item):
 
 @functools.total_ordering
 class Event(Item):
-    "Event item class; start and end datetimes in the local timezone."
+    "Event item class; start and end datetimes."
 
     def __str__(self):
         return f"{self.title} ({self.display(date=True)})"
@@ -284,9 +279,7 @@ class Event(Item):
     @start.setter
     def start(self, value):
         if isinstance(value, str):
-            self.frontmatter["start"] = dt.datetime.fromisoformat(value).replace(
-                tzinfo=constants.TIMEZONE
-            )
+            self.frontmatter["start"] = dt.datetime.fromisoformat(value)
         elif isinstance(value, dt.datetime):
             self.frontmatter["start"] = value
         else:
@@ -299,50 +292,73 @@ class Event(Item):
     @end.setter
     def end(self, value):
         if isinstance(value, str):
-            self.frontmatter["end"] = dt.datetime.fromisoformat(value).replace(
-                tzinfo=constants.TIMEZONE
-            )
+            self.frontmatter["end"] = dt.datetime.fromisoformat(value)
         elif isinstance(value, dt.datetime):
             self.frontmatter["end"] = value
         else:
             raise ValueError("invalid datetime value")
 
-    def set(self, start_date, start_time, end_date, end_time):
-        "Set the start and end from string values in ISO format."
+    @property
+    def duration(self):
+        "The duration of the event as a timedelta instance."
+        return self.end - self.start
+
+    @property
+    def str_duration(self):
+        "Formatted duration; weeks, days, hours, minutes."
+        minutes = round(self.duration.total_seconds() / 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
+        weeks, days = divmod(days, 7)
+        result = []
+        if weeks:
+            result.append(f"{weeks}w")
+        if days:
+            result.append(f"{days}d")
+        if hours:
+            result.append(f"{hours}h")
+        if minutes:
+            result.append(f"{minutes}m")
+        return " ".join(result)
+
+    def set(
+        self, start_date, start_time, weeks, days, hours, minutes, end_date, end_time
+    ):
+        "Set the start and end from string values in ISO format and/or duration values."
+        assert start_date
         if start_time:
             self.start = dt.datetime.combine(
-                dt.date.fromisoformat(start_date),
-                dt.time.fromisoformat(start_time),
-                tzinfo=constants.TIMEZONE,
+                dt.date.fromisoformat(start_date), dt.time.fromisoformat(start_time)
             )
         else:
-            self.start = dt.datetime.fromisoformat(start_date).replace(
-                tzinfo=constants.TIMEZONE
+            self.start = dt.datetime.fromisoformat(start_date)
+        # Duration; overrides any end datetime.
+        if weeks or days or hours or minutes:
+            self.end = self.start + dt.timedelta(
+                weeks=weeks, days=days, hours=hours, minutes=minutes
             )
-        if end_date:
+        # End date.
+        elif end_date:
+            # End time.
             if end_time and end_time != "00:00":
                 self.end = dt.datetime.combine(
-                    dt.date.fromisoformat(end_date),
-                    dt.time.fromisoformat(end_time),
-                    tzinfo=constants.TIMEZONE,
+                    dt.date.fromisoformat(end_date), dt.time.fromisoformat(end_time)
                 )
+            # No end time; 1 day duration.
             else:
-                end = dt.datetime.fromisoformat(end_date).replace(
-                    tzinfo=constants.TIMEZONE
-                )
+                end = dt.datetime.fromisoformat(end_date)
                 if self.start.hour == 0 and self.start.minute == 0:
                     end = max(self.start, end) + dt.timedelta(days=1)
                 self.end = end
+        # Only end time; use start date.
         elif end_time:
-            self.end = dt.datetime.combine(
-                self.start,
-                dt.time.fromisoformat(end_time),
-                tzinfo=constants.TIMEZONE,
-            )
+            self.end = dt.datetime.combine(self.start, dt.time.fromisoformat(end_time))
+        # No end datetime and no start time: 1 day duration.
         elif self.start.hour == 0 and self.start.minute == 0:
             self.end = self.start + dt.timedelta(days=1)
+        # No end datetime and start time given: 1 hour duration.
         else:
-            self.end = self.start + dt.timedelta(seconds=3600)
+            self.end = self.start + dt.timedelta(hours=1)
 
     @property
     def whole_days(self):
@@ -350,8 +366,7 @@ class Event(Item):
         return (
             self.start.hour == 0
             and self.start.minute == 0
-            and self.end.hour == 0
-            and self.end.minute == 0
+            and self.duration.seconds == 0
         )
 
     @property
@@ -364,8 +379,13 @@ class Event(Item):
 
     @property
     def time(self):
-        "The start time."
+        "The start time as formatted string."
         return self.start.strftime("%H:%M")
+
+    @property
+    def date(self):
+        "The start date as formatted string."
+        return self.start.strftime("%Y-%m-%d")
 
     @property
     def week(self):
@@ -560,23 +580,6 @@ class Event(Item):
         else:  # Different years; ignore flag.
             return f"{self.start.day} {self.month_short} {self.start.year} - {self.end_day} {self.end_month_short} {self.end_year}"
 
-    def duration(self):
-        "Formatted duration; weeks, days, hours, minutes."
-        minutes = round((self.end - self.start).total_seconds() / 60)
-        hours, minutes = divmod(minutes, 60)
-        days, hours = divmod(hours, 24)
-        weeks, days = divmod(days, 7)
-        result = []
-        if weeks:
-            result.append(f"{weeks}w")
-        if days:
-            result.append(f"{days}d")
-        if hours:
-            result.append(f"{hours}h")
-        if minutes:
-            result.append(f"{minutes}m")
-        return " ".join(result)
-
 
 class _GenericFile(Item):
     "Generic file item class."
@@ -620,7 +623,7 @@ class _GenericFile(Item):
     @property
     def file_modified(self):
         "Modified timestamp in UTC ISO format."
-        return utils.timestamp_utc(self.filepath.stat().st_mtime)
+        return utils.iso_utc_from_timestamp(self.filepath.stat().st_mtime)
 
     @property
     def url_file(self):
@@ -917,8 +920,7 @@ def get_shortcuts(item=None):
     """Get the pinned and recent items for display in the nav menu.
     If item is provided, update the recent items.
     """
-    global lookup
-    global state
+    global lookup, state
     recent = list(state["recent"])
     if item is None:
         cleanup_state()
@@ -947,7 +949,6 @@ def read():
     Set up pointers between items.
     """
     global lookup, state
-
     try:
         state.clear()
         state.update(yaml.safe_load(constants.STATE_FILE.read_text()))
@@ -956,7 +957,8 @@ def read():
         write_state()
     lookup.clear()
     for path in constants.DATA_DIR.iterdir():
-        if item := read_item(path):
+        item = read_item(path)
+        if item is not None:
             lookup[item.id] = item
     setup_pointers()
 
@@ -975,19 +977,33 @@ def read_item(path):
         frontmatter["tags"] = set(frontmatter["tags"])
     except KeyError:
         pass
-    text = content[m.start(2) :]
     item = TYPES[frontmatter["type"]](path)
     item.frontmatter.update(frontmatter)
-    item.text = text
-    # ------------------------------
-    # Fix for change in MD file contents. Keep this for backward compatibility!
-    # Remove 'filename' and add 'ext'; for Image, File and Database items.
-    if filename := item.frontmatter.pop("filename", None):
-        filename = pathlib.Path(filename)
-        item.ext = filename.suffix
-        item.write(stealth=True)
-    # ------------------------------
+    item.text = content[m.start(2) :]
     return item
+
+
+def patch_all_md_files():
+    """Update the contents of all Markdown files to the current format.
+    Should be able to handle any previous backup.
+    """
+    # Remove 'filename' and add 'ext' instead; for File, Image and Database items.
+    for path in constants.DATA_DIR.iterdir():
+        item = read_item(path)
+        if item is None:
+            continue
+        if "filename" in item.frontmatter:
+            with item.patch():
+                filename = item.frontmatter.pop("filename")
+                filename = pathlib.Path(filename)
+                item.ext = filename.suffix
+        # Remove timezone info from 'start' and 'end'; for Event items.
+        if "start" in item.frontmatter:
+            with item.patch():
+                item.start = item.start.replace(tzinfo=None)
+        if "end" in item.frontmatter:
+            with item.patch():
+                item.end = item.end.replace(tzinfo=None)
 
 
 def setup_pointers():
@@ -1017,34 +1033,21 @@ def setup_pointers():
                 other.refs_to_self.add(item.id)
 
 
-def get_items(type=None, key=None):
+def get_items(type=None):
     "Get all items, or of a given type."
     global lookup
     if type is None:
-        result = list(lookup.values())
+        return lookup.values()
     else:
         type = type.lower()
-        result = [i for i in lookup.values() if i.type == type]
-    if key:
-        result.sort(key=key)
-    return result
-
-
-def get_events_overlapping(start, end):
-    "Return the list of events overlapping with the time period specified."
-    return [e for e in get_items(type="event") if e.overlap(start, end)]
-
-
-def get_events_within(start, end):
-    "Return the list of events within with the time period specified."
-    return [e for e in get_items(type="event") if e.within(start, end)]
+        return (i for i in lookup.values() if i.type == type)
 
 
 def get_all_files():
     "Get a map of item paths and filepaths with their 'modified' and 'size' values."
     global lookup
     result = {
-        constants.STATE_FILE.name: utils.timestamp_utc(
+        constants.STATE_FILE.name: utils.iso_utc_from_timestamp(
             constants.STATE_FILE.stat().st_mtime
         )
     }

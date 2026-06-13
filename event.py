@@ -1250,7 +1250,6 @@ def get_non_overlapping_days(events, candidates=None):
 
 def get_event_display(event, start, end, detail=3, vertical=False):
     "Return the display of the event at different levels of information."
-    ic(event.start, event.end, event.end - event.start, start, end)
     match detail:
         case 0:
             return A(

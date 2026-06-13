@@ -1,7 +1,6 @@
 "Update all Markdown files to new format. Handles all previous formats."
 
 import contextlib
-import locale
 import os
 
 import constants
@@ -18,7 +17,6 @@ def update(item):
     finally:
         item.write(refresh=False)
         os.utime(item.path, times=times)
-        print("updated", item.id)
 
 
 def migrate():

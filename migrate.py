@@ -4,18 +4,6 @@ import contextlib
 import locale
 import os
 
-# This must be done before importing 'constants'.
-from dotenv import load_dotenv
-
-if os.environ.get("CHAOS_DEVELOPMENT"):
-    with open(".env-development") as infile:
-        load_dotenv(stream=infile)
-else:
-    load_dotenv()
-
-locale.setlocale(locale.LC_ALL, "")
-
-
 import constants
 import items
 
@@ -52,7 +40,3 @@ def migrate():
         if "end" in item.frontmatter:
             with update(item):
                 item.end = item.end.replace(tzinfo=None)
-
-
-if __name__ == "__main__":
-    migrate()

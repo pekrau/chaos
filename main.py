@@ -48,6 +48,7 @@ import book
 import article
 import api
 import utils
+import migrate
 
 app, rt = components.get_app_rt(
     routes=[
@@ -66,6 +67,8 @@ app, rt = components.get_app_rt(
 )
 
 constants.TRASH_DIR.mkdir(exist_ok=True)
+
+migrate.migrate()
 
 items.read()
 

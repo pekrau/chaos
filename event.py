@@ -174,9 +174,11 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
             (
                 Card(
                     Header("Subevents"),
-                    get_vertical_display(event.start, event.end, subevents)
-                    if len(items.Duration(event.end - event.start)) > 24 * 60
-                    else get_day_display(event.start, event.end, subevents)
+                    (
+                        get_vertical_display(event.start, event.end, subevents)
+                        if len(items.Duration(event.end - event.start)) > 24 * 60
+                        else get_day_display(event.start, event.end, subevents)
+                    ),
                 )
                 if subevents
                 else ""
@@ -916,11 +918,7 @@ def get(year: int, month: int, day: int):
                     ),
                     cls="grid",
                 ),
-                (
-                    get_day_display(thisday, next, events)
-                    if events
-                    else I("No events")
-                ),
+                (get_day_display(thisday, next, events) if events else I("No events")),
                 Footer(
                     A(
                         "Add",
@@ -1088,7 +1086,7 @@ def get_week_rows(weekdays, events, offset=True, full=True):
     start = weekdays[0]
     end = weekdays[6] + dt.timedelta(days=1)
     row_cells = []
-    events = list(events)  # Make copy to avoid changing incoming argument.
+    events = set(events)
     while events:
         cells = []
         events_list = get_next_events_list(events, start, end)
@@ -1138,8 +1136,7 @@ def get_week_rows(weekdays, events, offset=True, full=True):
 def get_vertical_display(start, end, events):
     "Display the events vertically."
     days = [
-        dt.datetime.fromordinal(d)
-        for d in range(start.toordinal(), end.toordinal())
+        dt.datetime.fromordinal(d) for d in range(start.toordinal(), end.toordinal())
     ]
     rows = [
         [
@@ -1206,9 +1203,7 @@ def get_day_display(start, end, events):
         ]
         while part_day_events:
             colspan += 1
-            events_list = get_next_events_list(
-                part_day_events, start, end, hours=True
-            )
+            events_list = get_next_events_list(part_day_events, start, end, hours=True)
             part_day_events = set(part_day_events).difference(events_list)
             for event in events_list:
                 for slot, hour in enumerate(hours):
@@ -1257,6 +1252,7 @@ def get_day_display(start, end, events):
 
 def get_next_events_list(events, start, end, hours=False):
     "Return the next sorted list of non-overlapping events."
+    events = sorted(events)
     if hours:
         non_overlapping = get_non_overlapping_hours(events)
     else:
@@ -1273,7 +1269,6 @@ def get_next_events_list(events, start, end, hours=False):
 
 def get_non_overlapping_hours(events, candidates=None):
     "Return a list of of mutually hour-wise non-overlapping event lists."
-    events = list(events)
     result = []
     for pos, e in enumerate(events):
         if candidates is None:
@@ -1289,6 +1284,7 @@ def get_non_overlapping_hours(events, candidates=None):
 def get_non_overlapping_days(events, candidates=None):
     "Return a list of of mutually day-wise non-overlapping event lists."
     events = list(events)
+    events.sort(key=lambda e: (e.start, len(e)))
     result = []
     for pos, e in enumerate(events):
         if candidates is None:

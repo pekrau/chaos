@@ -21,6 +21,8 @@ app, rt = components.get_app_rt()
 @rt("/")
 def get(date: str = None):
     "Form for adding an event."
+    soon = dt.datetime.now() + dt.timedelta(hours=1)
+    date = date or soon.date().isoformat()
     return (
         Title("Add event"),
         Header(
@@ -35,94 +37,13 @@ def get(date: str = None):
         Main(
             Form(
                 components.get_title_input(autofocus=True),
-                Fieldset(
-                    Label(
-                        "Start date",
-                        Input(
-                            type="date",
-                            name="start_date",
-                            value=date or dt.date.today(),
-                            required=True,
-                        ),
+                get_event_period_edit(date),
+                Label(
+                    "Category",
+                    Select(
+                        *[Option(c, cls=c) for c in constants.EVENT_CATEGORIES],
+                        name="category",
                     ),
-                    Label(
-                        "Start time",
-                        Input(
-                            type="time",
-                            name="start_time",
-                        ),
-                    ),
-                    Label(
-                        "Category",
-                        Select(
-                            *[Option(c, cls=c) for c in constants.EVENT_CATEGORIES],
-                            name="category",
-                        ),
-                    ),
-                    cls="grid",
-                ),
-                Fieldset(
-                    Label(
-                        "Weeks",
-                        Input(
-                            type="number",
-                            name="weeks",
-                            value=0,
-                            step=1,
-                            min=0,
-                        ),
-                    ),
-                    Label(
-                        "Days",
-                        Input(
-                            type="number",
-                            name="days",
-                            value=0,
-                            step=1,
-                            min=0,
-                        ),
-                    ),
-                    Label(
-                        "Hours",
-                        Input(
-                            type="number",
-                            name="hours",
-                            value=0,
-                            step=1,
-                            min=0,
-                            max=23,
-                        ),
-                    ),
-                    Label(
-                        "Minutes",
-                        Input(
-                            type="nuber",
-                            name="minutes",
-                            value=0,
-                            step=1,
-                            min=0,
-                            max=60,
-                        ),
-                    ),
-                    cls="grid",
-                ),
-                Fieldset(
-                    Label(
-                        "End date",
-                        Input(
-                            type="date",
-                            name="end_date",
-                        ),
-                    ),
-                    Label(
-                        "End time",
-                        Input(
-                            type="time",
-                            name="end_time",
-                        ),
-                    ),
-                    Div(),
-                    cls="grid",
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
@@ -141,22 +62,48 @@ def post(
     title: str,
     start_date: str,
     text: str,
-    weeks: int = 0,
-    days: int = 0,
-    hours: int = 0,
-    minutes: int = 0,
-    tags: list[str] = None,
-    category: str = None,
     start_time: str = None,
     end_date: str = None,
     end_time: str = None,
+    weeks: int = None,
+    days: int = None,
+    hours: int = None,
+    minutes: int = None,
+    tags: list[str] = None,
+    category: str = None,
 ):
     "Actually add an event."
     event = items.Event()
     event.title = title
     event.text = text.strip()
-    event.set(start_date, start_time, weeks, days, hours, minutes, end_date, end_time)
-    event.check()
+    # Start date is always given.
+    start = dt.datetime.fromisoformat(start_date)
+    # Add start time, if given.
+    if start_time:
+        start = dt.datetime.combine(start, dt.time.fromisoformat(start_time))
+    # Duration, if given.
+    duration = items.Duration(weeks=weeks, days=days, hours=hours, minutes=minutes)
+    # End datetime, if given.
+    if end_date:
+        end = dt.date.fromisoformat(end_date)
+        # End time given.
+        if end_time:
+            end = dt.datetime.combine(end, dt.time.fromisoformat(end_time))
+    # Only end time given; use start date to set the end date.
+    elif end_time:
+        end = dt.datetime.combine(start, dt.time.fromisoformat(end_time))
+    # No end time, but start time given; either explicit duration or 1 hour.
+    elif start_time:
+        if duration:
+            end = start + duration.timedelta
+        else:
+            end = start + dt.timedelta(hours=1)
+    # No end time and no start time; either explicit duration or 1 day.
+    elif duration:
+        end = start + duration.timedelta
+    else:
+        end = start + dt.timedelta(days=1)
+    event.set(start, end)
     event.tags = tags
     event.category = category
     event.write()
@@ -172,7 +119,6 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
     )
     subevents.remove(event)
     subevents = sorted(subevents, key=lambda e: (len(e), e.start), reverse=True)
-    # superevents = set(get_events_overlapping(event.start, event.end))
     superevents = set(
         [e for e in items.get_items("event") if e.overlap_days(event.start, event.end)]
     )
@@ -191,7 +137,7 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                 header=Header(
                     Div(
                         Strong(event.display(date=True)),
-                        f" ({event.str_duration})",
+                        f" ({event.duration})",
                         cls="center",
                     ),
                     Div(
@@ -227,6 +173,7 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
             ),
             (
                 Card(
+                    Header("Subevents"),
                     get_vertical_display(event.start, event.end, subevents),
                     cls="container",
                 )
@@ -254,56 +201,31 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
 def get(event: items.Item):
     "Form for editing an event."
     assert isinstance(event, items.Event)
+    duration = event.duration
     return (
         *components.get_header_item_edit(event),
         Main(
             Form(
                 components.get_title_input(event.title),
-                Fieldset(
-                    Label(
-                        "Start date",
-                        Input(
-                            type="date",
-                            name="start_date",
-                            value=str(event.start).split()[0],
-                            required=True,
-                        ),
+                get_event_period_edit(
+                    event.date,
+                    event.time,
+                    event.end_date,
+                    event.end_time,
+                    weeks=duration.weeks,
+                    days=duration.days,
+                    hours=duration.hours,
+                    minutes=duration.minutes,
+                ),
+                Label(
+                    "Category",
+                    Select(
+                        *[
+                            Option(c, selected=c == event.category, cls=c)
+                            for c in constants.EVENT_CATEGORIES
+                        ],
+                        name="category",
                     ),
-                    Label(
-                        "Start time",
-                        Input(
-                            type="time",
-                            name="start_time",
-                            value=":".join(str(event.start).split()[1].split(":")[0:2]),
-                        ),
-                    ),
-                    Label(
-                        "End date",
-                        Input(
-                            type="date",
-                            name="end_date",
-                            value=str(event._end).split()[0],  # Note: uses '_end'!
-                        ),
-                    ),
-                    Label(
-                        "End time",
-                        Input(
-                            type="time",
-                            name="end_time",
-                            value=":".join(str(event.end).split()[1].split(":")[0:2]),
-                        ),
-                    ),
-                    Label(
-                        "Category",
-                        Select(
-                            *[
-                                Option(c, cls=c, selected=c == event.category)
-                                for c in constants.EVENT_CATEGORIES
-                            ],
-                            name="category",
-                        ),
-                    ),
-                    cls="grid",
                 ),
                 components.get_text_input(event.text),
                 components.get_tags_input(event.tags),
@@ -326,6 +248,10 @@ def post(
     start_time: str = None,
     end_date: str = None,
     end_time: str = None,
+    weeks: int = None,
+    days: int = None,
+    hours: int = None,
+    minutes: int = None,
     tags: list[str] = None,
     category: str = None,
 ):
@@ -333,9 +259,36 @@ def post(
     assert isinstance(event, items.Event)
     event.title = title
     event.text = text.strip()
-    # XXX fix!
-    event.set(start_date, start_time, 0, 0, 0, 0, end_date, end_time)
-    event.check()
+    # Start date is always given.
+    start = dt.datetime.fromisoformat(start_date)
+    # Add start time, if given.
+    if start_time:
+        start = dt.datetime.combine(start, dt.time.fromisoformat(start_time))
+    # Duration, if given.
+    duration = items.Duration(weeks=weeks, days=days, hours=hours, minutes=minutes)
+    # End datetime, if given.
+    if end_date:
+        end = dt.date.fromisoformat(end_date)
+        # End time given.
+        if end_time:
+            end = dt.datetime.combine(end, dt.time.fromisoformat(end_time))
+    else:
+        end = None
+    # Start datetime was changed.
+    if start != event.start:
+        # End datetime was not changed; start + duration, if given, else current.
+        if end == event.end:
+            if duration:
+                end = start + duration.timedelta
+            else:
+                end = start + event.duration.timedelta
+    # Neither start nor end datetime were changed; use duration, if given, else current.
+    elif end == event.end:
+        if duration:
+            end = start + duration.timedelta
+        else:
+            end = start + event.duration.timedelta
+    event.set(start, end)
     event.tags = tags
     event.category = category
     event.write()
@@ -386,8 +339,7 @@ def post(
     assert isinstance(source, items.Event)
     event = items.Event()
     event.title = title
-    event.start = copy.copy(source.start)
-    event.end = copy.copy(source.end)
+    event.set(source.start, source.end)
     event.category = source.category
     event.text = source.text
     event.tags = source.tags
@@ -558,11 +510,11 @@ def post(
             break
         starts.append(start)
 
+    timedelta = source.end - source.start
     for start in starts:
         event = items.Event()
         event.title = source.title
-        event.start = copy.copy(start)
-        event.end = start + (source.end - source.start)
+        event.set(start, start + timedelta)
         event.text = f"{source.text}\n\nRecurring copy of [[{source.id}]]."
         event.tags = source.tags
         event.category = source.category
@@ -973,6 +925,101 @@ def get(year: int, month: int, day: int):
                 ),
             ),
             cls="container",
+        ),
+    )
+
+
+def get_event_period_edit(
+    start_date=None,
+    start_time=None,
+    end_date=None,
+    end_time=None,
+    weeks=None,
+    days=None,
+    hours=None,
+    minutes=None,
+):
+    return Div(
+        Div(
+            Label(
+                "Start date",
+                Input(
+                    type="date",
+                    name="start_date",
+                    value=start_date or dt.date.today(),
+                    required=True,
+                ),
+            ),
+            Label(
+                "Start time",
+                Input(
+                    type="time",
+                    name="start_time",
+                    value=start_time,
+                ),
+            ),
+            Label(
+                "End date",
+                Input(
+                    type="date",
+                    name="end_date",
+                    value=end_date,
+                ),
+            ),
+            Label(
+                "End time",
+                Input(
+                    type="time",
+                    name="end_time",
+                    value=end_time,
+                ),
+            ),
+            cls="grid",
+        ),
+        Div(
+            Label(
+                "Weeks",
+                Input(
+                    type="number",
+                    name="weeks",
+                    value=weeks or None,
+                    step=1,
+                    min=0,
+                ),
+            ),
+            Label(
+                "Days",
+                Input(
+                    type="number",
+                    name="days",
+                    value=days or None,
+                    step=1,
+                    min=0,
+                ),
+            ),
+            Label(
+                "Hours",
+                Input(
+                    type="number",
+                    name="hours",
+                    value=hours or None,
+                    step=1,
+                    min=0,
+                    max=23,
+                ),
+            ),
+            Label(
+                "Minutes",
+                Input(
+                    type="nuber",
+                    name="minutes",
+                    value=minutes or None,
+                    step=1,
+                    min=0,
+                    max=60,
+                ),
+            ),
+            cls="grid",
         ),
     )
 

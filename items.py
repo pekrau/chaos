@@ -276,97 +276,35 @@ class Event(Item):
     def start(self):
         return self.frontmatter["start"]
 
-    @start.setter
-    def start(self, value):
-        if isinstance(value, str):
-            self.frontmatter["start"] = dt.datetime.fromisoformat(value)
-        elif isinstance(value, dt.datetime):
-            self.frontmatter["start"] = value
-        else:
-            raise ValueError("invalid datetime value")
-
     @property
     def end(self):
         return self.frontmatter["end"]
 
-    @end.setter
-    def end(self, value):
-        if isinstance(value, str):
-            self.frontmatter["end"] = dt.datetime.fromisoformat(value)
-        elif isinstance(value, dt.datetime):
-            self.frontmatter["end"] = value
-        else:
-            raise ValueError("invalid datetime value")
+    def set(self, start, end):
+        "Set the start and end datetimes. Check validity."
+        if isinstance(start, str):
+            start = dt.datetime.fromisoformat(start)
+        elif not isinstance(start, dt.datetime):
+            raise ValueError("invalid 'start' datetime value")
+        if isinstance(end, str):
+            end = dt.datetime.fromisoformat(end)
+        elif not isinstance(end, dt.datetime):
+            raise ValueError("invalid 'end' datetime value")
+        if start > end:
+            raise ValueError("invalid period; 'start' must be <= 'end'")
+        self.frontmatter["start"] = start
+        self.frontmatter["end"] = end
 
     @property
     def duration(self):
-        "The duration of the event as a timedelta instance."
-        return self.end - self.start
-
-    @property
-    def str_duration(self):
-        "Formatted duration; weeks, days, hours, minutes."
-        minutes = round(self.duration.total_seconds() / 60)
-        hours, minutes = divmod(minutes, 60)
-        days, hours = divmod(hours, 24)
-        weeks, days = divmod(days, 7)
-        result = []
-        if weeks:
-            result.append(f"{weeks}w")
-        if days:
-            result.append(f"{days}d")
-        if hours:
-            result.append(f"{hours}h")
-        if minutes:
-            result.append(f"{minutes}m")
-        return " ".join(result)
-
-    def set(
-        self, start_date, start_time, weeks, days, hours, minutes, end_date, end_time
-    ):
-        "Set the start and end from string values in ISO format and/or duration values."
-        assert start_date
-        if start_time:
-            self.start = dt.datetime.combine(
-                dt.date.fromisoformat(start_date), dt.time.fromisoformat(start_time)
-            )
-        else:
-            self.start = dt.datetime.fromisoformat(start_date)
-        # Duration; overrides any end datetime.
-        if weeks or days or hours or minutes:
-            self.end = self.start + dt.timedelta(
-                weeks=weeks, days=days, hours=hours, minutes=minutes
-            )
-        # End date.
-        elif end_date:
-            # End time.
-            if end_time and end_time != "00:00":
-                self.end = dt.datetime.combine(
-                    dt.date.fromisoformat(end_date), dt.time.fromisoformat(end_time)
-                )
-            # No end time; 1 day duration.
-            else:
-                end = dt.datetime.fromisoformat(end_date)
-                if self.start.hour == 0 and self.start.minute == 0:
-                    end = max(self.start, end) + dt.timedelta(days=1)
-                self.end = end
-        # Only end time; use start date.
-        elif end_time:
-            self.end = dt.datetime.combine(self.start, dt.time.fromisoformat(end_time))
-        # No end datetime and no start time: 1 day duration.
-        elif self.start.hour == 0 and self.start.minute == 0:
-            self.end = self.start + dt.timedelta(days=1)
-        # No end datetime and start time given: 1 hour duration.
-        else:
-            self.end = self.start + dt.timedelta(hours=1)
+        "The duration of the event as a Duration instance."
+        return Duration(self.end - self.start)
 
     @property
     def whole_days(self):
         "Does this event span a whole number of days?"
         return (
-            self.start.hour == 0
-            and self.start.minute == 0
-            and self.duration.seconds == 0
+            self.start.hour == 0 and self.start.minute == 0 and self.duration.whole_days
         )
 
     @property
@@ -378,14 +316,14 @@ class Event(Item):
             return self.end.toordinal() - self.start.toordinal() + 1
 
     @property
-    def time(self):
-        "The start time as formatted string."
-        return self.start.strftime("%H:%M")
+    def date(self):
+        "The start date as ISO string."
+        return self.start.strftime("%Y-%m-%d")
 
     @property
-    def date(self):
-        "The start date as formatted string."
-        return self.start.strftime("%Y-%m-%d")
+    def time(self):
+        "The start time as ISO string."
+        return self.start.strftime("%H:%M")
 
     @property
     def week(self):
@@ -426,8 +364,13 @@ class Event(Item):
             return self.end
 
     @property
+    def end_date(self):
+        "The end date as ISO string."
+        return self.end.strftime("%Y-%m-%d")
+
+    @property
     def end_time(self):
-        "The end time."
+        "The end time as ISO string."
         return self.end.strftime("%H:%M")
 
     @property
@@ -528,11 +471,6 @@ class Event(Item):
             > (24 * end.toordinal() + end.hour)
         )
 
-    def check(self):
-        "Check that the current event value is valid, i.e. start <= end."
-        if self.start > self.end:
-            raise ValueError("invalid event; start must be <= end")
-
     def isodate(self, month=True, day=True, week=False):
         "Return formatted date in ISO style."
         if week:
@@ -579,6 +517,45 @@ class Event(Item):
                 return f"{self.start.day} {self.month_short} - {self.end_day} {self.end_month_short}  {self.start.year}"
         else:  # Different years; ignore flag.
             return f"{self.start.day} {self.month_short} {self.start.year} - {self.end_day} {self.end_month_short} {self.end_year}"
+
+
+class Duration:
+    "Duration; a chunk of time."
+
+    def __init__(self, timedelta=None, weeks=None, days=None, hours=None, minutes=None):
+        if timedelta is None:
+            timedelta = dt.timedelta(
+                weeks=weeks or 0, days=days or 0, hours=hours or 0, minutes=minutes or 0
+            )
+        value = round(timedelta.total_seconds() / 60)
+        value, self.minutes = divmod(value, 60)
+        value, self.hours = divmod(value, 24)
+        self.weeks, self.days = divmod(value, 7)
+
+    def __len__(self):
+        return self.minutes + 60 * (self.hours + 24 * (self.days + 7 * self.weeks))
+
+    def __str__(self):
+        result = []
+        if self.weeks:
+            result.append(f"{self.weeks}w")
+        if self.days:
+            result.append(f"{self.days}d")
+        if self.hours:
+            result.append(f"{self.hours}h")
+        if self.minutes:
+            result.append(f"{self.minutes}m")
+        return " ".join(result)
+
+    @property
+    def whole_days(self):
+        return self.hours == 0 and self.minutes == 0
+
+    @property
+    def timedelta(self):
+        return dt.timedelta(
+            weeks=self.weeks, days=self.days, hours=self.hours, minutes=self.minutes
+        )
 
 
 class _GenericFile(Item):
@@ -981,29 +958,6 @@ def read_item(path):
     item.frontmatter.update(frontmatter)
     item.text = content[m.start(2) :]
     return item
-
-
-def patch_all_md_files():
-    """Update the contents of all Markdown files to the current format.
-    Should be able to handle any previous backup.
-    """
-    # Remove 'filename' and add 'ext' instead; for File, Image and Database items.
-    for path in constants.DATA_DIR.iterdir():
-        item = read_item(path)
-        if item is None:
-            continue
-        if "filename" in item.frontmatter:
-            with item.patch():
-                filename = item.frontmatter.pop("filename")
-                filename = pathlib.Path(filename)
-                item.ext = filename.suffix
-        # Remove timezone info from 'start' and 'end'; for Event items.
-        if "start" in item.frontmatter:
-            with item.patch():
-                item.start = item.start.replace(tzinfo=None)
-        if "end" in item.frontmatter:
-            with item.patch():
-                item.end = item.end.replace(tzinfo=None)
 
 
 def setup_pointers():

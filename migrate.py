@@ -7,18 +7,6 @@ import constants
 import items
 
 
-@contextlib.contextmanager
-def update(item):
-    "Update the contents of the Markdown file without changing the modification time."
-    stat = item.path.stat()
-    times = (stat.st_atime, stat.st_mtime)
-    try:
-        yield item
-    finally:
-        item.write(refresh=False)
-        os.utime(item.path, times=times)
-
-
 def migrate():
     "Update all Markdown files to the new format. Handles all previous formats."
     for path in constants.DATA_DIR.iterdir():
@@ -31,10 +19,23 @@ def migrate():
                 filename = item.frontmatter.pop("filename")
                 filename = pathlib.Path(filename)
                 item.ext = filename.suffix
-        # Remove timezone info from 'start' and 'end'; for Event items.
-        if "start" in item.frontmatter:
-            with update(item):
-                item.start = item.start.replace(tzinfo=None)
-        if "end" in item.frontmatter:
-            with update(item):
-                item.end = item.end.replace(tzinfo=None)
+        # For Event items, remove timezone info from 'start' and 'end'
+        if isinstance(item, items.Event):
+            if item.start.tzinfo:
+                with update(item):
+                    item.frontmatter["start"] = item.start.replace(tzinfo=None)
+            if item.end.tzinfo:
+                with update(item):
+                    item.frontmatter["end"] = item.end.replace(tzinfo=None)
+
+
+@contextlib.contextmanager
+def update(item):
+    "Update the contents of the Markdown file without changing the modification time."
+    stat = item.path.stat()
+    times = (stat.st_atime, stat.st_mtime)
+    try:
+        yield item
+    finally:
+        item.write(refresh=False)
+        os.utime(item.path, times=times)

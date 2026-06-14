@@ -1252,7 +1252,6 @@ def get_day_display(start, end, events):
 
 def get_next_events_list(events, start, end, hours=False):
     "Return the next sorted list of non-overlapping events."
-    events = sorted(events)
     if hours:
         non_overlapping = get_non_overlapping_hours(events)
     else:
@@ -1269,6 +1268,7 @@ def get_next_events_list(events, start, end, hours=False):
 
 def get_non_overlapping_hours(events, candidates=None):
     "Return a list of of mutually hour-wise non-overlapping event lists."
+    events = sorted(events)
     result = []
     for pos, e in enumerate(events):
         if candidates is None:
@@ -1283,8 +1283,7 @@ def get_non_overlapping_hours(events, candidates=None):
 
 def get_non_overlapping_days(events, candidates=None):
     "Return a list of of mutually day-wise non-overlapping event lists."
-    events = list(events)
-    events.sort(key=lambda e: (e.start, len(e)))
+    events = sorted(events)
     result = []
     for pos, e in enumerate(events):
         if candidates is None:

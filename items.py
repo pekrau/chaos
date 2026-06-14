@@ -270,7 +270,7 @@ class Event(Item):
 
     def __len__(self):
         "Duration in minutes."
-        return round((self.end - self.start).total_seconds() / 60)
+        return len(self.duration)
 
     @property
     def start(self):

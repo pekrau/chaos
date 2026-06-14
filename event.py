@@ -37,7 +37,7 @@ def get(date: str = None):
         Main(
             Form(
                 components.get_title_input(autofocus=True),
-                get_event_period_edit(date),
+                get_period_edit(date),
                 Label(
                     "Category",
                     Select(
@@ -174,8 +174,9 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
             (
                 Card(
                     Header("Subevents"),
-                    get_vertical_display(event.start, event.end, subevents),
-                    cls="container",
+                    get_vertical_display(event.start, event.end, subevents)
+                    if len(items.Duration(event.end - event.start)) > 24 * 60
+                    else get_day_display(event.start, event.end, subevents)
                 )
                 if subevents
                 else ""
@@ -207,7 +208,7 @@ def get(event: items.Item):
         Main(
             Form(
                 components.get_title_input(event.title),
-                get_event_period_edit(
+                get_period_edit(
                     event.date,
                     event.time,
                     event.end_date,
@@ -718,8 +719,8 @@ def get(year: int, week: int):
         end = dt.datetime.strptime(f"{year+1}-{1}-1", "%G-%V-%u")
     prev = start - dt.timedelta(days=4)  # Thursday previous week.
     next = end + dt.timedelta(days=3)  # Thursday next week.
-    events = [e for e in items.get_items("event") if e.overlap_days(start, end)]
-    weekdays = [start] + [start + dt.timedelta(days=day) for day in range(1, 7)]
+    events = [e for e in items.get_items("event") if e.overlap(start, end)]
+    weekdays = [start + dt.timedelta(days=day) for day in range(7)]
     thursday = weekdays[3]
     today_ordinal = dt.datetime.now().toordinal()
     title = f"w{week} {year}"
@@ -915,7 +916,11 @@ def get(year: int, month: int, day: int):
                     ),
                     cls="grid",
                 ),
-                get_vertical_display(thisday, next, events),
+                (
+                    get_day_display(thisday, next, events)
+                    if events
+                    else I("No events")
+                ),
                 Footer(
                     A(
                         "Add",
@@ -929,7 +934,7 @@ def get(year: int, month: int, day: int):
     )
 
 
-def get_event_period_edit(
+def get_period_edit(
     start_date=None,
     start_time=None,
     end_date=None,
@@ -1110,7 +1115,11 @@ def get_week_rows(weekdays, events, offset=True, full=True):
                 sum_colspan += pad + colspan
             cells.append(
                 Td(
-                    get_event_display(event, start, end, detail=int(full)),
+                    (
+                        get_event_display_basic(event, start, end)
+                        if full
+                        else get_event_display_minimal(event, start, end)
+                    ),
                     colspan=colspan,
                 )
             )
@@ -1127,125 +1136,122 @@ def get_week_rows(weekdays, events, offset=True, full=True):
 
 
 def get_vertical_display(start, end, events):
-    "Return a vertical display of the events."
-    if not events:
-        return I("No events")
-
-    # One day or less.
-    if (end - start).total_seconds() <= 24 * 3600:
-        # Desired side-effect; makes copy which avoids changing the incoming argument.
-        entire_day_events = [e for e in events if e.whole_days]
-        part_day_events = set(events).difference(entire_day_events)
-
-        # Part-day events.
-        colspan = 0
-        if part_day_events:
-            try:
-                first = min([e.start for e in part_day_events])
-                first_hour = min(first.hour, 7)
-            except ValueError:  # No values to get min for.
-                first_hour = 7
-            try:
-                last = max([e.end for e in part_day_events])
-                last_hour = max(last.hour, 18) + 1
-            except ValueError:  # No values to get max for.
-                last_hour = 19
-            hours = [
-                dt.datetime.combine(
-                    dt.date(start.year, start.month, start.day),
-                    dt.time(hour=h),
+    "Display the events vertically."
+    days = [
+        dt.datetime.fromordinal(d)
+        for d in range(start.toordinal(), end.toordinal())
+    ]
+    rows = [
+        [
+            Td(
+                A(
+                    day.strftime("%Y-%m-%d"),
+                    href=f"/event/day/{day.strftime('%Y-%m-%d')}",
+                    cls="nobr",
                 )
-                for h in range(first_hour, last_hour)
-            ]
-            rows = [
-                [
-                    Th(
-                        hour.strftime("%H:%M"),
-                        cls="night" if (hour.hour <= 6 or hour.hour >= 19) else None,
-                    )
-                ]
-                for hour in hours
-            ]
-            while part_day_events:
-                colspan += 1
-                events_list = get_next_events_list(
-                    part_day_events, start, end, hours=True
-                )
-                part_day_events = set(part_day_events).difference(events_list)
-                for event in events_list:
-                    for slot, hour in enumerate(hours):
-                        if hour.hour == event.start.hour:
-                            rows[slot].append(
-                                Td(
-                                    get_event_display(event, start, end, vertical=True),
-                                    rowspan=max(
-                                        1,
-                                        math.floor(
-                                            (event.end - hour).total_seconds() / 3600
-                                        ),
-                                    ),
-                                )
-                            )
-        else:
-            rows = []
-
-        # Prepend the entire-day events, if any.
-        if entire_day_events:
-            rows = (
-                [
-                    Tr(
-                        Th("Entire day", rowspan=len(entire_day_events)),
+            )
+        ]
+        for day in days
+    ]
+    events = set(events)  # Make copy to avoid changing incoming argument.
+    while events:
+        events_list = get_next_events_list(events, start, end)
+        events = set(events).difference(events_list)
+        for event in events_list:
+            for slot, day in enumerate(days):
+                if day.toordinal() == event.start.toordinal():
+                    rows[slot].append(
                         Td(
-                            get_event_display(entire_day_events[0], start, end),
-                            colspan=colspan,
-                        ),
-                    )
-                ]
-                + [
-                    Tr(
-                        Td(
-                            get_event_display(e, start, end),
-                            colspan=max(1, colspan),
+                            get_event_display_standard(event, start, end),
+                            rowspan=event.days,
                         )
                     )
-                    for e in entire_day_events[1:]
-                ]
-                + rows
-            )
+    return Table(*[Tr(*row) for row in rows], cls="vertical")
 
-    # More than one day.
-    else:
-        days = [
-            dt.datetime.fromordinal(d)
-            for d in range(start.toordinal(), end.toordinal())
+
+def get_day_display(start, end, events):
+    "Display the events of the day vertically."
+    # Desired side-effect; makes copy which avoids changing the incoming argument.
+    entire_day_events = [e for e in events if e.whole_days]
+    part_day_events = set(events).difference(entire_day_events)
+
+    # Part-day events, if any.
+    colspan = 0
+    if part_day_events:
+        try:
+            first = min([e.start for e in part_day_events])
+            first_hour = min(first.hour, 7)
+        except ValueError:  # No values to get min for.
+            first_hour = 7
+        try:
+            last = max([e.end for e in part_day_events])
+            last_hour = max(last.hour, 18) + 1
+        except ValueError:  # No values to get max for.
+            last_hour = 19
+        hours = [
+            dt.datetime.combine(
+                dt.date(start.year, start.month, start.day),
+                dt.time(hour=h),
+            )
+            for h in range(first_hour, last_hour)
         ]
         rows = [
             [
-                Td(
-                    A(
-                        day.strftime("%Y-%m-%d"),
-                        href=f"/event/day/{day.strftime('%Y-%m-%d')}",
-                        cls="nobr",
-                    )
+                Th(
+                    hour.strftime("%H:%M"),
+                    cls="night" if (hour.hour <= 6 or hour.hour >= 19) else None,
                 )
             ]
-            for day in days
+            for hour in hours
         ]
-        events = set(events)  # Make copy to avoid changing incoming argument.
-        while events:
-            events_list = get_next_events_list(events, start, end)
-            events = set(events).difference(events_list)
+        while part_day_events:
+            colspan += 1
+            events_list = get_next_events_list(
+                part_day_events, start, end, hours=True
+            )
+            part_day_events = set(part_day_events).difference(events_list)
             for event in events_list:
-                for slot, day in enumerate(days):
-                    if day.toordinal() == event.start.toordinal():
+                for slot, hour in enumerate(hours):
+                    if hour.hour == event.start.hour:
                         rows[slot].append(
                             Td(
-                                get_event_display(
-                                    event, start, end, detail=2, vertical=True
+                                get_event_display_full(
+                                    event, start, end, vertical=True
                                 ),
-                                rowspan=event.days,
+                                rowspan=max(
+                                    1,
+                                    math.floor(
+                                        (event.end - hour).total_seconds() / 3600
+                                    ),
+                                ),
                             )
                         )
+    else:
+        rows = []
+
+    # Prepend the entire-day events, if any.
+    if entire_day_events:
+        rows = (
+            [
+                Tr(
+                    Th("Entire day", rowspan=len(entire_day_events)),
+                    Td(
+                        get_event_display_full(entire_day_events[0], start, end),
+                        colspan=colspan,
+                    ),
+                )
+            ]
+            + [
+                Tr(
+                    Td(
+                        get_event_display_full(e, start, end),
+                        colspan=max(1, colspan),
+                    )
+                )
+                for e in entire_day_events[1:]
+            ]
+            + rows
+        )
     return Table(*[Tr(*row) for row in rows], cls="vertical")
 
 
@@ -1295,50 +1301,47 @@ def get_non_overlapping_days(events, candidates=None):
     return result
 
 
-def get_event_display(event, start, end, detail=3, vertical=False):
+def get_event_display_minimal(event, start, end):
+    "Return a minimal event display."
+    return A(
+        Div(cls="vspacer " + get_event_classes(event, start, end)),
+        href=event.url,
+        title=f"{event.category.capitalize()}: {event.title}",
+        cls="black",
+    )
+
+
+def get_event_display_basic(event, start, end):
+    "Return a basic event display."
+    return Div(
+        get_event_link(event, event.title),
+        title=event.category.capitalize(),
+        cls=get_event_classes(event, start, end),
+    )
+
+
+def get_event_display_standard(event, start, end):
+    "Return a standard event display."
+    return Div(
+        get_event_link(event, f"{event.display(year=start.year)}: {event.title}"),
+        title=event.category.capitalize(),
+        cls=get_event_classes(event, start, end),
+    )
+
+
+def get_event_display_full(event, start, end, vertical=False):
     "Return the display of the event at different levels of information."
-    match detail:
-        case 0:
-            return A(
-                Div(cls="vspacer " + get_event_classes(event, start, end)),
-                href=event.url,
-                title=f"{event.category.capitalize()}: {event.title}",
-                cls="black",
-            )
-        case 1:
-            return Div(
-                A(
-                    event.title,
-                    href=event.url,
-                    cls="black",
-                ),
-                title=event.category.capitalize(),
-                cls=get_event_classes(event, start, end),
-            )
-        case 2:
-            return Div(
-                A(
-                    f"{event.display(year=start.year)}: {event.title}",
-                    href=event.url,
-                    cls="black",
-                ),
-                title=event.category.capitalize(),
-                cls=get_event_classes(event, start, end),
-            )
-        case 3:
-            return Div(
-                A(
-                    f"{event.display(year=start.year)}: {event.title}",
-                    href=event.url,
-                    cls="black",
-                ),
-                Br(),
-                NotStr(markdown.to_html(event.text)),
-                title=event.category.capitalize(),
-                cls=get_event_classes(event, start, end, vertical=vertical),
-            )
-        case _:
-            raise NotImplementedError
+    return Div(
+        get_event_link(event, f"{event.display(year=start.year)}: {event.title}"),
+        Br(),
+        NotStr(markdown.to_html(event.text)),
+        title=event.category.capitalize(),
+        cls=get_event_classes(event, start, end, vertical=vertical),
+    )
+
+
+def get_event_link(event, title):
+    return A(title, href=event.url, cls="black")
 
 
 def get_event_classes(event, start, end, vertical=False):

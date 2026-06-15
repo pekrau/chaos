@@ -1,9 +1,7 @@
 "Event pages."
 
 import calendar
-import copy
 import datetime as dt
-import itertools
 import math
 
 from fasthtml.common import *
@@ -12,7 +10,6 @@ import yaml
 import components
 import constants
 import items
-import markdown
 import utils
 
 app, rt = components.get_app_rt()
@@ -168,7 +165,7 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                         cls="right",
                     ),
                     cls=f"grid {event.category}",
-                    title=event.category.capitalize(),
+                    data_tooltip=event.category.capitalize(),
                 ),
             ),
             (
@@ -485,7 +482,7 @@ def post(
         case _:
             raise NotImplementedError
 
-    start = copy.copy(source.start)
+    start = source.start
     month = start.month
     year = start.year
     starts = []
@@ -786,14 +783,14 @@ def get(year: int, week: int):
                             *[
                                 Th(
                                     A(
+                                        (
+                                            Div("Today")
+                                            if d.toordinal() == today_ordinal
+                                            else ""
+                                        ),
                                         f"{d.strftime('%a')} {d.day} {d.strftime('%b')}".capitalize(),
                                         href=d.strftime("/event/day/%Y-%m-%d"),
                                         cls="secondary strong",
-                                    ),
-                                    cls=(
-                                        "today"
-                                        if d.toordinal() == today_ordinal
-                                        else None
                                     ),
                                 )
                                 for d in weekdays
@@ -859,7 +856,9 @@ def get(year: int, month: int, day: int):
                 Ul(
                     Li(components.get_nav_menu()),
                     Li(
-                        components.get_event_icon(), title, cls="today" if today else ""
+                        Strong("Today ") if today else "",
+                        components.get_event_icon(),
+                        title,
                     ),
                 ),
                 Ul(
@@ -1054,6 +1053,7 @@ def get_month_table(year, month, events, full=True):
                 *[
                     Th(
                         A(
+                            Div("Today") if d.toordinal() == today_ordinal else "",
                             d.day,
                             href=f"/event/day/{d.year}-{d.month:02}-{d.day:02}",
                             cls=(
@@ -1061,8 +1061,7 @@ def get_month_table(year, month, events, full=True):
                                 if d.month == month
                                 else "secondary small"
                             ),
-                        ),
-                        cls="today" if d.toordinal() == today_ordinal else "",
+                        )
                     )
                     for d in weekdays
                 ],
@@ -1209,7 +1208,7 @@ def get_day_display(start, end, events):
                     if hour.hour == event.start.hour:
                         rows[slot].append(
                             Td(
-                                get_event_display_full(
+                                get_event_display_standard(
                                     event, start, end, vertical=True
                                 ),
                                 rowspan=max(
@@ -1230,7 +1229,7 @@ def get_day_display(start, end, events):
                 Tr(
                     Th(rowspan=len(entire_day_events)),
                     Td(
-                        get_event_display_full(entire_day_events[0], start, end),
+                        get_event_display_standard(entire_day_events[0], start, end),
                         colspan=colspan,
                     ),
                 )
@@ -1238,7 +1237,7 @@ def get_day_display(start, end, events):
             + [
                 Tr(
                     Td(
-                        get_event_display_full(e, start, end),
+                        get_event_display_standard(e, start, end),
                         colspan=max(1, colspan),
                     )
                 )
@@ -1299,42 +1298,32 @@ def get_event_display_minimal(event, start, end):
     return A(
         Div(cls="vspacer " + get_event_classes(event, start, end)),
         href=event.url,
-        title=f"{event.category.capitalize()}: {event.title}",
-        cls="black",
+        data_tooltip=f"{event.category.capitalize()}: {event.title}",
+        cls="event",
     )
 
 
 def get_event_display_basic(event, start, end):
     "Return a basic event display."
-    return Div(
-        get_event_link(event, event.title),
-        title=f"{event.display(year=start.year)}: {event.category.capitalize()}",
-        cls=get_event_classes(event, start, end),
+    return A(
+        Div(event.title, cls=get_event_classes(event, start, end)),
+        href=event.url,
+        data_tooltip=f"{event.display(year=start.year)}: {event.category.capitalize()}",
+        cls="event",
     )
 
 
-def get_event_display_standard(event, start, end):
+def get_event_display_standard(event, start, end, vertical=False):
     "Return a standard event display."
-    return Div(
-        get_event_link(event, f"{event.display(year=start.year)}: {event.title}"),
-        title=event.category.capitalize(),
-        cls=get_event_classes(event, start, end),
+    return A(
+        Div(
+            f"{event.display(year=start.year)}: {event.title}",
+            cls=get_event_classes(event, start, end, vertical=vertical),
+        ),
+        href=event.url,
+        data_tooltip=event.category.capitalize(),
+        cls="event",
     )
-
-
-def get_event_display_full(event, start, end, vertical=False):
-    "Return the display of the event at different levels of information."
-    return Div(
-        get_event_link(event, f"{event.display(year=start.year)}: {event.title}"),
-        Br(),
-        NotStr(markdown.to_html(event.text)),
-        title=event.category.capitalize(),
-        cls=get_event_classes(event, start, end, vertical=vertical),
-    )
-
-
-def get_event_link(event, title):
-    return A(title, href=event.url, cls="black")
 
 
 def get_event_classes(event, start, end, vertical=False):

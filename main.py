@@ -117,7 +117,7 @@ def get():
                         A(
                             components.get_chaos_icon(),
                             role="button",
-                            cls="secondary outline nomargin",
+                            cls="secondary outline",
                             href="/",
                         )
                     ),

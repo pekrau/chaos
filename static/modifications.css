@@ -144,22 +144,33 @@ table.compressed > tbody > tr > td {
     padding-bottom: 0px;
 }
 
-table.days > tbody > tr > td, th {
+table.days > tbody > tr > th {
+    min-width: 100px;
     vertical-align: top;
     text-align: center;
     border-width: 0px;
     padding: 2px 0px 0px;
 }
 
-table.days > tbody > tr > th {
-    min-width: 50px;
+table.days > tbody > tr > td {
+    vertical-align: top;
+    text-align: center;
+    border-width: 0px;
+    padding: 2px 0px 0px;
 }
 
 table.vertical {
     width: auto;
 }
 
-table.vertical > tbody > tr > td, th {
+table.vertical > tbody > tr > th {
+    height: 2em;
+    vertical-align: top;
+    border-width: 0px;
+    padding: 2px 4px;
+}
+
+table.vertical > tbody > tr > td {
     height: 2em;
     vertical-align: top;
     border-width: 0px;

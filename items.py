@@ -284,11 +284,11 @@ class Event(Item):
         "Set the start and end datetimes. Check validity."
         if isinstance(start, str):
             start = dt.datetime.fromisoformat(start)
-        elif not isinstance(start, dt.datetime):
+        if not isinstance(start, dt.datetime):
             raise ValueError("invalid 'start' datetime value")
         if isinstance(end, str):
             end = dt.datetime.fromisoformat(end)
-        elif not isinstance(end, dt.datetime):
+        if not isinstance(end, dt.datetime):
             raise ValueError("invalid 'end' datetime value")
         if start > end:
             raise ValueError("invalid period; 'start' must be <= 'end'")

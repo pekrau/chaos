@@ -282,7 +282,6 @@ class Event(Item):
 
     def set(self, start, end):
         "Set the start and end datetimes. Check validity."
-        ic(start, end)
         if isinstance(start, str):
             start = dt.datetime.fromisoformat(start)
         if not isinstance(start, dt.datetime):

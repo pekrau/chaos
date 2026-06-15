@@ -1260,7 +1260,7 @@ def get_next_events_list_day(events, start, end):
     result = []
     for event in events:
         for e in result:
-            if event.overlap_days(e.start, e.end):
+            if event.overlap_days(e.start, e._end):
                 break
         else:
             result.append(event)

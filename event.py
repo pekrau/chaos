@@ -1089,10 +1089,10 @@ def get_week_rows(weekdays, events, offset=True, full=True):
     events = set(events)
     while events:
         cells = []
-        events_list = get_next_events_list_day(events, start, end)
-        events = set(events).difference(events_list)
+        next_events = get_next_events_day(events, start, end)
+        events = set(events).difference(next_events)
         sum_colspan = 0
-        for event in events_list:
+        for event in next_events:
             if event.start < start:
                 if event._end > end:
                     colspan = 7
@@ -1152,9 +1152,9 @@ def get_vertical_display(start, end, events):
     ]
     events = set(events)  # Make copy to avoid changing incoming argument.
     while events:
-        events_list = get_next_events_list_day(events, start, end)
-        events = set(events).difference(events_list)
-        for event in events_list:
+        next_events = get_next_events_day(events, start, end)
+        events = set(events).difference(next_events)
+        for event in next_events:
             for slot, day in enumerate(days):
                 if day.toordinal() == event.start.toordinal():
                     rows[slot].append(
@@ -1203,9 +1203,9 @@ def get_day_display(start, end, events):
         ]
         while part_day_events:
             colspan += 1
-            events_list = get_next_events_list_hour(part_day_events, start, end)
-            part_day_events = set(part_day_events).difference(events_list)
-            for event in events_list:
+            next_events = get_next_events_hour(part_day_events, start, end)
+            part_day_events = set(part_day_events).difference(next_events)
+            for event in next_events:
                 for slot, hour in enumerate(hours):
                     if hour.hour == event.start.hour:
                         rows[slot].append(
@@ -1229,7 +1229,7 @@ def get_day_display(start, end, events):
         rows = (
             [
                 Tr(
-                    Th("Entire day", rowspan=len(entire_day_events)),
+                    Th(rowspan=len(entire_day_events)),
                     Td(
                         get_event_display_full(entire_day_events[0], start, end),
                         colspan=colspan,
@@ -1250,7 +1250,7 @@ def get_day_display(start, end, events):
     return Table(*[Tr(*row) for row in rows], cls="vertical")
 
 
-def get_next_events_list_day(events, start, end):
+def get_next_events_day(events, start, end):
     "Return the next sorted list of non-overlapping events day-wise."
     covers_period = [e for e in events if e.start <= start and e.end >= end]
     if covers_period:
@@ -1267,7 +1267,7 @@ def get_next_events_list_day(events, start, end):
     return result
 
 
-def get_next_events_list_hour(events, start, end):
+def get_next_events_hour(events, start, end):
     "Return the next sorted list of non-overlapping events hour-wise."
     non_overlapping = get_non_overlapping_hours(events)
     non_overlapping.sort(
@@ -1340,7 +1340,9 @@ def get_event_link(event, title):
 
 def get_event_classes(event, start, end, vertical=False):
     "Get the event classes; border and category."
-    if event.start < start:
+    if event.duration < items.Duration(days=1):
+        border = "border-open"
+    elif event.start < start:
         if event.end > end:
             if vertical:
                 border = f"border-open-top-bottom"

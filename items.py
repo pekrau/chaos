@@ -519,6 +519,7 @@ class Event(Item):
             return f"{self.start.day} {self.month_short} {self.start.year} - {self.end_day} {self.end_month_short} {self.end_year}"
 
 
+@functools.total_ordering
 class Duration:
     "Duration; a chunk of time."
 
@@ -547,8 +548,19 @@ class Duration:
             result.append(f"{self.minutes}m")
         return " ".join(result)
 
+    def __lt__(self, other):
+        assert isinstance(other, Duration)
+        return len(self) < len(other)
+
+    def __eq__(self, other):
+        if isinstance(other, Duration):
+            return len(self) == len(other)
+        else:
+            return False
+
     @property
     def whole_days(self):
+        "Does this duration represent a whole number of days?"
         return self.hours == 0 and self.minutes == 0
 
     @property

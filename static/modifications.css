@@ -52,31 +52,35 @@
 }
 
 .standard {
-    background-color: #c1fba4;
+    background-color: palegreen;
 }
 
 .important {
-    background-color: #ffa500;
+    background-color: orange;
 }
 
 .critical {
-    background-color: #ff8fa3;
+    background-color: coral;
 }
 
 .travel {
-    background-color:  #ade8f4;
+    background-color:  aquamarine;
+}
+
+.meal {
+    background-color: yellow;
 }
 
 .meeting {
-    background-color: #fdffb6;
+    background-color: skyblue;
 }
 
 .activity {
-    background-color: #ffc6ff;
+    background-color: lightpink;
 }
 
 .other {
-    background-color: #edede9;
+    background-color: lightgrey;
 }
 
 .today {

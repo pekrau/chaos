@@ -784,7 +784,7 @@ def get(year: int, week: int):
                     Table(
                         Tr(
                             *[
-                                Td(
+                                Th(
                                     A(
                                         f"{d.strftime('%a')} {d.day} {d.strftime('%b')}".capitalize(),
                                         href=d.strftime("/event/day/%Y-%m-%d"),
@@ -793,9 +793,8 @@ def get(year: int, week: int):
                                     cls=(
                                         "today"
                                         if d.toordinal() == today_ordinal
-                                        else ""
+                                        else None
                                     ),
-                                    style="width: 15%",
                                 )
                                 for d in weekdays
                             ]
@@ -1043,7 +1042,7 @@ def get_month_table(year, month, events, full=True):
     for weekdays in monthdays:
         rows.append(
             Tr(
-                Th(
+                Td(
                     A(
                         f"w{weekdays[0].strftime('%V').lstrip('0')}",
                         href=f"/event/week/{weekdays[3].year}-{weekdays[3].isocalendar().week}",

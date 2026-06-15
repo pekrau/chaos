@@ -147,6 +147,10 @@ table.days > tbody > tr > td, th {
     padding: 2px 0px 0px;
 }
 
+table.days > tbody > tr > th {
+    min-width: 50px;
+}
+
 table.vertical {
     width: auto;
 }

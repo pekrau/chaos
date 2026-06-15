@@ -80,15 +80,15 @@ def post(
     start = dt.datetime.fromisoformat(start_date)
     # Add start time, if given.
     if start_time:
-        start = dt.datetime.combine(start, dt.time.fromisoformat(start_time))
+        start = dt.datetime.combine(start.date(), dt.time.fromisoformat(start_time))
     # Duration, if given.
     duration = items.Duration(weeks=weeks, days=days, hours=hours, minutes=minutes)
     # End datetime, if given.
     if end_date:
-        end = dt.date.fromisoformat(end_date)
+        end = dt.datetime.fromisoformat(end_date)
         # End time given.
         if end_time:
-            end = dt.datetime.combine(end, dt.time.fromisoformat(end_time))
+            end = dt.datetime.combine(end.date(), dt.time.fromisoformat(end_time))
     # Only end time given; use start date to set the end date.
     elif end_time:
         end = dt.datetime.combine(start, dt.time.fromisoformat(end_time))

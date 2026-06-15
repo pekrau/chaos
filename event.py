@@ -1089,7 +1089,7 @@ def get_week_rows(weekdays, events, offset=True, full=True):
     events = set(events)
     while events:
         cells = []
-        events_list = get_next_events_list(events, start, end)
+        events_list = get_next_events_list_day(events, start, end)
         events = set(events).difference(events_list)
         sum_colspan = 0
         for event in events_list:
@@ -1152,7 +1152,7 @@ def get_vertical_display(start, end, events):
     ]
     events = set(events)  # Make copy to avoid changing incoming argument.
     while events:
-        events_list = get_next_events_list(events, start, end)
+        events_list = get_next_events_list_day(events, start, end)
         events = set(events).difference(events_list)
         for event in events_list:
             for slot, day in enumerate(days):
@@ -1168,7 +1168,7 @@ def get_vertical_display(start, end, events):
 
 def get_day_display(start, end, events):
     "Display the events of the day vertically."
-    # Desired side-effect; makes copy which avoids changing the incoming argument.
+    # Desired side-effect; makes copy, which avoids changing the incoming argument.
     entire_day_events = [e for e in events if e.whole_days]
     part_day_events = set(events).difference(entire_day_events)
 
@@ -1203,7 +1203,7 @@ def get_day_display(start, end, events):
         ]
         while part_day_events:
             colspan += 1
-            events_list = get_next_events_list(part_day_events, start, end, hours=True)
+            events_list = get_next_events_list_hour(part_day_events, start, end)
             part_day_events = set(part_day_events).difference(events_list)
             for event in events_list:
                 for slot, hour in enumerate(hours):
@@ -1250,12 +1250,26 @@ def get_day_display(start, end, events):
     return Table(*[Tr(*row) for row in rows], cls="vertical")
 
 
-def get_next_events_list(events, start, end, hours=False):
-    "Return the next sorted list of non-overlapping events."
-    if hours:
-        non_overlapping = get_non_overlapping_hours(events)
-    else:
-        non_overlapping = get_non_overlapping_days(events)
+def get_next_events_list_day(events, start, end):
+    "Return the next sorted list of non-overlapping events day-wise."
+    covers_period = [e for e in events if e.start <= start and e.end >= end]
+    if covers_period:
+        covers_period.sort()
+        return [covers_period[0]]
+    events = sorted(events)
+    result = []
+    for event in events:
+        for e in result:
+            if event.overlap_days(e.start, e.end):
+                break
+        else:
+            result.append(event)
+    return result
+
+
+def get_next_events_list_hour(events, start, end):
+    "Return the next sorted list of non-overlapping events hour-wise."
+    non_overlapping = get_non_overlapping_hours(events)
     non_overlapping.sort(
         key=lambda s: (
             sum([e.overlap(start, end) for e in s]),
@@ -1281,21 +1295,6 @@ def get_non_overlapping_hours(events, candidates=None):
     return result
 
 
-def get_non_overlapping_days(events, candidates=None):
-    "Return a list of of mutually day-wise non-overlapping event lists."
-    events = sorted(events)
-    result = []
-    for pos, e in enumerate(events):
-        if candidates is None:
-            result.append([e])
-            result.extend(get_non_overlapping_days(events[pos + 1 :], [e]))
-        elif not any([e.overlap_days(c.start, c.end) for c in candidates]):
-            new_candidates = candidates + [e]
-            result.append(new_candidates)
-            result.extend(get_non_overlapping_days(events[pos + 1 :], new_candidates))
-    return result
-
-
 def get_event_display_minimal(event, start, end):
     "Return a minimal event display."
     return A(
@@ -1310,7 +1309,7 @@ def get_event_display_basic(event, start, end):
     "Return a basic event display."
     return Div(
         get_event_link(event, event.title),
-        title=event.category.capitalize(),
+        title=f"{event.display(year=start.year)}: {event.category.capitalize()}",
         cls=get_event_classes(event, start, end),
     )
 

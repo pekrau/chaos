@@ -3,7 +3,6 @@ databases, graphics, books and articles.
 """
 
 import itertools
-import locale
 import os
 import pathlib
 import shutil
@@ -12,24 +11,20 @@ import sys
 import bibtexparser
 import fasthtml
 from fasthtml.common import *
-import icecream
 import marko
 import psutil
 import yaml
-
-# For debugging.
-icecream.install()
 
 # This must be done before importing 'constants'.
 from dotenv import load_dotenv
 
 if os.environ.get("CHAOS_DEVELOPMENT"):
+    import icecream
+    icecream.install()
     with open(".env-development") as infile:
         load_dotenv(stream=infile)
 else:
     load_dotenv()
-
-locale.setlocale(locale.LC_ALL, "")
 
 
 import bibtex
@@ -177,14 +172,14 @@ async def get(filename: str):
     return FileResponse(f"static/{filename}")
 
 
-@rt("/add")
+@rt("/create")
 def get():
-    "Page for selecting type of item to add."
+    "Page for selecting type of item to create."
     forms = [
         Form(
             Button(
                 components.get_type_icon(type),
-                f"Add {type}",
+                f"Create {type}",
                 type="submit",
                 cls="outline",
             ),
@@ -193,12 +188,12 @@ def get():
         for type in items.TYPES
     ]
     return (
-        Title("Add item..."),
+        Title("Create item..."),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add item..."),
+                    Li("Create item..."),
                 ),
             ),
             cls="container",

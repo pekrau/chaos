@@ -209,7 +209,7 @@ def get_nav_menu(item=None, copy=True, operations=None):
     if item is not None:
         links.append(A("Delete...", href=f"{item.url}/delete"))
     links.append(A("Today", href="/event/day/"))
-    links.append(A("Add...", href="/add/"))
+    links.append(A("Create...", href="/create/"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("Search...", href="/search"))
     links.append(A("System", href="/system"))
@@ -222,12 +222,14 @@ def get_nav_menu(item=None, copy=True, operations=None):
     )
 
 
-def get_to_clipboard(item):
+def get_to_clipboard(text):
+    if isinstance(text, items.Item):
+        text = f"[[{text.id}]]"
     return Img(
-        src="/static/markdown.svg",
-        title="Copy Markdown for ref to clipboard",
+        src="/static/clipboard-check.svg",
+        title="Copy reference to clipboard",
         cls="icon to_clipboard",
-        data_clipboard_text=f"[[{item.id}]]",
+        data_clipboard_text=text,
         width=24,
         height=24,
     )

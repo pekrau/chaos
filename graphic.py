@@ -16,14 +16,14 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get():
-    "Form for adding a graphic."
+    "Form for creating a graphic."
     return (
-        Title("Add graphic"),
+        Title("Create graphic"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add ", components.get_graphic_icon(), "graphic"),
+                    Li("Create ", components.get_graphic_icon(), "graphic"),
                 ),
             ),
             cls="container",
@@ -46,7 +46,7 @@ def get():
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add"),
+                Input(type="submit", value="Create"),
                 action="/graphic/",
                 method="POST",
             ),
@@ -60,7 +60,7 @@ def get():
 def post(
     title: str, text: str, graphic_type: str, specification: str, tags: list[str] = None
 ):
-    "Actually add the graphic."
+    "Actually create the graphic."
     graphic = items.Graphic()
     graphic.title = title
 

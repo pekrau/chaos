@@ -17,16 +17,16 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get(date: str = None):
-    "Form for adding an event."
+    "Form for creating an event."
     soon = dt.datetime.now() + dt.timedelta(hours=1)
     date = date or soon.date().isoformat()
     return (
-        Title("Add event"),
+        Title("Create event"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add ", components.get_event_icon(), "event"),
+                    Li("Create ", components.get_event_icon(), "event"),
                 ),
             ),
             cls="container",
@@ -44,7 +44,7 @@ def get(date: str = None):
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add"),
+                Input(type="submit", value="Create"),
                 action="/event/",
                 method="POST",
             ),
@@ -69,7 +69,7 @@ def post(
     tags: list[str] = None,
     category: str = None,
 ):
-    "Actually add an event."
+    "Actually create an event."
     event = items.Event()
     event.title = title
     event.text = text.strip()
@@ -593,6 +593,7 @@ def get(year: int):
     title = f"Year {year}"
     return (
         Title(title),
+        components.get_clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -600,6 +601,7 @@ def get(year: int):
                     Li(components.get_event_icon(), title),
                 ),
                 Ul(
+                    Li(components.get_to_clipboard(f"[{title}](/event/year/{year})"), cls="slim"),
                     Li(components.get_search_field()),
                 ),
             ),
@@ -635,6 +637,7 @@ def get(year: int):
             ),
             cls="container",
         ),
+        components.get_clipboard_activate(),
     )
 
 
@@ -657,6 +660,7 @@ def get(year: int, month: int):
     title = f"{start.strftime('%B %Y').capitalize()}"
     return (
         Title(title),
+        components.get_clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -664,6 +668,7 @@ def get(year: int, month: int):
                     Li(components.get_event_icon(), title),
                 ),
                 Ul(
+                    Li(components.get_to_clipboard(f"[{title}](/event/month/{first.strftime('%Y-%m')})"), cls="slim"),
                     Li(components.get_search_field()),
                 ),
             ),
@@ -708,6 +713,7 @@ def get(year: int, month: int):
             ),
             cls="container",
         ),
+        components.get_clipboard_activate(),
     )
 
 
@@ -735,6 +741,7 @@ def get(year: int, week: int):
     title = f"w{week} {year}"
     return (
         Title(title),
+        components.get_clipboard_script(),
         Header(
             Nav(
                 Ul(
@@ -742,6 +749,7 @@ def get(year: int, week: int):
                     Li(components.get_event_icon(), title),
                 ),
                 Ul(
+                    Li(components.get_to_clipboard(f"[{title}](/event/week/{year}-{week})"), cls="slim"),
                     Li(components.get_search_field()),
                 ),
             ),
@@ -812,7 +820,7 @@ def get(year: int, week: int):
                             *[
                                 Td(
                                     A(
-                                        "Add",
+                                        "Create",
                                         href=f"/event?date={d.year}-{d.month:02}-{d.day:02}",
                                         role="button",
                                         cls="thin",
@@ -828,6 +836,7 @@ def get(year: int, week: int):
             ),
             cls="container",
         ),
+        components.get_clipboard_activate(),
     )
 
 
@@ -841,7 +850,7 @@ def get():
 def get(year: int, month: int, day: int):
     "Display events during a specified day."
     thisday = utils.get_datetime(year, month, day)
-    today = dt.date(year, month, day) == dt.date.today()
+    is_today = dt.date(year, month, day) == dt.date.today()
     prev = thisday - dt.timedelta(days=1)
     next = thisday + dt.timedelta(days=1)
 
@@ -861,17 +870,19 @@ def get(year: int, month: int, day: int):
     title = f"{thisday.strftime('%A').capitalize()} {thisday.day} {thisday.strftime('%B')} {thisday.year}"
     return (
         Title(title),
+        components.get_clipboard_script(),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
                     Li(
-                        Span("Today", cls="today") if today else "",
+                        Span("Today", cls="today") if is_today else "",
                         components.get_event_icon(),
                         title,
                     ),
                 ),
                 Ul(
+                    Li(components.get_to_clipboard(f"[{title}](/event/day/{thisday.strftime('%Y-%m-%d')})"), cls="slim"),
                     Li(components.get_search_field()),
                 ),
             ),
@@ -929,7 +940,7 @@ def get(year: int, month: int, day: int):
                 (get_day_display(thisday, next, events) if events else I("No events")),
                 Footer(
                     A(
-                        "Add",
+                        "Create",
                         href=f"/event?date={year}-{month:02}-{day:02}",
                         role="button",
                     ),
@@ -937,6 +948,7 @@ def get(year: int, month: int, day: int):
             ),
             cls="container",
         ),
+        components.get_clipboard_activate(),
     )
 
 

@@ -27,14 +27,14 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get():
-    "Form for adding a database."
+    "Form for creating a database."
     return (
-        Title("Add database"),
+        Title("Create database"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add ", components.get_database_icon(), "database"),
+                    Li("Create ", components.get_database_icon(), "database"),
                 ),
             ),
             cls="container",
@@ -52,7 +52,7 @@ def get():
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add"),
+                Input(type="submit", value="Create"),
                 action="/database/",
                 method="POST",
             ),

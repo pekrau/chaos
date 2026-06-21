@@ -16,14 +16,14 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get():
-    "Form for adding a article reference."
+    "Form for creating a article reference."
     return (
-        Title("Add article"),
+        Title("Create article"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Add ", components.get_article_icon(), "article"),
+                    Li("Create ", components.get_article_icon(), "article"),
                 ),
             ),
             cls="container",
@@ -97,7 +97,7 @@ def get():
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Add"),
+                Input(type="submit", value="Create"),
                 action="/article/",
                 method="POST",
             ),
@@ -123,7 +123,7 @@ def post(
     pmid: str,
     tags: list[str] = None,
 ):
-    "Actually add the article."
+    "Actually create the article."
     id = utils.normalize(id.strip())
     if not id:
         raise errors.Error("no identifier provided")

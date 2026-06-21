@@ -129,8 +129,22 @@ li.slim {
     padding-right: 0px;
 }
 
-th.night {
-    background-color: lightgrey;
+select.slim {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    margin-bottom: 0px;
+}
+
+textarea.specification {
+    font-family: Courier;
+}
+
+input.search {
+    min-width: 100px;
+}
+
+span.error {
+    color: red;
 }
 
 table.compressed > tbody > tr > td {
@@ -139,7 +153,6 @@ table.compressed > tbody > tr > td {
 }
 
 table.days > tbody > tr > th {
-    min-width: 100px;
     vertical-align: top;
     text-align: center;
     border-width: medium 0px 0px;
@@ -173,22 +186,8 @@ table.vertical > tbody > tr > td {
     padding: 2px 4px;
 }
 
-select.slim {
-    padding-top: 0px;
-    padding-bottom: 0px;
-    margin-bottom: 0px;
-}
-
-textarea.specification {
-    font-family: Courier;
-}
-
-input.search {
-    min-width: 100px;
-}
-
-span.error {
-    color: red;
+th.night {
+    background-color: lightgrey;
 }
 
 div.vspacer {
@@ -202,7 +201,6 @@ div.border {
     padding: 0px 4px;
     margin-left: 1px;
     margin-right: 1px;
-    min-width: 150px;
 }
 
 div.border-closed {

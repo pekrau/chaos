@@ -280,6 +280,14 @@ class Event(Item):
     def end(self):
         return self.frontmatter["end"]
 
+    @property
+    def endwh(self):
+        "The end datetime taking whole days into account."
+        if self.whole_days:
+            return self.end - dt.timedelta(days=1)
+        else:
+            return self.end
+
     def set(self, start, end):
         "Set the start and end datetimes. Check validity."
         if isinstance(start, str):
@@ -356,17 +364,9 @@ class Event(Item):
         return self.start.strftime("%b")
 
     @property
-    def _end(self):
-        "The end datetime taking whole days into account."
-        if self.whole_days:
-            return self.end - dt.timedelta(days=1)
-        else:
-            return self.end
-
-    @property
     def end_date(self):
         "The end date as ISO string."
-        return self.end.strftime("%Y-%m-%d")
+        return self.endwh.strftime("%Y-%m-%d")
 
     @property
     def end_time(self):
@@ -376,42 +376,42 @@ class Event(Item):
     @property
     def end_week(self):
         "The end week number."
-        return self._end.isocalendar().week
+        return self.endwh.isocalendar().week
 
     @property
     def end_weekday(self):
         "The end weekday name."
-        return self._end.strftime("%A").capitalize()
+        return self.endwh.strftime("%A").capitalize()
 
     @property
     def end_weekday_short(self):
         "The end weekday abbreviated name."
-        return self._end.strftime("%a").capitalize()
+        return self.endwh.strftime("%a").capitalize()
 
     @property
     def end_weekday_number(self):
         "The end weekday number."
-        return self._end.isoweekday()
+        return self.endwh.isoweekday()
 
     @property
     def end_day(self):
         "The end day month number."
-        return self._end.day
+        return self.endwh.day
 
     @property
     def end_month(self):
         "The end month name."
-        return self._end.strftime("%B")
+        return self.endwh.strftime("%B")
 
     @property
     def end_month_short(self):
         "The end month name abbreviation."
-        return self._end.strftime("%b")
+        return self.endwh.strftime("%b")
 
     @property
     def end_year(self):
         "The end year number."
-        return self._end.year
+        return self.endwh.year
 
     @property
     def category(self):
@@ -456,7 +456,7 @@ class Event(Item):
         assert isinstance(start, dt.datetime)
         assert isinstance(end, dt.datetime)
         return not (
-            self._end.toordinal() < start.toordinal()
+            self.endwh.toordinal() < start.toordinal()
             or self.start.toordinal() > end.toordinal()
         )
 
@@ -465,7 +465,7 @@ class Event(Item):
         assert isinstance(start, dt.datetime)
         assert isinstance(end, dt.datetime)
         return not (
-            (24 * self._end.toordinal() + self._end.hour)
+            (24 * self.endwh.toordinal() + self.endwh.hour)
             < (24 * start.toordinal() + start.hour)
             or (24 * self.start.toordinal() + self.start.hour)
             > (24 * end.toordinal() + end.hour)

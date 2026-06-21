@@ -86,6 +86,9 @@ def post(
         # End time given.
         if end_time:
             end = dt.datetime.combine(end.date(), dt.time.fromisoformat(end_time))
+        # Whole-days event; add one day.
+        elif not start_time:
+            end = end + dt.timedelta(days=1)
     # Only end time given; use start date to set the end date.
     elif end_time:
         end = dt.datetime.combine(start, dt.time.fromisoformat(end_time))
@@ -95,7 +98,7 @@ def post(
             end = start + duration.timedelta
         else:
             end = start + dt.timedelta(hours=1)
-    # No end time and no start time; either explicit duration or 1 day.
+    # No end and no start time; either explicit duration or 1 day.
     elif duration:
         end = start + duration.timedelta
     else:
@@ -117,7 +120,11 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
     subevents.remove(event)
     subevents = sorted(subevents, key=lambda e: (len(e), e.start), reverse=True)
     superevents = set(
-        [e for e in items.get_items("event") if e.overlap_days(event.start, event.end)]
+        [
+            e
+            for e in items.get_items("event")
+            if e.overlap_days(event.start, event.endwh)
+        ]
     )
     superevents.remove(event)
     superevents = set(superevents).difference(subevents)
@@ -209,9 +216,9 @@ def get(event: items.Item):
                 components.get_title_input(event.title),
                 get_period_edit(
                     event.date,
-                    event.time,
+                    event.time if not event.whole_days else None,
                     event.end_date,
-                    event.end_time,
+                    event.end_time if not event.whole_days else None,
                     weeks=duration.weeks,
                     days=duration.days,
                     hours=duration.hours,
@@ -268,10 +275,13 @@ def post(
     duration = items.Duration(weeks=weeks, days=days, hours=hours, minutes=minutes)
     # End datetime, if given.
     if end_date:
-        end = dt.date.fromisoformat(end_date)
+        end = dt.datetime.fromisoformat(end_date)
         # End time given.
         if end_time:
             end = dt.datetime.combine(end, dt.time.fromisoformat(end_time))
+        # Whole-days event; add one day.
+        elif not start_time:
+            end = end + dt.timedelta(days=1)
     else:
         end = None
     # Start datetime was changed.
@@ -783,14 +793,14 @@ def get(year: int, week: int):
                             *[
                                 Th(
                                     A(
-                                        (
-                                            Div("Today")
-                                            if d.toordinal() == today_ordinal
-                                            else ""
-                                        ),
                                         f"{d.strftime('%a')} {d.day} {d.strftime('%b')}".capitalize(),
                                         href=d.strftime("/event/day/%Y-%m-%d"),
                                         cls="secondary strong",
+                                    ),
+                                    (
+                                        Div("Today", cls="today")
+                                        if d.toordinal() == today_ordinal
+                                        else ""
                                     ),
                                 )
                                 for d in weekdays
@@ -856,7 +866,7 @@ def get(year: int, month: int, day: int):
                 Ul(
                     Li(components.get_nav_menu()),
                     Li(
-                        Strong("Today ") if today else "",
+                        Span("Today", cls="today") if today else "",
                         components.get_event_icon(),
                         title,
                     ),
@@ -1053,7 +1063,6 @@ def get_month_table(year, month, events, full=True):
                 *[
                     Th(
                         A(
-                            Div("Today") if d.toordinal() == today_ordinal else "",
                             d.day,
                             href=f"/event/day/{d.year}-{d.month:02}-{d.day:02}",
                             cls=(
@@ -1061,7 +1070,12 @@ def get_month_table(year, month, events, full=True):
                                 if d.month == month
                                 else "secondary small"
                             ),
-                        )
+                        ),
+                        (
+                            Div("Today", cls="today")
+                            if d.toordinal() == today_ordinal
+                            else ""
+                        ),
                     )
                     for d in weekdays
                 ],
@@ -1092,12 +1106,12 @@ def get_week_rows(weekdays, events, offset=True, full=True):
         sum_colspan = 0
         for event in next_events:
             if event.start < start:
-                if event._end > end:
+                if event.endwh > end:
                     colspan = 7
                 else:
                     colspan = event.end_weekday_number
                     sum_colspan += colspan
-            elif event._end > end:
+            elif event.endwh >= end:
                 first = event.weekday_number
                 if pad := first - sum_colspan - 1:
                     cells.append(Td(colspan=pad))
@@ -1258,7 +1272,7 @@ def get_next_events_day(events, start, end):
     result = []
     for event in events:
         for e in result:
-            if event.overlap_days(e.start, e._end):
+            if event.overlap_days(e.start, e.endwh):
                 break
         else:
             result.append(event)

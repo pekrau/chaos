@@ -79,6 +79,14 @@
     background-color: lightgrey;
 }
 
+.today {
+    border: thick solid red;
+    border-radius: 10px;
+    border-style: dashed;
+    padding: 4px;
+    margin: 2px;
+}
+
 *:required {
     border-color: red;
     border-width: medium;

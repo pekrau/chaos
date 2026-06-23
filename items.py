@@ -175,7 +175,7 @@ class Item:
 
     def delete(self):
         """Delete the item from the file system; move to trash.
-        Remove from the lookup.
+        Remove from the items lookup.
         Remove from pinned and recent, if present.
         Setup pointers between items again; inefficient, but defensive and safe.
         """

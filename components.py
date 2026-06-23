@@ -200,6 +200,7 @@ def get_edit_icon(title="Edit"):
 
 def get_nav_menu(item=None, copy=True, operations=None):
     links = [A("Home", href="/")]
+    links.append(A("Today", href="/event/day/"))
     if item is not None:
         links.append(A("Edit...", href=f"{item.url}/edit"))
         if copy:
@@ -208,7 +209,6 @@ def get_nav_menu(item=None, copy=True, operations=None):
         links.extend(operations)
     if item is not None:
         links.append(A("Delete...", href=f"{item.url}/delete"))
-    links.append(A("Today", href="/event/day/"))
     links.append(A("Create...", href="/create/"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("Search...", href="/search"))

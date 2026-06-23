@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 
 if os.environ.get("CHAOS_DEVELOPMENT"):
     import icecream
+
     icecream.install()
     with open(".env-development") as infile:
         load_dotenv(stream=infile)

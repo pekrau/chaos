@@ -183,6 +183,7 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                         if len(items.Duration(event.end - event.start)) > 24 * 60
                         else get_day_display(event.start, event.end, subevents)
                     ),
+                    cls="overflow-auto",
                 )
                 if subevents
                 else ""
@@ -601,7 +602,10 @@ def get(year: int):
                     Li(components.get_event_icon(), title),
                 ),
                 Ul(
-                    Li(components.get_to_clipboard(f"[{title}](/event/year/{year})"), cls="slim"),
+                    Li(
+                        components.get_to_clipboard(f"[{title}](/event/year/{year})"),
+                        cls="slim",
+                    ),
                     Li(components.get_search_field()),
                 ),
             ),
@@ -668,7 +672,12 @@ def get(year: int, month: int):
                     Li(components.get_event_icon(), title),
                 ),
                 Ul(
-                    Li(components.get_to_clipboard(f"[{title}](/event/month/{first.strftime('%Y-%m')})"), cls="slim"),
+                    Li(
+                        components.get_to_clipboard(
+                            f"[{title}](/event/month/{first.strftime('%Y-%m')})"
+                        ),
+                        cls="slim",
+                    ),
                     Li(components.get_search_field()),
                 ),
             ),
@@ -749,7 +758,12 @@ def get(year: int, week: int):
                     Li(components.get_event_icon(), title),
                 ),
                 Ul(
-                    Li(components.get_to_clipboard(f"[{title}](/event/week/{year}-{week})"), cls="slim"),
+                    Li(
+                        components.get_to_clipboard(
+                            f"[{title}](/event/week/{year}-{week})"
+                        ),
+                        cls="slim",
+                    ),
                     Li(components.get_search_field()),
                 ),
             ),
@@ -882,7 +896,12 @@ def get(year: int, month: int, day: int):
                     ),
                 ),
                 Ul(
-                    Li(components.get_to_clipboard(f"[{title}](/event/day/{thisday.strftime('%Y-%m-%d')})"), cls="slim"),
+                    Li(
+                        components.get_to_clipboard(
+                            f"[{title}](/event/day/{thisday.strftime('%Y-%m-%d')})"
+                        ),
+                        cls="slim",
+                    ),
                     Li(components.get_search_field()),
                 ),
             ),
@@ -945,6 +964,7 @@ def get(year: int, month: int, day: int):
                         role="button",
                     ),
                 ),
+                cls="overflow-auto",
             ),
             cls="container",
         ),

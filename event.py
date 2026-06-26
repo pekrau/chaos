@@ -1274,7 +1274,6 @@ def get_day_display(start, end, events):
                     )
 
     # Entire-day events.
-    ic(len(entire_day_events))
     entire_day_rows = [
         Tr(
             Th(

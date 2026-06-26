@@ -16,7 +16,7 @@ app, rt = components.get_app_rt()
 
 
 @rt("/")
-def get(date: str = None):
+def get(date: str = None, time: str = None):
     "Form for creating an event."
     soon = dt.datetime.now() + dt.timedelta(hours=1)
     date = date or soon.date().isoformat()
@@ -34,7 +34,7 @@ def get(date: str = None):
         Main(
             Form(
                 components.get_title_input(autofocus=True),
-                get_period_edit(date),
+                get_period_edit(start_date=date, start_time=time),
                 Label(
                     "Category",
                     Select(
@@ -589,7 +589,13 @@ def get(year: int):
             )
         )
         rows.append(
-            Tr(Td(get_month_table(month.year, month.month, events, full=False)))
+            Tr(
+                Td(
+                    get_month_table(
+                        month.year, month.month, events, full=False, create=False
+                    )
+                )
+            )
         )
     title = f"Year {year}"
     return (
@@ -816,32 +822,19 @@ def get(year: int, week: int):
                                 Th(
                                     A(
                                         f"{d.strftime('%a')} {d.day} {d.strftime('%b')}".capitalize(),
+                                        cls=(
+                                            "today"
+                                            if d.toordinal() == today_ordinal
+                                            else ""
+                                        ),
                                         href=d.strftime("/event/day/%Y-%m-%d"),
-                                        cls="secondary strong",
-                                    ),
-                                    (
-                                        Div("Today", cls="today")
-                                        if d.toordinal() == today_ordinal
-                                        else ""
-                                    ),
+                                    )
                                 )
                                 for d in weekdays
                             ]
                         ),
-                        *get_week_rows(weekdays, events, offset=False, full=True),
-                        Tr(Td(Div(cls="vspacer"), colspan=7)),
-                        Tr(
-                            *[
-                                Td(
-                                    A(
-                                        "Create",
-                                        href=f"/event?date={d.year}-{d.month:02}-{d.day:02}",
-                                        role="button",
-                                        cls="thin",
-                                    ),
-                                )
-                                for d in weekdays
-                            ]
+                        *get_week_rows(
+                            weekdays, events, offset=False, full=True, create=True
                         ),
                         cls="days",
                     ),
@@ -890,9 +883,11 @@ def get(year: int, month: int, day: int):
                 Ul(
                     Li(components.get_nav_menu()),
                     Li(
-                        Span("Today", cls="today") if is_today else "",
-                        components.get_event_icon(),
-                        title,
+                        Span(
+                            components.get_event_icon(),
+                            title,
+                            cls="today" if is_today else "",
+                        ),
                     ),
                 ),
                 Ul(
@@ -956,14 +951,7 @@ def get(year: int, month: int, day: int):
                     ),
                     cls="grid",
                 ),
-                (get_day_display(thisday, next, events) if events else I("No events")),
-                Footer(
-                    A(
-                        "Create",
-                        href=f"/event?date={year}-{month:02}-{day:02}",
-                        role="button",
-                    ),
-                ),
+                get_day_display(thisday, next, events),
                 cls="overflow-auto",
             ),
             cls="container",
@@ -1067,7 +1055,7 @@ def get_period_edit(
     )
 
 
-def get_month_table(year, month, events, full=True):
+def get_month_table(year, month, events, full=True, create=True):
     "Generate the display the given events of a specified month."
     today_ordinal = dt.datetime.now().toordinal()
     monthdays = list(calendar.Calendar().monthdatescalendar(year, month))
@@ -1098,16 +1086,16 @@ def get_month_table(year, month, events, full=True):
                             d.day,
                             href=f"/event/day/{d.year}-{d.month:02}-{d.day:02}",
                             cls=(
-                                "secondary strong"
-                                if d.month == month
-                                else "secondary small"
+                                (
+                                    "secondary strong"
+                                    if d.month == month
+                                    else "secondary small"
+                                )
+                                + " today"
+                                if d.toordinal() == today_ordinal
+                                else ""
                             ),
-                        ),
-                        (
-                            Div("Today", cls="today")
-                            if d.toordinal() == today_ordinal
-                            else ""
-                        ),
+                        )
                     )
                     for d in weekdays
                 ],
@@ -1117,19 +1105,36 @@ def get_month_table(year, month, events, full=True):
         last = utils.to_datetime(weekdays[6]) + dt.timedelta(days=1)
         rows.extend(
             get_week_rows(
-                weekdays, [e for e in events if e.overlap(first, last)], full=full
+                weekdays,
+                [e for e in events if e.overlap(first, last)],
+                full=full,
+                create=create,
             )
         )
         rows.append(Tr(Td(Div(cls="vspacer"), colspan=8)))
     return Table(*rows, cls="days")
 
 
-def get_week_rows(weekdays, events, offset=True, full=True):
+def get_week_rows(weekdays, events, offset=True, full=True, create=True):
     "Return rows for the events of the week."
     weekdays = [utils.to_datetime(d) for d in weekdays]
     start = weekdays[0]
     end = weekdays[6] + dt.timedelta(days=1)
-    row_cells = []
+    if create:
+        row_cells = [
+            [
+                Td(
+                    A(
+                        Div("+"),
+                        href=f"/event?date={d.year}-{d.month:02}-{d.day:02}",
+                        cls="field",
+                    )
+                )
+                for d in weekdays
+            ]
+        ]
+    else:
+        row_cells = []
     events = set(events)
     while events:
         cells = []
@@ -1216,82 +1221,95 @@ def get_day_display(start, end, events):
     entire_day_events = [e for e in events if e.whole_days]
     part_day_events = set(events).difference(entire_day_events)
 
-    # Part-day events, if any.
+    # Part-day events.
     colspan = 0
-    if part_day_events:
-        try:
-            first = min([e.start for e in part_day_events])
-            first_hour = min(first.hour, 7)
-        except ValueError:  # No values to get min for.
-            first_hour = 7
-        try:
-            last = max([e.end for e in part_day_events])
-            last_hour = max(last.hour, 18) + 1
-        except ValueError:  # No values to get max for.
-            last_hour = 19
-        hours = [
-            dt.datetime.combine(
-                dt.date(start.year, start.month, start.day),
-                dt.time(hour=h),
-            )
-            for h in range(first_hour, last_hour)
-        ]
-        rows = [
-            [
-                Th(
-                    hour.strftime("%H:%M"),
-                    cls="night" if (hour.hour <= 6 or hour.hour >= 19) else None,
-                )
-            ]
-            for hour in hours
-        ]
-        while part_day_events:
-            colspan += 1
-            next_events = get_next_events_hour(part_day_events, start, end)
-            part_day_events = set(part_day_events).difference(next_events)
-            for event in next_events:
-                for slot, hour in enumerate(hours):
-                    if hour.hour == event.start.hour:
-                        rows[slot].append(
-                            Td(
-                                get_event_display_standard(
-                                    event, start, end, vertical=True
-                                ),
-                                rowspan=max(
-                                    1,
-                                    math.floor(
-                                        (event.end - hour).total_seconds() / 3600
-                                    ),
-                                ),
-                            )
-                        )
-    else:
-        rows = []
-
-    # Prepend the entire-day events, if any.
-    if entire_day_events:
-        rows = (
-            [
-                Tr(
-                    Th(rowspan=len(entire_day_events)),
-                    Td(
-                        get_event_display_standard(entire_day_events[0], start, end),
-                        colspan=colspan,
-                    ),
-                )
-            ]
-            + [
-                Tr(
-                    Td(
-                        get_event_display_standard(e, start, end),
-                        colspan=max(1, colspan),
-                    )
-                )
-                for e in entire_day_events[1:]
-            ]
-            + rows
+    try:
+        first = min([e.start for e in part_day_events])
+        first_hour = min(first.hour, 7)
+    except ValueError:  # No values to get min for.
+        first_hour = 7
+    try:
+        last = max([e.end for e in part_day_events])
+        last_hour = max(last.hour, 18) + 1
+    except ValueError:  # No values to get max for.
+        last_hour = 19
+    hours = [
+        dt.datetime.combine(
+            dt.date(start.year, start.month, start.day),
+            dt.time(hour=h),
         )
-    return Table(*[Tr(*row) for row in rows], cls="vertical")
+        for h in range(first_hour, last_hour)
+    ]
+
+    part_day_rows = [
+        [
+            Th(
+                A(
+                    Div(hour.strftime("%H:%M")),
+                    href=f"/event?date={start.year}-{start.month:02}-{start.day:02}&time={hour.hour:02}:00",
+                    cls="field",
+                ),
+                cls="night" if (hour.hour <= 6 or hour.hour >= 19) else None,
+            )
+        ]
+        for hour in hours
+    ]
+    while part_day_events:
+        colspan += 1
+        next_events = get_next_events_hour(part_day_events, start, end)
+        part_day_events = set(part_day_events).difference(next_events)
+        for event in next_events:
+            for slot, hour in enumerate(hours):
+                if hour.hour == event.start.hour:
+                    part_day_rows[slot].append(
+                        Td(
+                            get_event_display_standard(
+                                event, start, end, vertical=True
+                            ),
+                            rowspan=max(
+                                1,
+                                math.floor((event.end - hour).total_seconds() / 3600),
+                            ),
+                        )
+                    )
+
+    # Entire-day events.
+    ic(len(entire_day_events))
+    entire_day_rows = [
+        Tr(
+            Th(
+                A(
+                    Div("+"),
+                    href=f"/event?date={start.year}-{start.month:02}-{start.day:02}",
+                    cls="field",
+                ),
+                rowspan=max(1, len(entire_day_events)),
+            ),
+            (
+                Td(
+                    get_event_display_standard(entire_day_events[0], start, end),
+                    colspan=max(1, colspan),
+                )
+                if entire_day_events
+                else ""
+            ),
+        )
+    ]
+    entire_day_rows.extend(
+        [
+            Tr(
+                Td(
+                    get_event_display_standard(e, start, end),
+                    colspan=max(1, colspan),
+                )
+            )
+            for e in entire_day_events[1:]
+        ]
+    )
+
+    return Table(
+        *[Tr(*row) for row in (entire_day_rows + part_day_rows)], cls="vertical"
+    )
 
 
 def get_next_events_day(events, start, end):

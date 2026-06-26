@@ -124,6 +124,22 @@ a.event {
     text-decoration: none;
 }
 
+a.field {
+    text-decoration: none;
+    color: black;
+}
+
+a.field > div {
+    text-align: center;
+    border-width: 1px;
+    border-color: lightgrey;
+    padding: 0px 4px;
+    margin-left: 1px;
+    margin-right: 1px;
+    border-style: solid;
+    border-radius: 10px;
+}
+
 li.slim {
     padding-left: 0px;
     padding-right: 0px;

@@ -6,6 +6,7 @@ import urllib.parse
 
 
 from fasthtml.common import *
+from fasthtml.pico import Card
 
 import components
 import constants

@@ -9,8 +9,59 @@ import constants
 import items
 
 
+class Url(marko.inline.InlineElement):
+    "Extension to make a bare URL into a link."
+
+    pattern = constants.URL
+    parse_children = False
+
+    def __init__(self, match):
+        self.url = match.group(1)
+
+
+class UrlRenderer:
+    "Output a link to the bare URL."
+
+    def render_url(self, element):
+        return f'<a href="{element.url}">{element.url}</a>'
+
+
+class Email(marko.inline.InlineElement):
+    "Extension to make a bare email into a link."
+
+    pattern = constants.EMAIL
+    parse_children = False
+
+    def __init__(self, match):
+        self.email = match.group(1)
+
+
+class EmailRenderer:
+    "Output a link to the bare email."
+
+    def render_email(self, element):
+        return f'<a href="mailto:{element.email}">{element.email}</a>'
+
+
+class Tel(marko.inline.InlineElement):
+    "Extension to make a bare telephone number into a link."
+
+    pattern = constants.TEL
+    parse_children = False
+
+    def __init__(self, match):
+        self.tel = match.group(1)
+
+
+class TelRenderer:
+    "Output a link to the bare telephone number."
+
+    def render_tel(self, element):
+        return f'<a href="tel:{element.tel}">{element.tel}</a>'
+
+
 class Ref(marko.inline.InlineElement):
-    "Markdown extension for a cross-referenced item."
+    "Extension for a cross-referenced item."
 
     pattern = constants.REF
     parse_children = False
@@ -31,7 +82,7 @@ class RefRenderer:
 
 
 class Incl(marko.inline.InlineElement):
-    "Markdown extension for an included item."
+    "Extension for an included item."
 
     pattern = constants.INCL
     parse_children = False
@@ -104,7 +155,7 @@ def to_html(text):
     converter = marko.Markdown(
         extensions=[
             marko.helpers.MarkoExtension(
-                elements=[Ref, Incl], renderer_mixins=[RefRenderer, InclRenderer]
+                elements=[Url, Email, Tel, Ref, Incl], renderer_mixins=[UrlRenderer, EmailRenderer, TelRenderer, RefRenderer, InclRenderer]
             )
         ]
     )

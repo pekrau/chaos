@@ -12,6 +12,10 @@
     text-align: center;
 }
 
+.middle {
+    vertical-align: middle;
+}
+
 .to_clipboard {
     cursor: pointer
 }
@@ -80,7 +84,7 @@
 }
 
 .today {
-    border: thick solid red;
+    border: thick solid orange;
     border-radius: 10px;
     border-style: dashed;
     padding: 4px;
@@ -119,14 +123,9 @@ a.button {
     margin: 6px;
 }
 
-a.event {
-    color: black;
-    text-decoration: none;
-}
-
 a.field {
-    text-decoration: none;
     color: black;
+    text-decoration: none;
 }
 
 a.field > div {

@@ -4,6 +4,7 @@ import datetime as dt
 import urllib.parse
 
 from fasthtml.common import *
+from fasthtml.pico import Card
 
 import bibtex
 import components

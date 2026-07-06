@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 8, 18)
+VERSION = (1, 8, 19)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -28,6 +28,9 @@ FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
 REF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
 INCL = re.compile(r"\[!([0-9a-z-]+)\]\]", re.IGNORECASE)
+URL = re.compile(r"(https?://\S+)", re.IGNORECASE)
+EMAIL = re.compile(r"(\S+@\S+\.\S+)", re.IGNORECASE)
+TEL = re.compile(r"(\+?\d[0-9-]+)", re.IGNORECASE)
 
 TIMEZONE = zoneinfo.ZoneInfo(os.environ.get("TZ", "UTC"))
 

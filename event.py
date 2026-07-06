@@ -5,6 +5,7 @@ import datetime as dt
 import math
 
 from fasthtml.common import *
+from fasthtml.pico import Card
 import yaml
 
 import components
@@ -140,39 +141,43 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                 event,
                 header=Header(
                     Div(
-                        event.display(date=True),
-                        f" ({event.duration}); {event.category}",
+                        Span(
+                            event.display(date=True), Br(), event.duration, cls="middle"
+                        ),
                         cls="center",
+                    ),
+                    Div(
+                        Span(event.category, cls="middle"),
+                        cls=f"center {event.category}",
                     ),
                     Div(
                         A(
                             f"{event.weekday_short.capitalize()} {event.start.day}",
                             href=f"/event/day/{event.isodate()}",
                             role="button",
-                            cls="outline thin",
+                            cls="secondary outline thin",
                         ),
                         A(
                             event.month,
                             href=f"/event/month/{event.isodate(day=False)}",
                             role="button",
-                            cls="outline thin",
+                            cls="secondary outline thin",
                         ),
                         A(
                             event.start.year,
                             href=f"/event/year/{event.isodate(month=False, day=False)}",
                             role="button",
-                            cls="outline thin",
+                            cls="secondary outline thin",
                         ),
                         A(
                             f"w{event.week}",
                             href=f"/event/week/{event.isodate(week=True)}",
                             role="button",
-                            cls="outline thin",
+                            cls="secondary outline thin",
                         ),
                         cls="right",
                     ),
-                    cls=f"grid {event.category}",
-                    data_tooltip=event.category.capitalize(),
+                    cls="grid",
                 ),
             ),
             (
@@ -578,12 +583,11 @@ def get(year: int):
         rows.append(
             Tr(
                 Td(
-                    Strong(
-                        A(
-                            month.strftime("%B").capitalize(),
-                            href=f"/event/month/{month.year}-{month.month}",
-                            cls="secondary",
-                        )
+                    A(
+                        Strong(month.strftime("%B").capitalize()),
+                        href=f"/event/month/{month.year}-{month.month}",
+                        role="button",
+                        cls="secondary outline thin",
                     )
                 )
             )
@@ -700,13 +704,13 @@ def get(year: int, month: int):
                             data_placement="right",
                         ),
                     ),
-                    Strong(
-                        Span(start.strftime("%B").capitalize(), cls="rmargin"),
+                    Div(
+                        Strong(start.strftime("%B").capitalize()),
                         A(
                             start.strftime("%Y"),
                             href=f"/event/year/{year}",
                             role="button",
-                            cls="outline thin",
+                            cls="secondary outline thin",
                         ),
                         cls="center",
                     ),
@@ -787,18 +791,18 @@ def get(year: int, week: int):
                         ),
                     ),
                     Div(
-                        Strong(f"w{week}", cls="rmargin"),
+                        Strong(f"w{week} "),
                         A(
                             thursday.strftime("%B"),
                             href=thursday.strftime("/event/month/%Y-%m"),
                             role="button",
-                            cls="outline thin",
+                            cls="secondary outline thin",
                         ),
                         A(
                             thursday.strftime("%Y"),
                             href=thursday.strftime("/event/year/%Y"),
                             role="button",
-                            cls="outline thin",
+                            cls="secondary outline thin",
                         ),
                         cls="center",
                     ),
@@ -820,12 +824,14 @@ def get(year: int, week: int):
                                 Th(
                                     A(
                                         f"{d.strftime('%a')} {d.day} {d.strftime('%b')}".capitalize(),
-                                        cls=(
-                                            "today"
+                                        href=d.strftime("/event/day/%Y-%m-%d"),
+                                        role="button",
+                                        cls="secondary thin"
+                                        + (
+                                            " today"
                                             if d.toordinal() == today_ordinal
                                             else ""
                                         ),
-                                        href=d.strftime("/event/day/%Y-%m-%d"),
                                     )
                                 )
                                 for d in weekdays
@@ -916,25 +922,24 @@ def get(year: int, month: int, day: int):
                             thisday.strftime("%A").capitalize(),
                             " ",
                             thisday.day,
-                            cls="rmargin",
                         ),
                         A(
                             thisday.strftime("%B"),
                             href=f"/event/month/{year}-{month}",
                             role="button",
-                            cls="outline thin",
+                            cls="secondary outline thin",
                         ),
                         A(
                             year,
                             href=f"/event/year/{year}",
                             role="button",
-                            cls="outline thin",
+                            cls="secondary outline thin",
                         ),
                         A(
                             f"w{thisday.strftime('%V').lstrip('0')}",
                             href=f"/event/week/{thisday.year}-{thisday.isocalendar().week}",
                             role="button",
-                            cls="outline thin",
+                            cls="secondary outline thin",
                         ),
                         cls="center",
                     ),
@@ -1074,7 +1079,7 @@ def get_month_table(year, month, events, full=True, create=True):
                         f"w{weekdays[0].strftime('%V').lstrip('0')}",
                         href=f"/event/week/{weekdays[3].year}-{weekdays[3].isocalendar().week}",
                         role="button",
-                        cls="outline thin",
+                        cls="secondary outline thin",
                     ),
                     cls="minwidth",
                 ),
@@ -1083,15 +1088,14 @@ def get_month_table(year, month, events, full=True, create=True):
                         A(
                             d.day,
                             href=f"/event/day/{d.year}-{d.month:02}-{d.day:02}",
+                            role="button",
                             cls=(
                                 (
-                                    "secondary strong"
+                                    "secondary thin strong"
                                     if d.month == month
-                                    else "secondary small"
+                                    else "secondary thin small"
                                 )
-                                + " today"
-                                if d.toordinal() == today_ordinal
-                                else ""
+                                + (" today" if d.toordinal() == today_ordinal else "")
                             ),
                         )
                     )
@@ -1126,6 +1130,7 @@ def get_week_rows(weekdays, events, offset=True, full=True, create=True):
                         Div("+"),
                         href=f"/event?date={d.year}-{d.month:02}-{d.day:02}",
                         cls="field",
+                        data_tooltip="Add event"
                     )
                 )
                 for d in weekdays
@@ -1246,6 +1251,7 @@ def get_day_display(start, end, events):
                     Div(hour.strftime("%H:%M")),
                     href=f"/event?date={start.year}-{start.month:02}-{start.day:02}&time={hour.hour:02}:00",
                     cls="field",
+                    data_tooltip="Add event"
                 ),
                 cls="night" if (hour.hour <= 6 or hour.hour >= 19) else None,
             )
@@ -1279,6 +1285,7 @@ def get_day_display(start, end, events):
                     Div("+"),
                     href=f"/event?date={start.year}-{start.month:02}-{start.day:02}",
                     cls="field",
+                    data_tooltip="Add event"
                 ),
                 rowspan=max(1, len(entire_day_events)),
             ),
@@ -1360,7 +1367,7 @@ def get_event_display_minimal(event, start, end):
         Div(cls="vspacer " + get_event_classes(event, start, end)),
         href=event.url,
         data_tooltip=f"{event.category.capitalize()}: {event.title}",
-        cls="event",
+        cls="field",
     )
 
 
@@ -1370,7 +1377,7 @@ def get_event_display_basic(event, start, end):
         Div(event.title, cls=get_event_classes(event, start, end)),
         href=event.url,
         data_tooltip=f"{event.display(year=start.year)}: {event.category.capitalize()}",
-        cls="event",
+        cls="field",
     )
 
 
@@ -1383,7 +1390,7 @@ def get_event_display_standard(event, start, end, vertical=False):
         ),
         href=event.url,
         data_tooltip=event.category.capitalize(),
-        cls="event",
+        cls="field",
     )
 
 

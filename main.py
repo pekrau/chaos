@@ -11,6 +11,7 @@ import sys
 import bibtexparser
 import fasthtml
 from fasthtml.common import *
+from fasthtml.pico import Card
 import marko
 import psutil
 import yaml

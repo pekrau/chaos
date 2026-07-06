@@ -5,6 +5,7 @@ import os
 from urllib.parse import urlsplit
 
 from fasthtml.common import *
+from fasthtml.pico import Card
 
 import constants
 import errors

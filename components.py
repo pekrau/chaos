@@ -198,6 +198,14 @@ def get_edit_icon(title="Edit"):
     return get_icon("pencil-square.svg", title=title)
 
 
+def get_left_icon():
+    return get_icon("caret-left-square.svg")
+
+
+def get_right_icon():
+    return get_icon("caret-right-square.svg")
+
+
 def get_nav_menu(item=None, copy=True, operations=None):
     links = [A("Home", href="/")]
     links.append(A("Today", href="/event/day/"))

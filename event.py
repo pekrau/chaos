@@ -140,8 +140,8 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                 event,
                 header=Header(
                     Div(
-                        Strong(event.display(date=True)),
-                        f" ({event.duration})",
+                        event.display(date=True),
+                        f" ({event.duration}); {event.category}",
                         cls="center",
                     ),
                     Div(
@@ -622,19 +622,19 @@ def get(year: int):
                 Header(
                     Div(
                         A(
-                            year - 1,
+                            components.get_left_icon(),
                             href=f"/event/year/{year-1}",
-                            role="button",
-                            cls="outline thin",
+                            data_tooltip=str(year - 1),
+                            data_placement="right",
                         ),
                     ),
                     Strong(year, cls="center"),
                     Div(
                         A(
-                            year + 1,
+                            components.get_right_icon(),
                             href=f"/event/year/{year+1}",
-                            role="button",
-                            cls="outline thin",
+                            data_tooltip=str(year + 1),
+                            data_placement="left",
                         ),
                         cls="right",
                     ),
@@ -694,10 +694,10 @@ def get(year: int, month: int):
                 Header(
                     Div(
                         A(
-                            prev.strftime("%B %Y").capitalize(),
+                            components.get_left_icon(),
                             href=f"/event/month/{prev.strftime('%Y-%m')}",
-                            role="button",
-                            cls="outline thin",
+                            data_tooltip=prev.strftime("%B %Y").capitalize(),
+                            data_placement="right",
                         ),
                     ),
                     Strong(
@@ -712,10 +712,10 @@ def get(year: int, month: int):
                     ),
                     Div(
                         A(
-                            last.strftime("%B %Y").capitalize(),
+                            components.get_right_icon(),
                             href=f"/event/month/{last.strftime('%Y-%m')}",
-                            role="button",
-                            cls="outline thin",
+                            data_tooltip=last.strftime("%B %Y").capitalize(),
+                            data_placement="left",
                         ),
                         cls="right",
                     ),
@@ -780,11 +780,10 @@ def get(year: int, week: int):
                 Header(
                     Div(
                         A(
-                            f"w{prev.strftime('%V').lstrip('0')}",
-                            f" {prev.year}" if prev.year != thursday.year else "",
+                            components.get_left_icon(),
                             href=f"/event/week/{prev.strftime('%Y-%V')}",
-                            role="button",
-                            cls="outline thin",
+                            data_tooltip=f"w{prev.strftime('%V').lstrip('0')}",
+                            data_placement="right",
                         ),
                     ),
                     Div(
@@ -805,11 +804,10 @@ def get(year: int, week: int):
                     ),
                     Div(
                         A(
-                            f"w{next.strftime('%V').lstrip('0')}",
-                            f" {next.year}" if next.year != thursday.year else "",
+                            components.get_right_icon(),
                             href=f"/event/week/{next.strftime('%Y-%V')}",
-                            role="button",
-                            cls="outline thin",
+                            data_tooltip=f"w{next.strftime('%V').lstrip('0')}",
+                            data_placement="left",
                         ),
                         cls="right",
                     ),
@@ -907,10 +905,10 @@ def get(year: int, month: int, day: int):
                 Header(
                     Div(
                         A(
-                            f"{prev.day} {prev.strftime('%b')}",
+                            components.get_left_icon(),
                             href=prev.strftime("/event/day/%Y-%m-%d"),
-                            role="button",
-                            cls="outline thin",
+                            data_tooltip=f"{prev.day} {prev.strftime('%b')}",
+                            data_placement="right",
                         ),
                     ),
                     Div(
@@ -942,10 +940,10 @@ def get(year: int, month: int, day: int):
                     ),
                     Div(
                         A(
-                            f"{next.day} {next.strftime('%b')}",
+                            components.get_right_icon(),
                             href=next.strftime("/event/day/%Y-%m-%d"),
-                            role="button",
-                            cls="outline thin",
+                            data_tooltip=f"{next.day} {next.strftime('%b')}",
+                            data_placement="left",
                         ),
                         cls="right",
                     ),

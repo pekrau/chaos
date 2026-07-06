@@ -30,7 +30,7 @@ REF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
 INCL = re.compile(r"\[!([0-9a-z-]+)\]\]", re.IGNORECASE)
 URL = re.compile(r"(https?://\S+)")
 EMAIL = re.compile(r"(\S+@\S+\.\S+)")
-TEL = re.compile(r"(((\+[1-9]\d{2,4})|(0\d{1,3}))-?\d{6,7})")
+TEL = re.compile(r"(((\+[1-9]\d{2,4})|(0\d{1,3}))-?(\d{6,8}|(\d{2,4} \d\d \d\d)))")
 
 TIMEZONE = zoneinfo.ZoneInfo(os.environ.get("TZ", "UTC"))
 

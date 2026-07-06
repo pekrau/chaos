@@ -28,9 +28,9 @@ FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
 REF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
 INCL = re.compile(r"\[!([0-9a-z-]+)\]\]", re.IGNORECASE)
-URL = re.compile(r"(https?://\S+)", re.IGNORECASE)
-EMAIL = re.compile(r"(\S+@\S+\.\S+)", re.IGNORECASE)
-TEL = re.compile(r"(\+?\d[0-9-]+)", re.IGNORECASE)
+URL = re.compile(r"(https?://\S+)")
+EMAIL = re.compile(r"(\S+@\S+\.\S+)")
+TEL = re.compile(r"(((\+[1-9]\d{2,4})|(0\d{1,3}))-?\d{6,7})")
 
 TIMEZONE = zoneinfo.ZoneInfo(os.environ.get("TZ", "UTC"))
 

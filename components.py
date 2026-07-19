@@ -207,17 +207,9 @@ def get_right_icon():
     return get_icon("caret-right-square.svg")
 
 
-def get_nav_menu(item=None, copy=True, operations=None):
+def get_nav_menu(item=None):
     links = [A("Home", href="/")]
     links.append(A("Today", href="/event/day/"))
-    if item is not None:
-        links.append(A("Edit...", href=f"{item.url}/edit"))
-        if copy:
-            links.append(A("Copy...", href=f"{item.url}/copy"))
-    if operations:
-        links.extend(operations)
-    if item is not None:
-        links.append(A("Delete...", href=f"{item.url}/delete"))
     links.append(A("Create...", href="/create/"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("Search...", href="/search"))
@@ -226,7 +218,7 @@ def get_nav_menu(item=None, copy=True, operations=None):
     return Details(
         Summary(get_chaos_icon()),
         Ul(*[Li(l) for l in links]),
-        title="chaos: Web-based repository of items with no intrinsic order.",
+        title="chaos: Web-based repository of various items.",
         cls="dropdown",
     )
 
@@ -267,27 +259,29 @@ def get_search_field():
 
 def get_header_item_view(item, copy=True, operations=None):
     "Standard header for item view page."
+    links = [A("Edit...", href=f"{item.url}/edit")]
+    if item.pinned:
+        links.append(A("Unpin", href=f"/unpin/{item.id}"))
+    else:
+        links.append(A("Pin", href=f"/pin/{item.id}"))
+    if copy:
+        links.append(A("Copy...", href=f"{item.url}/copy"))
+    if operations:
+        links.extend(operations)
+    links.append(A("Delete...", href=f"{item.url}/delete"))
     return Header(
         Nav(
             Ul(
-                Li(get_nav_menu(item, copy=copy, operations=operations)),
-                Li(get_item_icon(item), item.title),
+                Li(get_nav_menu()),
+                Li(
+                    Details(
+                        Summary(get_item_icon(item), item.title),
+                        Ul(*[Li(l) for l in links]),
+                        cls="dropdown",
+                    ),
+                ),
             ),
             Ul(
-                Li(
-                    (
-                        A(
-                            get_icon("pin-angle-fill.svg", title="Unpin"),
-                            href=f"/unpin/{item.id}",
-                        )
-                        if item.pinned
-                        else A(
-                            get_icon("pin-angle.svg", title="Pin"),
-                            href=f"/pin/{item.id}",
-                        )
-                    ),
-                    cls="slim",
-                ),
                 Li(get_to_clipboard(item), cls="slim"),
                 Li(get_search_field()),
             ),

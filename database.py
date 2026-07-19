@@ -179,34 +179,22 @@ def get(database: items.Item, tablename: str):
             inputs.append((Div(*label), Input(type="number", step=0.01, **kwargs)))
         else:
             inputs.append((Div(*label), Input(type="text", **kwargs)))
-    title = "Add row to table"
     return (
-        Title(title),
+        Title(f"Add row to table {tablename}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_database_icon(), title),
+                    Li("Add row to table ", Strong(tablename)),
+                    Li(
+                        components.get_database_icon(),
+                        A(database, href=database.url),
+                    ),
                 ),
             ),
             cls="container",
         ),
         Main(
-            Card(
-                Div(
-                    components.get_database_icon(),
-                    A(database, href=database.url),
-                ),
-                A(
-                    "Table ",
-                    Strong(tablename),
-                    f", {schema[tablename]['count']} rows",
-                    href=f"{database.url}/rows/{tablename}",
-                    role="button",
-                    cls="outline",
-                ),
-                cls="grid",
-            ),
             Form(
                 *[Label(i[0], i[1]) for i in inputs],
                 Input(type="submit", value="Add row"),
@@ -279,22 +267,19 @@ def get(database: items.Item, relname: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(database)),
-                    Li(components.get_database_icon(), title),
+                    Li(components.get_nav_menu()),
+                    Li(title),
+                    Li(
+                        components.get_database_icon(),
+                        A(database, href=database.url),
+                    ),
                 ),
             ),
             cls="container",
         ),
         Main(
             Card(
-                Header(
-                    Div(
-                        components.get_database_icon(),
-                        A(database, href=database.url),
-                    ),
-                    Strong(f"{schema[relname]['count']} rows"),
-                    cls="grid",
-                ),
+                Header(f"{schema[relname]['count']} rows", cls="center"),
                 Div(id="table"),
             ),
             cls="container",
@@ -365,32 +350,22 @@ def get(database: items.Item, tablename: str):
     "Add data to the table from a CSV file."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
-    title = f"Add CSV file to table {tablename}"
     return (
-        Title(title),
+        Title(f"Add CSV file to table {tablename}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_database_icon(), title),
+                    Li("Add CSV file to table ", Strong(tablename)),
+                    Li(
+                        components.get_database_icon(),
+                        A(database, href=database.url),
+                    ),
                 ),
             ),
             cls="container",
         ),
         Main(
-            Card(
-                Div(
-                    components.get_database_icon(),
-                    A(database, href=database.url),
-                ),
-                A(
-                    f"{schema[tablename]['count']} rows",
-                    href=f"{database.url}/rows/{tablename}",
-                    role="button",
-                    cls="thin",
-                ),
-                cls="grid",
-            ),
             Form(
                 Label(
                     "CSV file to upload.",
@@ -467,16 +442,16 @@ def get(database: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_database_icon(), title),
+                    Li(title),
+                    Li(
+                        components.get_database_icon(),
+                        A(database, href=database.url),
+                    ),
                 ),
             ),
             cls="container",
         ),
         Main(
-            Card(
-                components.get_database_icon(),
-                A(database, href=database.url),
-            ),
             Form(
                 Label(
                     "Table name",
@@ -552,7 +527,7 @@ def post(database: items.Item, sql: str = None):
     if column_names or result:
         result_card = Card(
             Header(
-                Span(f"{len(result)} rows", cls="center"),
+                Span(f"{len(result)} rows", cls="center strong"),
                 Form(
                     Input(type="hidden", name="sql", value=sql),
                     Input(type="submit", value="Create view"),
@@ -587,17 +562,17 @@ def post(database: items.Item, sql: str = None):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu(database)),
+                    Li(components.get_nav_menu()),
                     Li(title),
+                    Li(
+                        components.get_database_icon(),
+                        A(database, href=database.url),
+                    ),
                 ),
             ),
             cls="container",
         ),
         Main(
-            Card(
-                components.get_database_icon(),
-                A(database, href=database.url),
-            ),
             get_overview(database),
             Card(
                 Form(

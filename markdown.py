@@ -155,7 +155,14 @@ def to_html(text):
     converter = marko.Markdown(
         extensions=[
             marko.helpers.MarkoExtension(
-                elements=[Url, Email, Tel, Ref, Incl], renderer_mixins=[UrlRenderer, EmailRenderer, TelRenderer, RefRenderer, InclRenderer]
+                elements=[Url, Email, Tel, Ref, Incl],
+                renderer_mixins=[
+                    UrlRenderer,
+                    EmailRenderer,
+                    TelRenderer,
+                    RefRenderer,
+                    InclRenderer,
+                ],
             )
         ]
     )

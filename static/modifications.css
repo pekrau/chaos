@@ -84,11 +84,8 @@
 }
 
 .today {
-    border: thick solid orange;
-    border-radius: 10px;
-    border-style: dashed;
-    padding: 4px;
-    margin: 2px;
+    background-color: hotpink;
+    padding: 6px;
 }
 
 *:required {

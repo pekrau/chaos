@@ -1127,9 +1127,9 @@ def get_week_rows(weekdays, events, offset=True, full=True, create=True):
             [
                 Td(
                     A(
-                        Div("+"),
+                        Div("+", cls="border border-closed"),
                         href=f"/event?date={d.year}-{d.month:02}-{d.day:02}",
-                        cls="field",
+                        cls="event",
                         data_tooltip="Add event"
                     )
                 )
@@ -1248,9 +1248,9 @@ def get_day_display(start, end, events):
         [
             Th(
                 A(
-                    Div(hour.strftime("%H:%M")),
+                    Div(hour.strftime("%H:%M"), cls="border border-closed"),
                     href=f"/event?date={start.year}-{start.month:02}-{start.day:02}&time={hour.hour:02}:00",
-                    cls="field",
+                    cls="event",
                     data_tooltip="Add event"
                 ),
                 cls="night" if (hour.hour <= 6 or hour.hour >= 19) else None,
@@ -1282,9 +1282,9 @@ def get_day_display(start, end, events):
         Tr(
             Th(
                 A(
-                    Div("+"),
+                    Div("+", cls="border border-closed"),
                     href=f"/event?date={start.year}-{start.month:02}-{start.day:02}",
-                    cls="field",
+                    cls="event",
                     data_tooltip="Add event"
                 ),
                 rowspan=max(1, len(entire_day_events)),
@@ -1367,7 +1367,7 @@ def get_event_display_minimal(event, start, end):
         Div(cls="vspacer " + get_event_classes(event, start, end)),
         href=event.url,
         data_tooltip=f"{event.category.capitalize()}: {event.title}",
-        cls="field",
+        cls="event",
     )
 
 
@@ -1377,7 +1377,7 @@ def get_event_display_basic(event, start, end):
         Div(event.title, cls=get_event_classes(event, start, end)),
         href=event.url,
         data_tooltip=f"{event.display(year=start.year)}: {event.category.capitalize()}",
-        cls="field",
+        cls="event",
     )
 
 
@@ -1390,7 +1390,7 @@ def get_event_display_standard(event, start, end, vertical=False):
         ),
         href=event.url,
         data_tooltip=event.category.capitalize(),
-        cls="field",
+        cls="event",
     )
 
 

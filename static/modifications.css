@@ -123,20 +123,10 @@ a.button {
     margin: 6px;
 }
 
-a.field {
+a.event {
     color: black;
     text-decoration: none;
-}
-
-a.field > div {
     text-align: center;
-    border-width: 1px;
-    border-color: lightgrey;
-    padding: 0px 4px;
-    margin-left: 1px;
-    margin-right: 1px;
-    border-style: solid;
-    border-radius: 10px;
 }
 
 li.slim {
@@ -213,7 +203,7 @@ div.vspacer {
 div.border {
     height: 100%;
     border-width: 1px;
-    border-color: black;
+    border-color: grey;
     padding: 0px 4px;
     margin-left: 1px;
     margin-right: 1px;

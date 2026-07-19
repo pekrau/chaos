@@ -86,7 +86,18 @@ def get(page: int = 1):
                     Li(Strong(title)),
                 ),
                 Ul(
-                    Li(components.get_search_field()),
+                    Li(
+                        Form(
+                            Input(
+                                type="search",
+                                name="term",
+                                placeholder="Search...",
+                                aria_label="Search",
+                                cls="search",
+                            ),
+                            action="/search",
+                        )
+                    )
                 ),
             ),
             cls="container",
@@ -296,10 +307,12 @@ def get(
                     Header("Criteria"),
                     Body(
                         Input(
-                            type="text",
+                            type="search",
                             name="term",
                             placeholder="Search...",
+                            aria_label="Search",
                             value=term or "",
+                            cls="search",
                         ),
                         Fieldset(
                             Details(
@@ -588,9 +601,9 @@ def get():
                     Li(components.get_nav_menu()),
                     Li("System"),
                 ),
-                Ul(
-                    Li(components.get_search_field()),
-                ),
+                # Ul(
+                #     Li(components.get_search_field()),
+                # ),
                 cls="main",
             ),
             cls="container",
@@ -650,9 +663,9 @@ def get():
                     Li(components.get_nav_menu()),
                     Li("Trash"),
                 ),
-                Ul(
-                    Li(components.get_search_field()),
-                ),
+                # Ul(
+                #     Li(components.get_search_field()),
+                # ),
                 cls="main",
             ),
             cls="container",

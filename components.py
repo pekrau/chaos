@@ -211,8 +211,8 @@ def get_nav_menu(item=None):
     links = [A("Home", href="/")]
     links.append(A("Today", href="/event/day/"))
     links.append(A("Create...", href="/create/"))
-    links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("Search...", href="/search"))
+    links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("System", href="/system"))
     links.extend([get_item_link(i, full=False) for i in items.get_shortcuts(item)])
     return Details(
@@ -244,17 +244,17 @@ def get_clipboard_activate():
     return Script("new ClipboardJS('.to_clipboard');", type="text/javascript")
 
 
-def get_search_field():
-    return Form(
-        Input(
-            type="search",
-            name="term",
-            placeholder="Search...",
-            aria_label="Search",
-            cls="search",
-        ),
-        action="/search",
-    )
+# def get_search_field():
+#     return Form(
+#         Input(
+#             type="search",
+#             name="term",
+#             placeholder="Search...",
+#             aria_label="Search",
+#             cls="search",
+#         ),
+#         action="/search",
+#     )
 
 
 def get_header_item_view(item, copy=True, operations=None):
@@ -283,7 +283,7 @@ def get_header_item_view(item, copy=True, operations=None):
             ),
             Ul(
                 Li(get_to_clipboard(item), cls="slim"),
-                Li(get_search_field()),
+                # Li(get_search_field()),
             ),
         ),
         cls="container",

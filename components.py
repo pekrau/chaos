@@ -226,13 +226,10 @@ def get_nav_menu(item=None):
 def get_to_clipboard(text):
     if isinstance(text, items.Item):
         text = f"[[{text.id}]]"
-    return Img(
-        src="/static/clipboard-check.svg",
-        title="Copy reference to clipboard",
+    return Div(
+        "MD ref to clipboard",
         cls="icon to_clipboard",
         data_clipboard_text=text,
-        width=24,
-        height=24,
     )
 
 
@@ -244,17 +241,15 @@ def get_clipboard_activate():
     return Script("new ClipboardJS('.to_clipboard');", type="text/javascript")
 
 
-# def get_search_field():
-#     return Form(
-#         Input(
-#             type="search",
-#             name="term",
-#             placeholder="Search...",
-#             aria_label="Search",
-#             cls="search",
-#         ),
-#         action="/search",
-#     )
+def get_search_field(term=None):
+    return Input(
+        type="search",
+        name="term",
+        value=term,
+        placeholder="Search terms...",
+        aria_label="Search",
+        cls="search",
+    )
 
 
 def get_header_item_view(item, copy=True, operations=None):
@@ -264,6 +259,7 @@ def get_header_item_view(item, copy=True, operations=None):
         links.append(A("Unpin", href=f"/unpin/{item.id}"))
     else:
         links.append(A("Pin", href=f"/pin/{item.id}"))
+    links.append(get_to_clipboard(item))
     if copy:
         links.append(A("Copy...", href=f"{item.url}/copy"))
     if operations:
@@ -280,10 +276,6 @@ def get_header_item_view(item, copy=True, operations=None):
                         cls="dropdown",
                     ),
                 ),
-            ),
-            Ul(
-                Li(get_to_clipboard(item), cls="slim"),
-                # Li(get_search_field()),
             ),
         ),
         cls="container",
@@ -383,9 +375,9 @@ def get_items_display(items, title=None, page=None, gallery=False, name="page"):
 
     if total_items == 0:
         if title is None:
-            return Card("No items", cls="right")
+            return Card("No items")
         else:
-            return Card(NotStr(title), Div("No items", cls="right"), cls="grid")
+            return Card(NotStr(title), Div("No items"), cls="grid")
 
     # All items in one single page.
     if page is None:
@@ -455,7 +447,6 @@ def get_items_display(items, title=None, page=None, gallery=False, name="page"):
                             ],
                         ),
                         Td(item.age, cls="nobr right top"),
-                        Td(get_to_clipboard(item), cls="minwidth top"),
                     )
                     for item in items
                 ]
@@ -467,7 +458,7 @@ def get_items_display(items, title=None, page=None, gallery=False, name="page"):
         table, get_items_page_buttons(page, total_pages, name=name), cls="overflow-auto"
     )
     if title is None:
-        return Card(Header(number, cls="right"), display)
+        return Card(Header(number), display)
     else:
         return Card(
             Header(Div(NotStr(title)), Div(number, cls="right"), cls="grid"), display

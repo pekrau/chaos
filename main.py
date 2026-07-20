@@ -86,18 +86,7 @@ def get(page: int = 1):
                     Li(Strong(title)),
                 ),
                 Ul(
-                    Li(
-                        Form(
-                            Input(
-                                type="search",
-                                name="term",
-                                placeholder="Search...",
-                                aria_label="Search",
-                                cls="search",
-                            ),
-                            action="/search",
-                        )
-                    )
+                    Li(Form(components.get_search_field(), action="/search")),
                 ),
             ),
             cls="container",
@@ -299,21 +288,13 @@ def get(
             Form(
                 components.get_items_display(
                     result,
-                    title="Results",
                     page=page,
                     gallery=display.lower() == "gallery",
                 ),
                 Card(
                     Header("Criteria"),
                     Body(
-                        Input(
-                            type="search",
-                            name="term",
-                            placeholder="Search...",
-                            aria_label="Search",
-                            value=term or "",
-                            cls="search",
-                        ),
+                        components.get_search_field(term),
                         Fieldset(
                             Details(
                                 Summary("Filter by type..."),
@@ -601,9 +582,6 @@ def get():
                     Li(components.get_nav_menu()),
                     Li("System"),
                 ),
-                # Ul(
-                #     Li(components.get_search_field()),
-                # ),
                 cls="main",
             ),
             cls="container",
@@ -663,9 +641,6 @@ def get():
                     Li(components.get_nav_menu()),
                     Li("Trash"),
                 ),
-                # Ul(
-                #     Li(components.get_search_field()),
-                # ),
                 cls="main",
             ),
             cls="container",

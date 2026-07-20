@@ -609,14 +609,19 @@ def get(year: int):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_event_icon(), title),
-                ),
-                Ul(
                     Li(
-                        components.get_to_clipboard(f"[{title}](/event/year/{year})"),
-                        cls="slim",
+                        Details(
+                            Summary(components.get_event_icon(), title),
+                            Ul(
+                                Li(
+                                    components.get_to_clipboard(
+                                        f"[{title}](/event/year/{year})"
+                                    )
+                                )
+                            ),
+                            cls="dropdown",
+                        ),
                     ),
-                    # Li(components.get_search_field()),
                 ),
             ),
             cls="container",
@@ -679,16 +684,19 @@ def get(year: int, month: int):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_event_icon(), title),
-                ),
-                Ul(
                     Li(
-                        components.get_to_clipboard(
-                            f"[{title}](/event/month/{first.strftime('%Y-%m')})"
+                        Details(
+                            Summary(components.get_event_icon(), title),
+                            Ul(
+                                Li(
+                                    components.get_to_clipboard(
+                                        f"[{title}](/event/month/{first.strftime('%Y-%m')})"
+                                    ),
+                                ),
+                            ),
+                            cls="dropdown",
                         ),
-                        cls="slim",
                     ),
-                    # Li(components.get_search_field()),
                 ),
             ),
             cls="container",
@@ -765,16 +773,19 @@ def get(year: int, week: int):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(components.get_event_icon(), title),
-                ),
-                Ul(
                     Li(
-                        components.get_to_clipboard(
-                            f"[{title}](/event/week/{year}-{week})"
+                        Details(
+                            Summary(components.get_event_icon(), title),
+                            Ul(
+                                Li(
+                                    components.get_to_clipboard(
+                                        f"[{title}](/event/week/{year}-{week})"
+                                    ),
+                                ),
+                            ),
+                            cls="dropdown",
                         ),
-                        cls="slim",
                     ),
-                    # Li(components.get_search_field()),
                 ),
             ),
             cls="container",
@@ -872,7 +883,7 @@ def get(year: int, month: int, day: int):
         key=lambda e: len(e),
         reverse=True,
     )
-    # Then thisdays events, sorted by start time.
+    # Then this days events, sorted by start time.
     just_thisday = sorted(
         [e for e in events if e.within(thisday, next)], key=lambda e: e.start
     )
@@ -886,16 +897,19 @@ def get(year: int, month: int, day: int):
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(Span(components.get_event_icon(), title)),
-                ),
-                Ul(
                     Li(
-                        components.get_to_clipboard(
-                            f"[{title}](/event/day/{thisday.strftime('%Y-%m-%d')})"
+                        Details(
+                            Summary(components.get_event_icon(), title),
+                            Ul(
+                                Li(
+                                    components.get_to_clipboard(
+                                        f"[{title}](/event/day/{thisday.strftime('%Y-%m-%d')})"
+                                    )
+                                )
+                            ),
+                            cls="dropdown",
                         ),
-                        cls="slim",
                     ),
-                    # Li(components.get_search_field()),
                 ),
             ),
             cls="container",

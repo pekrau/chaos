@@ -114,7 +114,7 @@ def get(note: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(note)),
                     Li("Copy ", components.get_note_icon(), note),
                 ),
             ),

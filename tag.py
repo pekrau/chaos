@@ -121,7 +121,7 @@ def get(tag: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(tag)),
                     Li("Copy ", components.get_tag_icon(), tag),
                 ),
             ),

@@ -126,7 +126,7 @@ def get(link: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(link)),
                     Li("Copy ", components.get_link_icon(), link),
                 ),
             ),

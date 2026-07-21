@@ -243,7 +243,7 @@ def get(graphic: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(graphic)),
                     Li("Copy ", components.get_graphic_icon(), graphic),
                 ),
             ),

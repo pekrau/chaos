@@ -905,6 +905,13 @@ def write_state(recent=None, pin=None, unpin=None):
     constants.STATE_FILE.write_text(yaml.safe_dump(state, allow_unicode=True))
 
 
+def cleanup_state():
+    "Clean up state; remove non-existent entries from it."
+    global state
+    state["recent"] = [id for id in state["recent"] if id in lookup]
+    state["pinned"] = [id for id in state["pinned"] if id in lookup]
+
+
 def get_shortcuts(item=None):
     """Get the pinned and recent items for display in the nav menu.
     If item is provided, update the recent items.
@@ -922,13 +929,6 @@ def get_shortcuts(item=None):
     pinned = [id for id in state["pinned"]]
     recent = [id for id in recent if id not in pinned]
     return [get(id) for id in (pinned + recent)]
-
-
-def cleanup_state():
-    "Remove any non-existen ids from the state."
-    global state
-    state["recent"] = [id for id in state["recent"] if id in lookup]
-    state["pinned"] = [id for id in state["pinned"] if id in lookup]
 
 
 def read():

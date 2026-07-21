@@ -268,14 +268,15 @@ def get_header_item_view(item, copy=True, operations=None):
     return Header(
         Nav(
             Ul(
-                Li(get_nav_menu()),
+                Li(get_nav_menu(item)),
                 Li(
                     Details(
-                        Summary(get_item_icon(item), item.title),
+                        Summary(get_item_icon(item)),
                         Ul(*[Li(l) for l in links]),
                         cls="dropdown",
                     ),
                 ),
+                Li(item.title),
             ),
         ),
         cls="container",
@@ -303,7 +304,7 @@ def get_header_item_edit(item):
         Header(
             Nav(
                 Ul(
-                    Li(get_nav_menu()),
+                    Li(get_nav_menu(item)),
                     Li("Edit ", get_item_icon(item), item),
                 ),
             ),
@@ -319,7 +320,7 @@ def get_header_item_delete(item):
         Header(
             Nav(
                 Ul(
-                    Li(get_nav_menu()),
+                    Li(get_nav_menu(item)),
                     Li("Delete ", get_item_icon(item), item),
                 ),
             ),

@@ -320,7 +320,7 @@ def get(event: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(event)),
                     Li("Copy ", components.get_event_icon(), event),
                 ),
             ),
@@ -372,7 +372,7 @@ def get(event: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(event)),
                     Li("Create recurring ", components.get_event_icon(), event),
                 ),
             ),
@@ -611,7 +611,7 @@ def get(year: int):
                     Li(components.get_nav_menu()),
                     Li(
                         Details(
-                            Summary(components.get_event_icon(), title),
+                            Summary(components.get_event_icon()),
                             Ul(
                                 Li(
                                     components.get_to_clipboard(
@@ -622,6 +622,7 @@ def get(year: int):
                             cls="dropdown",
                         ),
                     ),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -686,7 +687,7 @@ def get(year: int, month: int):
                     Li(components.get_nav_menu()),
                     Li(
                         Details(
-                            Summary(components.get_event_icon(), title),
+                            Summary(components.get_event_icon()),
                             Ul(
                                 Li(
                                     components.get_to_clipboard(
@@ -697,6 +698,7 @@ def get(year: int, month: int):
                             cls="dropdown",
                         ),
                     ),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -775,7 +777,7 @@ def get(year: int, week: int):
                     Li(components.get_nav_menu()),
                     Li(
                         Details(
-                            Summary(components.get_event_icon(), title),
+                            Summary(components.get_event_icon()),
                             Ul(
                                 Li(
                                     components.get_to_clipboard(
@@ -786,6 +788,7 @@ def get(year: int, week: int):
                             cls="dropdown",
                         ),
                     ),
+                    Li(title),
                 ),
             ),
             cls="container",
@@ -899,7 +902,7 @@ def get(year: int, month: int, day: int):
                     Li(components.get_nav_menu()),
                     Li(
                         Details(
-                            Summary(components.get_event_icon(), title),
+                            Summary(components.get_event_icon()),
                             Ul(
                                 Li(
                                     components.get_to_clipboard(
@@ -910,6 +913,7 @@ def get(year: int, month: int, day: int):
                             cls="dropdown",
                         ),
                     ),
+                    Li(title),
                 ),
             ),
             cls="container",

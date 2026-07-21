@@ -184,7 +184,7 @@ def get(database: items.Item, tablename: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(database)),
                     Li("Add row to table ", Strong(tablename)),
                     Li(
                         components.get_database_icon(),
@@ -267,7 +267,7 @@ def get(database: items.Item, relname: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(database)),
                     Li(title),
                     Li(
                         components.get_database_icon(),
@@ -355,7 +355,7 @@ def get(database: items.Item, tablename: str):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(database)),
                     Li("Add CSV file to table ", Strong(tablename)),
                     Li(
                         components.get_database_icon(),
@@ -562,7 +562,7 @@ def post(database: items.Item, sql: str = None):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(database)),
                     Li(title),
                     Li(
                         components.get_database_icon(),
@@ -678,7 +678,7 @@ def get(database: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(database)),
                     Li("Copy ", components.get_database_icon(), database),
                 ),
             ),
@@ -732,7 +732,7 @@ def get(database: items.Item, sql: str = None):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(database)),
                     Li("Create view in ", components.get_database_icon(), database),
                 ),
             ),
@@ -837,9 +837,7 @@ def get_overview(database):
                     Ul(*spec),
                 ),
                 Details(
-                    Summary(
-                        f"{relation['count']} rows",
-                    ),
+                    Summary(f"{relation['count']} rows"),
                     Ul(*operations),
                     cls="dropdown",
                 ),

@@ -165,7 +165,7 @@ def get(file: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(file)),
                     Li("Copy ", components.get_file_icon(), file),
                 ),
             ),

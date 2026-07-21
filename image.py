@@ -189,7 +189,7 @@ def get(image: items.Item):
         Header(
             Nav(
                 Ul(
-                    Li(components.get_nav_menu()),
+                    Li(components.get_nav_menu(image)),
                     Li("Copy ", components.get_image_icon(), image),
                 ),
             ),

@@ -72,12 +72,16 @@ def get():
                                 ),
                             ),
                             Input(
-                                name="publisher",
-                                placeholder="Publisher...",
+                                name="isbn",
+                                placeholder="ISBN...",
                             ),
                             cls="grid",
                         ),
                         Div(
+                            Input(
+                                name="publisher",
+                                placeholder="Publisher...",
+                            ),
                             Div(
                                 Input(
                                     name="published",
@@ -86,25 +90,9 @@ def get():
                                 ),
                                 Small("Date for this edition.", id="published-helper"),
                             ),
-                            Div(
-                                Select(
-                                    Option("Language", selected=True, value=""),
-                                    *[
-                                        Option(lang[1], value=lang[0])
-                                        for lang in constants.LANGUAGES.items()
-                                    ],
-                                    name="language",
-                                ),
-                                Small(),
-                            ),
                             cls="grid",
                         ),
-                        Div(
-                            Input(
-                                name="isbn",
-                                placeholder="ISBN...",
-                            ),
-                        ),
+                        Div(),
                     ),
                     cls="grid",
                 ),
@@ -129,7 +117,6 @@ def post(
     year: str,
     publisher: str,
     published: str,
-    language: str,
     isbn: str,
     text: str,
     tags: list[str] = None,
@@ -153,7 +140,6 @@ def post(
         book.year = entry.get("year") or entry["published"].split("-")[0]
         book.publisher = entry["publisher"] or None
         book.published = entry["published"] or None
-        book.language = entry.get("language")
         book.isbn = entry.get("isbn")
     else:
         book.title = title
@@ -161,7 +147,6 @@ def post(
         book.year = year
         book.publisher = publisher or None
         book.published = published or None
-        book.language = language or None
         book.isbn = isbn or None
     book.text = text.strip()
     book.tags = tags
@@ -181,9 +166,6 @@ def get(book: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
             Card("; ".join(book.authors)),
             Card(
                 Div(book.year or "", title="Year"),
-                Div(book.publisher or "", title="Publisher"),
-                Div(book.published or "", title="Published"),
-                Div(constants.LANGUAGES.get(book.language, ""), title="Language"),
                 (
                     A(
                         f"ISBN {book.isbn}",
@@ -193,6 +175,8 @@ def get(book: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
                     if book.isbn
                     else ""
                 ),
+                Div(book.publisher or "", title="Publisher"),
+                Div(book.published or "", title="Published"),
                 cls="grid",
             ),
             components.get_text_card(book),
@@ -238,6 +222,7 @@ def get(book: items.Item):
                         ),
                         Small("Original year of publication.", id="year-helper"),
                     ),
+                    Label("ISBN", Input(name="isbn", value=book.isbn)),
                     Label(
                         "Publisher",
                         Input(name="publisher", value=book.publisher or ""),
@@ -251,22 +236,6 @@ def get(book: items.Item):
                         ),
                         Small("Date for this edition.", id="published-helper"),
                     ),
-                    Label(
-                        "Language",
-                        Select(
-                            Option("", value=""),
-                            *[
-                                Option(
-                                    lang[1],
-                                    value=lang[0],
-                                    selected=book.language == lang[0],
-                                )
-                                for lang in constants.LANGUAGES.items()
-                            ],
-                            name="language",
-                        ),
-                    ),
-                    Label("ISBN", Input(name="isbn", value=book.isbn)),
                     cls="grid",
                 ),
                 components.get_text_input(book.text),
@@ -290,7 +259,6 @@ def post(
     year: str = None,
     publisher: str = None,
     published: str = None,
-    language: str = None,
     isbn: str = None,
     tags: list[str] = None,
 ):
@@ -301,7 +269,6 @@ def post(
     book.year = year
     book.publisher = publisher
     book.published = published
-    book.language = language
     book.isbn = isbn
     book.text = text.strip()
     book.tags = tags

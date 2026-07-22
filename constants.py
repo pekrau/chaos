@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 9, 3)
+VERSION = (1, 9, 4)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -35,11 +35,6 @@ TEL = re.compile(
 )
 
 TIMEZONE = zoneinfo.ZoneInfo(os.environ.get("TZ", "UTC"))
-
-LANGUAGES = dict(
-    en="English",
-    se="Svenska",
-)
 
 TEXT_MIMETYPE = "text/plain"
 BINARY_MIMETYPE = "application/octet-stream"

@@ -759,16 +759,6 @@ class _GenericReference(Item):
                 value = None
         self.frontmatter["published"] = value
 
-    @property
-    def language(self):
-        return self.frontmatter.get("language")
-
-    @language.setter
-    def language(self, value):
-        if isinstance(value, str):
-            value = value.strip() or None
-        self.frontmatter["language"] = value
-
 
 class Book(_GenericReference):
     "Reference to a book."

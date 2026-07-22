@@ -609,7 +609,6 @@ month =  dec,
 year =  2002,
 doi = "10.1093/actrade/9780192802552.001.0001",
 isbn =  9780192802552,
-language = "en"
 }
     @BOOK{Boehm1999-cb,
 title = "Hierarchy in the Forest. The Evolution of Egalitarian Behavior",
@@ -618,7 +617,6 @@ publisher = "Harvard University Press",
 address = "London, England",
 year =  1999,
 isbn =  9780674006911,
-language = "en"
 }
 @BOOK{Darwin2013-cv,
 title = "The descent of man",
@@ -629,7 +627,6 @@ series = "Wordsworth Classics of World Literature",
 month =  "8~" # jul,
 year =  2013,
 isbn =  9781840226980,
-language = "en"
 }
 @ARTICLE{Enright2017-ak,
 title = "'To the victor go the spoils': Infants expect resources to align with dominance structures",
@@ -646,7 +643,6 @@ doi = "10.1016/j.cognition.2017.03.008",
 pmc = "PMC5839744",
 pmid =  28346870,
 issn = "0010-0277,1873-7838",
-language = "en"
 }
 @ARTICLE{Kay2026-bb,
 title = "Dated gene duplications elucidate the evolutionary assembly of eukaryotes",
@@ -662,7 +658,6 @@ year =  2026,
 doi = "10.1038/s41586-025-09808-z",
 pmid =  41339551,
 issn = "0028-0836,1476-4687",
-language = "en"
 }
 
     """

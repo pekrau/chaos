@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 9, 0)
+VERSION = (1, 9, 1)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -80,14 +80,3 @@ VEGA_LITE_LIBRARIES = [
     "https://cdn.jsdelivr.net/npm/vega-embed@7",
 ]
 GRAPHIC_TYPES = [SVG, VEGA_LITE]
-
-EVENT_CATEGORIES = [  # These need entries for colors in 'modifications.css'
-    "standard",
-    "important",
-    "critical",
-    "travel",
-    "meal",
-    "meeting",
-    "activity",
-    "other",
-]

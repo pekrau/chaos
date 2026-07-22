@@ -36,13 +36,6 @@ def get(date: str = None, time: str = None):
             Form(
                 components.get_title_input(autofocus=True),
                 get_period_edit(start_date=date, start_time=time),
-                Label(
-                    "Category",
-                    Select(
-                        *[Option(c, cls=c) for c in constants.EVENT_CATEGORIES],
-                        name="category",
-                    ),
-                ),
                 components.get_text_input(),
                 components.get_tags_input(),
                 Input(type="submit", value="Create"),
@@ -68,7 +61,6 @@ def post(
     hours: int = None,
     minutes: int = None,
     tags: list[str] = None,
-    category: str = None,
 ):
     "Actually create an event."
     event = items.Event()
@@ -106,7 +98,6 @@ def post(
         end = start + dt.timedelta(days=1)
     event.set(start, end)
     event.tags = tags
-    event.category = category
     event.write()
     return components.redirect(event.url)
 
@@ -142,7 +133,7 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                 header=Header(
                     Div(event.display(date=True), cls="center"),
                     Div(event.duration, cls="center"),
-                    Div(style=event.tag_colors_style),
+                    Div(style=event.background_style),
                     Div(
                         A(
                             f"{event.weekday_short.capitalize()} {event.start.day}",
@@ -223,16 +214,6 @@ def get(event: items.Item):
                     hours=duration.hours,
                     minutes=duration.minutes,
                 ),
-                Label(
-                    "Category",
-                    Select(
-                        *[
-                            Option(c, selected=c == event.category, cls=c)
-                            for c in constants.EVENT_CATEGORIES
-                        ],
-                        name="category",
-                    ),
-                ),
                 components.get_text_input(event.text),
                 components.get_tags_input(event.tags),
                 Input(type="submit", value="Save"),
@@ -259,7 +240,6 @@ def post(
     hours: int = None,
     minutes: int = None,
     tags: list[str] = None,
-    category: str = None,
 ):
     "Actually edit the event."
     assert isinstance(event, items.Event)
@@ -299,7 +279,6 @@ def post(
             end = start + event.duration.timedelta
     event.set(start, end)
     event.tags = tags
-    event.category = category
     event.write()
     return components.redirect(event.url)
 
@@ -349,7 +328,6 @@ def post(
     event = items.Event()
     event.title = title
     event.set(source.start, source.end)
-    event.category = source.category
     event.text = source.text
     event.tags = source.tags
     event.write()
@@ -526,7 +504,6 @@ def post(
         event.set(start, start + timedelta)
         event.text = f"{source.text}\n\nRecurring copy of [[{source.id}]]."
         event.tags = source.tags
-        event.category = source.category
         event.write()
     add_toast(session, f"Created {len(starts)} recurring events.", "success")
     return components.redirect(source.url)
@@ -1372,11 +1349,11 @@ def get_event_display_minimal(event, start, end):
     "Return a minimal event display."
     return A(
         Div(
-            style=event.tag_colors_style,
+            style=event.background_style,
             cls="vspacer " + get_event_border(event, start, end),
         ),
         href=event.url,
-        data_tooltip=f"{event.category.capitalize()}: {event.title}",
+        data_tooltip=event.title,
         cls="event " + get_event_border(event, start, end),
     )
 
@@ -1386,11 +1363,11 @@ def get_event_display_basic(event, start, end):
     return A(
         Div(
             event.title,
-            style=event.tag_colors_style,
+            style=event.background_style,
             cls=get_event_border(event, start, end),
         ),
         href=event.url,
-        data_tooltip=f"{event.display(year=start.year)}: {event.category.capitalize()}",
+        data_tooltip=event.display(year=start.year),
         cls="event " + get_event_border(event, start, end),
     )
 
@@ -1400,11 +1377,10 @@ def get_event_display_standard(event, start, end, vertical=False):
     return A(
         Div(
             f"{event.display(year=start.year)}: {event.title}",
-            style=event.tag_colors_style,
+            style=event.background_style,
             cls=get_event_border(event, start, end, vertical=vertical),
         ),
         href=event.url,
-        data_tooltip=event.category.capitalize(),
         cls=f"event " + get_event_border(event, start, end),
     )
 

@@ -6,6 +6,12 @@ import os
 import constants
 import items
 
+# Map of event category to tag; some categories are not included.
+CATEGORY_EVENT = dict(
+    important="viktigt",
+    critical="superviktigt",
+)
+
 
 def migrate():
     "Update all Markdown files to the new format. Handles all previous formats."
@@ -19,7 +25,7 @@ def migrate():
                 filename = item.frontmatter.pop("filename")
                 filename = pathlib.Path(filename)
                 item.ext = filename.suffix
-        # For Event items, remove timezone info from 'start' and 'end'
+        # For Event items, remove timezone info from 'start' and 'end'.
         if isinstance(item, items.Event):
             if item.start.tzinfo:
                 with update(item):
@@ -27,6 +33,15 @@ def migrate():
             if item.end.tzinfo:
                 with update(item):
                     item.frontmatter["end"] = item.end.replace(tzinfo=None)
+            # For Event items, convert category to tag.
+            if category := item.frontmatter.pop("category", None):
+                with update(item):
+                    tags = item.tag_ids
+                    try:
+                        tags.add(CATEGORY_EVENT[category])
+                    except KeyError:
+                        pass
+                    item.tags = tags
 
 
 @contextlib.contextmanager

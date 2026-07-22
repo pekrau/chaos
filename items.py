@@ -135,17 +135,6 @@ class Item:
             self.frontmatter.pop("tags", None)
 
     @property
-    def tag_colors_style(self):
-        "Get the style attribute value for the colors of the item's tags, if any."
-        colors = [t.color for t in self.tags if t.color]
-        if len(colors) == 0:
-            return None
-        elif len(colors) == 1:
-            return f"background-color: {colors[0]};"
-        else:
-            return f"background-image: linear-gradient(to right, {', '.join(colors)});"
-
-    @property
     def pinned(self):
         "Is this item pinned?"
         global state
@@ -436,16 +425,15 @@ class Event(Item):
         return self.endwh.year
 
     @property
-    def category(self):
-        return self.frontmatter.get("category", constants.EVENT_CATEGORIES[0])
-
-    @category.setter
-    def category(self, value):
-        assert (not value) or (value in constants.EVENT_CATEGORIES)
-        if value:
-            self.frontmatter["category"] = value
+    def background_style(self):
+        "Get the style attribute value the background color(s) from event's tags."
+        colors = [t.color for t in self.tags if t.color]
+        if len(colors) == 0:
+            return f"background-color: linen;"
+        elif len(colors) == 1:
+            return f"background-color: {colors[0]};"
         else:
-            self.frontmatter.pop("category", None)
+            return f"background-image: linear-gradient(to right, {', '.join(colors)});"
 
     def within(self, start, end):
         "Is this event within the given start and end datetimes?"
@@ -506,16 +494,16 @@ class Event(Item):
 
     def display(self, date=False, year=None, time=True):
         """Human-readable representation of the period for the event.
-        Omit date if less than one day.
+        By default, omit date if less than one day.
         """
         if self.start.year == self.end_year:
             if self.month == self.end_month:
                 if self.whole_days:
                     if self.days == 1:
                         if year and year == self.start.year:
-                            return f"{self.start.day} {self.month}"
+                            return f"{self.weekday} {self.start.day} {self.month}"
                         else:
-                            return f"{self.start.day} {self.month} {self.start.year}"
+                            return f"{self.weekday} {self.start.day} {self.month} {self.start.year}"
                     elif year and year == self.start.year:
                         return f"{self.start.day}-{self.end_day} {self.month}"
                     else:

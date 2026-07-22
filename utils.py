@@ -40,7 +40,7 @@ def normalize(s):
 
 
 def numerical(n):
-    "Return numerical value as string formatted according to locale."
+    "Return the numerical value as a decimal string formatted according to locale."
     return babel.numbers.format_decimal(n, locale=os.environ.get("LC_MONETARY"))
 
 
@@ -57,10 +57,12 @@ def to_hex_color(color):
 
 
 def to_name_color(color):
-    "Convert to name color, or keep in hex."
+    "Convert to name color, or keep in hex if no name."
+    if not color:
+        return color
     if color.startswith("#"):
         try:
-            color = webcolors.hex_to_name(color)
+            color = webcolors.hex_to_name(webcolors.normalize_hex(color))
         except ValueError:
             pass
     return color

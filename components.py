@@ -354,13 +354,13 @@ def get_refs_card(item, page=None):
 
 
 def get_tags_card(item, page=None):
-    "Show the tags for this item."
+    "Show the tags for this item, and the similar items."
     tags = list(item.tags)
     if tags:
         title = str(
             Div(
                 Span("Tags:", cls="rmargin"),
-                *[A(tag, href=tag.url, cls="rmargin") for tag in item.tags],
+                *[A(tag, href=tag.url, cls="rmargin") for tag in tags],
             )
         )
         return (

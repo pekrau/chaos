@@ -3,10 +3,12 @@
 import urllib.parse
 
 from fasthtml.common import *
+from fasthtml.pico import Card
 
 import components
 import constants
 import items
+import utils
 
 app, rt = components.get_app_rt()
 
@@ -28,6 +30,19 @@ def get():
         Main(
             Form(
                 components.get_title_input(autofocus=True),
+                Fieldset(
+                    Span("Color", style="margin: 0.75em 1em;"),
+                    Input(
+                        type="text",
+                        name="color_name",
+                        placeholder="Color name",
+                    ),
+                    Input(
+                        type="color",
+                        name="color_hex",
+                    ),
+                    role="group",
+                ),
                 components.get_text_input(),
                 components.get_tags_input(),
                 Input(type="submit", value="Create"),
@@ -41,7 +56,14 @@ def get():
 
 
 @rt("/")
-def post(title: str, text: str, id: str = "", tags: list[str] = None):
+def post(
+    title: str,
+    text: str,
+    color_name: str = "",
+    color_hex: str = "",
+    id: str = "",
+    tags: list[str] = None,
+):
     "Actually create the tag."
     if id:
         tag = items.Tag(constants.DATA_DIR / f"{id}.md")
@@ -49,6 +71,7 @@ def post(title: str, text: str, id: str = "", tags: list[str] = None):
     else:
         tag = items.Tag()
     tag.title = title
+    tag.color = color_name or color_hex
     tag.text = text.strip()
     tag.tags = tags
     tag.write()
@@ -61,11 +84,23 @@ def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     assert isinstance(tag, items.Tag)
     items_list = tag.tagged
     items_list.sort(key=lambda i: i.modified, reverse=True)
+    color_name = utils.to_name_color(tag.color)
+    if not color_name:
+        color_name = I("Undefined")
+    elif color_name == tag.color:
+        color_name = I("No name")
     return (
         Title(tag),
         components.get_clipboard_script(),
         components.get_header_item_view(tag),
         Main(
+            Card(
+                Span("Color"),
+                Span(color_name),
+                Span(tag.color),
+                Div(style=f"background-color: {tag.color};" if tag.color else None),
+                cls="grid",
+            ),
             components.get_text_card(tag),
             Form(
                 components.get_items_display(items_list, title="Tagged...", page=page),
@@ -84,11 +119,31 @@ def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
 def get(tag: items.Item):
     "Form for editing a tag."
     assert isinstance(tag, items.Tag)
+    color_name = utils.to_name_color(tag.color)
+    if not color_name:
+        color_name = "none"
+    elif color_name == tag.color:
+        color_name = None
     return (
         *components.get_header_item_edit(tag),
         Main(
             Form(
                 components.get_title_input(tag.title),
+                Fieldset(
+                    Span("Color", style="margin: 0.75em 1em;"),
+                    Input(
+                        type="text",
+                        name="color_name",
+                        value=color_name,
+                        placeholder="Color name",
+                    ),
+                    Input(
+                        type="color",
+                        name="color_hex",
+                        value=tag.color,
+                    ),
+                    role="group",
+                ),
                 components.get_text_input(tag.text),
                 components.get_tags_input(tag.tags, tag=tag),
                 Input(type="submit", value="Save"),
@@ -102,10 +157,28 @@ def get(tag: items.Item):
 
 
 @rt("/{tag:Item}/edit")
-def post(tag: items.Item, title: str, text: str, tags: list[str] = None):
+def post(
+    tag: items.Item,
+    title: str,
+    text: str,
+    color_name: str = "",
+    color_hex: str = "",
+    tags: list[str] = None,
+):
     "Actually edit the tag."
     assert isinstance(tag, items.Tag)
     tag.title = title
+    if color_name.lower() in ("none", "undefined"):
+        if tag.color is None and color_hex != "#000000":
+            tag.color = color_hex
+        else:
+            tag.color = None
+    else:
+        color = utils.to_hex_color(color_name)
+        if color_name and color != tag.color:
+            tag.color = color
+        elif color_hex != tag.color:
+            tag.color = color_hex
     tag.text = text.strip()
     tag.tags = tags
     tag.write()

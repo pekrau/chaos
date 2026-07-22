@@ -135,6 +135,17 @@ class Item:
             self.frontmatter.pop("tags", None)
 
     @property
+    def tag_colors_style(self):
+        "Get the style attribute value for the colors of the item's tags, if any."
+        colors = [t.color for t in self.tags if t.color]
+        if len(colors) == 0:
+            return None
+        elif len(colors) == 1:
+            return f"background-color: {colors[0]};"
+        else:
+            return f"background-image: linear-gradient(to right, {', '.join(colors)});"
+
+    @property
     def pinned(self):
         "Is this item pinned?"
         global state
@@ -228,8 +239,19 @@ class Tag(Item):
         self._tagged = set()  # Set of id's of items using this tag.
 
     @property
+    def color(self):
+        return self.frontmatter.get("color")
+
+    @color.setter
+    def color(self, color):
+        if color:
+            self.frontmatter["color"] = utils.to_hex_color(color)
+        else:
+            self.frontmatter["color"] = None
+
+    @property
     def tagged(self):
-        "List of tagged items."
+        "List of items tagged by this tag."
         return [get(id) for id in self._tagged]
 
 

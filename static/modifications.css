@@ -84,8 +84,11 @@
 }
 
 .today {
-    background-color: hotpink;
-    padding: 6px;
+    color: contrast-color(var(--backgroundColor));
+    border: thick solid blue;
+    border-style: dotted;
+    background-color: yellow;
+    padding: 2px 6px;
 }
 
 *:required {
@@ -191,6 +194,11 @@ table.vertical > tbody > tr > td {
 
 th.night {
     background-color: lightgrey;
+}
+
+span.padded {
+    margin: 0px 5px;
+    padding: 0px 10px;
 }
 
 div.vspacer {

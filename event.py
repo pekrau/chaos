@@ -140,16 +140,9 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
             components.get_text_card(
                 event,
                 header=Header(
-                    Div(
-                        Span(
-                            event.display(date=True), Br(), event.duration, cls="middle"
-                        ),
-                        cls="center",
-                    ),
-                    Div(
-                        Span(event.category, cls="middle"),
-                        cls=f"center {event.category}",
-                    ),
+                    Div(event.display(date=True), cls="center"),
+                    Div(event.duration, cls="center"),
+                    Div(style=event.tag_colors_style),
                     Div(
                         A(
                             f"{event.weekday_short.capitalize()} {event.start.day}",
@@ -1144,7 +1137,7 @@ def get_week_rows(weekdays, events, offset=True, full=True, create=True):
                         Div("+", cls="border border-closed"),
                         href=f"/event?date={d.year}-{d.month:02}-{d.day:02}",
                         cls="event",
-                        data_tooltip="Add event",
+                        data_tooltip="Create event",
                     )
                 )
                 for d in weekdays
@@ -1160,7 +1153,7 @@ def get_week_rows(weekdays, events, offset=True, full=True, create=True):
         sum_colspan = 0
         for event in next_events:
             if event.start < start:
-                if event.endwh > end:
+                if event.endwh >= end:
                     colspan = 7
                 else:
                     colspan = event.end_weekday_number
@@ -1262,10 +1255,10 @@ def get_day_display(start, end, events):
         [
             Th(
                 A(
-                    Div(hour.strftime("%H:%M"), cls="border border-closed"),
+                    Div(hour.strftime("%H:%M"), cls="event border border-closed"),
                     href=f"/event?date={start.year}-{start.month:02}-{start.day:02}&time={hour.hour:02}:00",
                     cls="event",
-                    data_tooltip="Add event",
+                    data_tooltip="Create event",
                 ),
                 cls="night" if (hour.hour <= 6 or hour.hour >= 19) else None,
             )
@@ -1296,10 +1289,10 @@ def get_day_display(start, end, events):
         Tr(
             Th(
                 A(
-                    Div("+", cls="border border-closed"),
+                    Div("+", cls="event border border-closed"),
                     href=f"/event?date={start.year}-{start.month:02}-{start.day:02}",
                     cls="event",
-                    data_tooltip="Add event",
+                    data_tooltip="Create event",
                 ),
                 rowspan=max(1, len(entire_day_events)),
             ),
@@ -1378,20 +1371,27 @@ def get_non_overlapping_hours(events, candidates=None):
 def get_event_display_minimal(event, start, end):
     "Return a minimal event display."
     return A(
-        Div(cls="vspacer " + get_event_classes(event, start, end)),
+        Div(
+            style=event.tag_colors_style,
+            cls="vspacer " + get_event_border(event, start, end),
+        ),
         href=event.url,
         data_tooltip=f"{event.category.capitalize()}: {event.title}",
-        cls="event",
+        cls="event " + get_event_border(event, start, end),
     )
 
 
 def get_event_display_basic(event, start, end):
     "Return a basic event display."
     return A(
-        Div(event.title, cls=get_event_classes(event, start, end)),
+        Div(
+            event.title,
+            style=event.tag_colors_style,
+            cls=get_event_border(event, start, end),
+        ),
         href=event.url,
         data_tooltip=f"{event.display(year=start.year)}: {event.category.capitalize()}",
-        cls="event",
+        cls="event " + get_event_border(event, start, end),
     )
 
 
@@ -1400,16 +1400,17 @@ def get_event_display_standard(event, start, end, vertical=False):
     return A(
         Div(
             f"{event.display(year=start.year)}: {event.title}",
-            cls=get_event_classes(event, start, end, vertical=vertical),
+            style=event.tag_colors_style,
+            cls=get_event_border(event, start, end, vertical=vertical),
         ),
         href=event.url,
         data_tooltip=event.category.capitalize(),
-        cls="event",
+        cls=f"event " + get_event_border(event, start, end),
     )
 
 
-def get_event_classes(event, start, end, vertical=False):
-    "Get the event classes; border and category."
+def get_event_border(event, start, end, vertical=False):
+    "Get the event classes for the border."
     if event.duration < items.Duration(days=1):
         border = "border-open"
     elif event.start < start:
@@ -1429,4 +1430,4 @@ def get_event_classes(event, start, end, vertical=False):
             border = f"border-open-right"
     else:
         border = f"border-closed"
-    return f"border {border} {event.category}"
+    return f"border {border}"

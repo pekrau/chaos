@@ -98,7 +98,10 @@ def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
                 Span("Color"),
                 Span(color_name),
                 Span(tag.color),
-                Div(style=f"background-color: {tag.color};" if tag.color else None),
+                Div(
+                    NotStr("&nbsp;"),
+                    style=f"background-color: {tag.color};" if tag.color else None,
+                ),
                 cls="grid",
             ),
             components.get_text_card(tag),

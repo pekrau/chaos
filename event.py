@@ -133,7 +133,7 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                 header=Header(
                     Div(event.display(date=True), cls="center"),
                     Div(event.duration, cls="center"),
-                    Div(style=event.background_style),
+                    Div(NotStr("&nbsp;"), style=event.background_style),
                     Div(
                         A(
                             f"{event.weekday_short.capitalize()} {event.start.day}",

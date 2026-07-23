@@ -51,38 +51,6 @@
     font-size: small;
 }
 
-.standard {
-    background-color: palegreen;
-}
-
-.important {
-    background-color: orange;
-}
-
-.critical {
-    background-color: coral;
-}
-
-.travel {
-    background-color:  aquamarine;
-}
-
-.meal {
-    background-color: yellow;
-}
-
-.meeting {
-    background-color: skyblue;
-}
-
-.activity {
-    background-color: lightpink;
-}
-
-.other {
-    background-color: lightgrey;
-}
-
 .today {
     color: contrast-color(var(--backgroundColor));
     border: thick solid blue;

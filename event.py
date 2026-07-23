@@ -131,9 +131,6 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
             components.get_text_card(
                 event,
                 header=Header(
-                    Div(event.display(date=True), cls="center"),
-                    Div(event.duration, cls="center"),
-                    Div(NotStr("&nbsp;"), style=event.background_style),
                     Div(
                         A(
                             f"{event.weekday_short.capitalize()} {event.start.day}",
@@ -159,8 +156,13 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
                             role="button",
                             cls="secondary outline thin",
                         ),
-                        cls="right",
                     ),
+                    Div(
+                        event.display(),
+                        Span(event.duration, cls="lmargin"),
+                        cls="center",
+                    ),
+                    Div(NotStr("&nbsp;"), style=event.background_style),
                     cls="grid",
                 ),
             ),
@@ -1077,7 +1079,7 @@ def get_month_table(year, month, events, full=True, create=True):
                                 (
                                     "secondary thin"
                                     if d.month == month
-                                    else "secondary thin small"
+                                    else "outline secondary thin"
                                 )
                                 + (" today" if d.toordinal() == today_ordinal else "")
                             ),

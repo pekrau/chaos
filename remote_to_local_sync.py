@@ -25,7 +25,7 @@ def update(url, password, target_dir):
     """Get the current state of the remote site and update the local data.
     Return a dictionary with statistics.
     """
-    response = requests.get(url.rstrip("/") + "/api/", headers=dict(password=password))
+    response = requests.get(url.rstrip("/") + "/api/items", headers=dict(password=password))
     if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
         raise IOError(f"invalid response: {response.status_code=}")
     elif response.status_code != HTTP.OK:

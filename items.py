@@ -1021,9 +1021,10 @@ def get_all_files():
     for item in lookup.values():
         result[item.id] = dict(modified=item.modified, size=item.size)
         if isinstance(item, GenericFile):
-            result[str(item.filename)] = dict(
-                modified=item.file_modified, size=item.file_size
-            )
+            if item.filename.exists(): # Due to previous bug, the file may not exist.
+                result[str(item.filename)] = dict(
+                    modified=item.file_modified, size=item.file_size
+                )
     return result
 
 

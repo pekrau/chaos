@@ -13,14 +13,14 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get():
-    "Form for creating a note."
+    "Form for adding a note."
     return (
-        Title("Create note"),
+        Title("Add note"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Create ", components.get_note_icon(), "note"),
+                    Li("Add ", components.get_note_icon(), "note"),
                 ),
             ),
             cls="container",
@@ -30,7 +30,7 @@ def get():
                 components.get_title_input(autofocus=True),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Create"),
+                Input(type="submit", value="Add"),
                 action="/note/",
                 method="POST",
             ),
@@ -42,7 +42,7 @@ def get():
 
 @rt("/")
 def post(title: str, text: str, tags: list[str] = None):
-    "Actually create the note."
+    "Actually create and add the note."
     note = items.Note()
     note.title = title
     note.text = text.strip()

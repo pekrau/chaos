@@ -18,14 +18,14 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get():
-    "Form for creating an image."
+    "Form for adding an image."
     return (
-        Title("Create image"),
+        Title("Add image"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Create ", components.get_image_icon(), "image"),
+                    Li("Add ", components.get_image_icon(), "image"),
                 ),
             ),
             cls="container",
@@ -43,7 +43,7 @@ def get():
                 Small("Image file: PNG, JPEG, SVG, WEBP or GIF.", id="file-helper"),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Create"),
+                Input(type="submit", value="Add"),
                 action="/image/",
                 method="POST",
             ),
@@ -55,7 +55,7 @@ def get():
 
 @rt("/")
 async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None):
-    "Actually create the image."
+    "Actually create and add the image."
     filename = pathlib.Path(upfile.filename)
     if upfile.content_type not in constants.IMAGE_MIMETYPES:
         raise errors.Error("Cannot upload non-image file.")

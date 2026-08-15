@@ -18,16 +18,16 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get(date: str = None, time: str = None):
-    "Form for creating an event."
+    "Form for adding an event."
     soon = dt.datetime.now() + dt.timedelta(hours=1)
     date = date or soon.date().isoformat()
     return (
-        Title("Create event"),
+        Title("Add event"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Create ", components.get_event_icon(), "event"),
+                    Li("Add ", components.get_event_icon(), "event"),
                 ),
             ),
             cls="container",
@@ -38,7 +38,7 @@ def get(date: str = None, time: str = None):
                 get_period_edit(start_date=date, start_time=time),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Create"),
+                Input(type="submit", value="Add"),
                 action="/event/",
                 method="POST",
             ),
@@ -62,7 +62,7 @@ def post(
     minutes: int = None,
     tags: list[str] = None,
 ):
-    "Actually create an event."
+    "Actually create and add an event."
     event = items.Event()
     event.title = title
     event.text = text.strip()
@@ -125,7 +125,7 @@ def get(event: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
         Title(event),
         components.get_clipboard_script(),
         components.get_header_item_view(
-            event, operations=[A("Create recurring...", href=f"{event.url}/recurring")]
+            event, operations=[A("Add recurring...", href=f"{event.url}/recurring")]
         ),
         Main(
             components.get_text_card(
@@ -346,7 +346,7 @@ def get(event: items.Item):
             Nav(
                 Ul(
                     Li(components.get_nav_menu(event)),
-                    Li("Create recurring ", components.get_event_icon(), event),
+                    Li("Add recurring ", components.get_event_icon(), event),
                 ),
             ),
             cls="container",
@@ -424,7 +424,7 @@ def get(event: items.Item):
                     ),
                     cls="grid",
                 ),
-                Input(type="submit", value="Create events"),
+                Input(type="submit", value="Add events"),
                 action=f"{event.url}/recurring",
                 method="POST",
             ),
@@ -442,7 +442,7 @@ def post(
     last_date: str = None,
     number: int = 0,
 ):
-    "Actually create the recurring events."
+    "Actually create and add the recurring events."
     assert isinstance(source, items.Event)
     number = number or None  # Zero means 'no value given'.
     if last_date:
@@ -507,7 +507,7 @@ def post(
         event.text = f"{source.text}\n\nRecurring copy of [[{source.id}]]."
         event.tags = source.tags
         event.write()
-    add_toast(session, f"Created {len(starts)} recurring events.", "success")
+    add_toast(session, f"Added {len(starts)} recurring events.", "success")
     return components.redirect(source.url)
 
 
@@ -1116,7 +1116,7 @@ def get_week_rows(weekdays, events, offset=True, full=True, create=True):
                         Div("+", cls="border border-closed"),
                         href=f"/event?date={d.year}-{d.month:02}-{d.day:02}",
                         cls="event",
-                        data_tooltip="Create event",
+                        data_tooltip="Add event",
                     )
                 )
                 for d in weekdays
@@ -1237,7 +1237,7 @@ def get_day_display(start, end, events):
                     Div(hour.strftime("%H:%M"), cls="event border border-closed"),
                     href=f"/event?date={start.year}-{start.month:02}-{start.day:02}&time={hour.hour:02}:00",
                     cls="event",
-                    data_tooltip="Create event",
+                    data_tooltip="Add event",
                 ),
                 cls="night" if (hour.hour <= 6 or hour.hour >= 19) else None,
             )
@@ -1271,7 +1271,7 @@ def get_day_display(start, end, events):
                     Div("+", cls="event border border-closed"),
                     href=f"/event?date={start.year}-{start.month:02}-{start.day:02}",
                     cls="event",
-                    data_tooltip="Create event",
+                    data_tooltip="Add event",
                 ),
                 rowspan=max(1, len(entire_day_events)),
             ),

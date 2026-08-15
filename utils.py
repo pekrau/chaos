@@ -2,6 +2,9 @@
 
 import datetime as dt
 import os
+import os.path
+import psutil
+import shutil
 import unicodedata
 
 import babel.numbers
@@ -71,3 +74,33 @@ def to_name_color(color):
 def get_total_pages(total_items):
     "Return the total number of table pages for the given number of items."
     return (total_items - 1) // constants.MAX_PAGE_ITEMS + 1
+
+
+def get_status():
+    "Get the status of the instance."
+    import items
+
+    return {
+        "ram": psutil.Process().memory_info().rss,
+        "disk_usage": sum(
+            [
+                os.path.getsize(constants.DATA_DIR / filename)
+                for filename in constants.DATA_DIR.iterdir()
+            ]
+        ),
+        "disk_free": shutil.disk_usage(constants.DATA_DIR).free,
+        "items_count": len(items.lookup),
+        "trash_count": len(
+            [
+                filename
+                for filename in constants.TRASH_DIR.iterdir()
+                if not filename.suffix
+            ]
+        ),
+        "trash_usage": sum(
+            [
+                os.path.getsize(constants.TRASH_DIR / filename)
+                for filename in constants.TRASH_DIR.iterdir()
+            ]
+        ),
+    }

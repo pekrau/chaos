@@ -13,7 +13,6 @@ import fasthtml
 from fasthtml.common import *
 from fasthtml.pico import Card
 import marko
-import psutil
 import yaml
 
 # This must be done before importing 'constants'.
@@ -174,14 +173,14 @@ async def get(filename: str):
     return FileResponse(f"static/{filename}")
 
 
-@rt("/create")
+@rt("/add")
 def get():
-    "Page for selecting type of item to create."
+    "Page for selecting type of item to add."
     forms = [
         Form(
             Button(
                 components.get_type_icon(type),
-                f"Create {type}",
+                f"Add {type}",
                 type="submit",
                 cls="outline",
             ),
@@ -190,12 +189,12 @@ def get():
         for type in items.TYPES
     ]
     return (
-        Title("Create item..."),
+        Title("Add item..."),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Create item..."),
+                    Li("Add item..."),
                 ),
             ),
             cls="container",
@@ -454,26 +453,14 @@ def get(item: items.Item):
 @rt("/system")
 def get():
     "Display system information."
-    disk_usage = 0
-    for filename in constants.DATA_DIR.iterdir():
-        disk_usage += os.path.getsize(constants.DATA_DIR / filename)
-    disk_free = shutil.disk_usage(constants.DATA_DIR).free
+    status = utils.get_status()
     statistics = items.get_statistics()
-    trash_count = 0
-    trash_usage = 0
-    for filename in constants.TRASH_DIR.iterdir():
-        trash_usage += os.path.getsize(constants.TRASH_DIR / filename)
-        if not filename.suffix:
-            trash_count += 1
-    usage = Table(
-        Thead(Tr(Th("Resource usage", colspan=2))),
+    table = Table(
+        Thead(Tr(Th("Resource status", colspan=2))),
         Tbody(
             Tr(
-                Td("RAM"),
-                Td(
-                    utils.numerical(psutil.Process().memory_info().rss),
-                    cls="right",
-                ),
+                Td("Memory used"),
+                Td(utils.numerical(status["ram"]), cls="right"),
             ),
             Tr(
                 Td("Data directory"),
@@ -482,9 +469,9 @@ def get():
             Tr(
                 Td("Disk usage"),
                 Td(
-                    f"{utils.numerical(disk_usage)} bytes",
+                    f"{utils.numerical(status['disk_usage'])} bytes",
                     Span(
-                        f"{100 * disk_usage / (disk_usage + disk_free):.1f}%",
+                        f"{100 * status['disk_usage'] / (status['disk_usage'] + status['disk_free']):.1f}%",
                         style="margin-left: 2em;",
                     ),
                     cls="right",
@@ -493,9 +480,9 @@ def get():
             Tr(
                 Td("Disk free"),
                 Td(
-                    f"{utils.numerical(disk_free)} bytes",
+                    f"{utils.numerical(status['disk_free'])} bytes",
                     Span(
-                        f"{100 * disk_free / (disk_usage + disk_free):.1f}%",
+                        f"{100 * status['disk_free'] / (status['disk_usage'] + status['disk_free']):.1f}%",
                         style="margin-left: 2em;",
                     ),
                     cls="right",
@@ -515,10 +502,10 @@ def get():
             Tr(
                 Td("# items in trash"),
                 Td(
-                    f"{utils.numerical(trash_usage)} bytes",
+                    f"{utils.numerical(status['trash_usage'])} bytes",
                     Span(
                         A(
-                            trash_count,
+                            status["trash_count"],
                             href="/system/trash",
                             style="margin-left: 2em;",
                         ),
@@ -529,6 +516,7 @@ def get():
         ),
     )
     software = Table(
+        Thead(Tr(Th("Software", colspan=2))),
         Tbody(
             Tr(
                 Td(A("chaos", href=constants.GITHUB_URL, target="_blank")),
@@ -587,7 +575,7 @@ def get():
             cls="container",
         ),
         Main(
-            usage,
+            table,
             software,
             Div(
                 Form(

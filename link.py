@@ -14,14 +14,14 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get():
-    "Form for creating a link."
+    "Form for adding a link."
     return (
-        Title("Create link"),
+        Title("Add link"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Create ", components.get_link_icon(), "link"),
+                    Li("Add ", components.get_link_icon(), "link"),
                 ),
             ),
             cls="container",
@@ -32,7 +32,7 @@ def get():
                 Input(type="href", name="href", placeholder="Href...", required=True),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Create"),
+                Input(type="submit", value="Add"),
                 action="/link/",
                 method="POST",
             ),
@@ -44,7 +44,7 @@ def get():
 
 @rt("/")
 def post(title: str, href: str, text: str, tags: list[str] = None):
-    "Actually create the link."
+    "Actually create and add the link."
     link = items.Link()
     link.title = title
     link.href = href.strip() or "/"

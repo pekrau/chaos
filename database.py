@@ -28,14 +28,14 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get():
-    "Form for creating a database."
+    "Form for adding a database."
     return (
-        Title("Create database"),
+        Title("Add database"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Create ", components.get_database_icon(), "database"),
+                    Li("Add ", components.get_database_icon(), "database"),
                 ),
             ),
             cls="container",
@@ -53,7 +53,7 @@ def get():
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Create"),
+                Input(type="submit", value="Add"),
                 action="/database/",
                 method="POST",
             ),
@@ -67,7 +67,7 @@ def get():
 async def post(
     title: str, text: str, upfile: UploadFile = None, tags: list[str] = None
 ):
-    "Actually create the database."
+    "Actually create and add the database."
     database = items.Database()
     database.title = title
     database.ext = ".sqlite"
@@ -101,7 +101,7 @@ def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int 
         components.get_header_item_view(
             database,
             operations=[
-                A("Create table from CSV file...", href=f"{database.url}/csv"),
+                A("Add table from CSV file...", href=f"{database.url}/csv"),
                 A("Download Sqlite", href=database.url_file),
                 A("Download SQL", href=database.url_sql),
             ],
@@ -433,7 +433,7 @@ async def post(database: items.Item, tablename: str, upfile: UploadFile):
 
 @rt("/{database:Item}/csv")
 def get(database: items.Item):
-    "Create table from CSV file upload."
+    "Add table from CSV file upload."
     assert isinstance(database, items.Database)
     title = "Upload CSV file"
     return (
@@ -485,7 +485,7 @@ def get(database: items.Item):
 
 @rt("/{database:Item}/csv")
 async def post(database: items.Item, tablename: str, upfile: UploadFile):
-    """Actually create table from CSV file upload.
+    """Actually create a table from CSV file upload.
     Determine columns from header and data.
     """
     assert isinstance(database, items.Database)
@@ -530,7 +530,7 @@ def post(database: items.Item, sql: str = None):
                 Span(f"{len(result)} rows", cls="center strong"),
                 Form(
                     Input(type="hidden", name="sql", value=sql),
-                    Input(type="submit", value="Create view"),
+                    Input(type="submit", value="Add view"),
                     action=f"{database.url}/view",
                 ),
                 Form(
@@ -725,15 +725,15 @@ def post(source: items.Database, title: str):
 
 @rt("/{database:Item}/view")
 def get(database: items.Item, sql: str = None):
-    "Form for creating a view in the database."
+    "Form for adding a view in the database."
     assert isinstance(database, items.Database)
     return (
-        Title(f"Create view in '{database}'"),
+        Title(f"Add view in '{database}'"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu(database)),
-                    Li("Create view in ", components.get_database_icon(), database),
+                    Li("Add view in ", components.get_database_icon(), database),
                 ),
             ),
             cls="container",
@@ -755,7 +755,7 @@ def get(database: items.Item, sql: str = None):
                         name="view",
                     ),
                 ),
-                Input(type="submit", value="Create view"),
+                Input(type="submit", value="Add view"),
                 action=f"{database.url}/view",
                 method="POST",
             ),

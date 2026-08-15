@@ -15,14 +15,14 @@ app, rt = components.get_app_rt()
 
 @rt("/")
 def get():
-    "Form for creating a tag."
+    "Form for adding a tag."
     return (
-        Title("Create tag"),
+        Title("Add tag"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("Create ", components.get_tag_icon(), "tag"),
+                    Li("Add ", components.get_tag_icon(), "tag"),
                 ),
             ),
             cls="container",
@@ -45,7 +45,7 @@ def get():
                 ),
                 components.get_text_input(),
                 components.get_tags_input(),
-                Input(type="submit", value="Create"),
+                Input(type="submit", value="Add"),
                 action="/tag/",
                 method="POST",
             ),
@@ -64,7 +64,7 @@ def post(
     id: str = "",
     tags: list[str] = None,
 ):
-    "Actually create the tag."
+    "Actually create and add the tag."
     if id:
         tag = items.Tag(constants.DATA_DIR / f"{id}.md")
         items.lookup[tag.id] = tag

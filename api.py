@@ -9,20 +9,53 @@ from fasthtml.common import *
 import components
 import constants
 import items
+import utils
 
 app, rt = components.get_app_rt()
 
 
-@rt("/items")
+@rt("/status")
 def get():
-    "Return a JSON dictionary of items {name: modified} for all items."
+    "Return status of the server."
+    return utils.get_status()
+
+
+@rt("/all")
+def get():
+    """Return a JSON dictionary of items {name: {modified, size}} for all items,
+    which includes Markdown files and all other files (PDF, PNG, etc).
+    """
     return items.get_all_files()
 
 
-@rt("/item/{item:Item}")
-def get(item: items.Item):
-    "Return the Markdown contents of an item."
-    return {"frontmatter": item.frontmatter, "text": item.text}
+@rt("/tags")
+def get():
+    "Return the dictionary of all available tags; id -> title"
+    return dict([(t.id, t.title) for t in items.get_items("tag")])
+
+
+@rt("/note")
+async def post(request):
+    "Create and add a note."
+    data = await request.json()
+    note = items.Note()
+    note.title = data["title"]
+    note.tags = data["tags"]
+    note.text = data["text"]
+    note.write()
+    return {"note": note.id, "url": note.url}
+
+
+@rt("/tag")
+async def post(request):
+    "Create and add a tag."
+    data = await request.json()
+    tag = items.Tag()
+    tag.title = data["title"]
+    tag.tags = data["tags"]
+    tag.text = data["text"]
+    tag.write()
+    return {"tag": tag.id, "url": tag.url}
 
 
 @rt("/download")

@@ -580,7 +580,7 @@ class Duration:
         )
 
 
-class _GenericFile(Item):
+class GenericFile(Item):
     "Generic file item class."
 
     @property
@@ -635,19 +635,19 @@ class _GenericFile(Item):
         super().delete()
 
 
-class Image(_GenericFile):
+class Image(GenericFile):
     "Image item class."
 
     pass
 
 
-class File(_GenericFile):
+class File(GenericFile):
     "File item class."
 
     pass
 
 
-class Database(_GenericFile):
+class Database(GenericFile):
     "Database (Sqlite3) item class."
 
     def connect(self, readonly=False):
@@ -725,7 +725,7 @@ class Graphic(Item):
         return self.frontmatter["specification"]
 
 
-class _GenericReference(Item):
+class GenericReference(Item):
     "Generic book or article reference."
 
     @property
@@ -760,7 +760,7 @@ class _GenericReference(Item):
         self.frontmatter["published"] = value
 
 
-class Book(_GenericReference):
+class Book(GenericReference):
     "Reference to a book."
 
     @property
@@ -802,7 +802,7 @@ class Book(_GenericReference):
         self.frontmatter["isbn"] = value
 
 
-class Article(_GenericReference):
+class Article(GenericReference):
     "Reference to an article."
 
     @property
@@ -1020,7 +1020,7 @@ def get_all_files():
     result = {}
     for item in lookup.values():
         result[item.id] = dict(modified=item.modified, size=item.size)
-        if isinstance(item, (File, Image)):
+        if isinstance(item, GenericFile):
             result[str(item.filename)] = dict(
                 modified=item.file_modified, size=item.file_size
             )
@@ -1030,7 +1030,7 @@ def get_all_files():
 def get_statistics():
     global TYPES
     result = dict(item=len(lookup))
-    result.update(dict([(type, 0) for type in TYPES]))
+    result.update(dict([(type, 0) for type in TYPES if not type.startswith("generic")]))
     for item in lookup.values():
         result[item.type] += 1
     return result

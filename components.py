@@ -210,7 +210,7 @@ def get_right_icon():
 def get_nav_menu(item=None):
     links = [A("Home", href="/")]
     links.append(A("Today", href="/event/day/"))
-    links.append(A("Create...", href="/create/"))
+    links.append(A("Add...", href="/add/"))
     links.append(A("Search...", href="/search"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
     links.append(A("System", href="/system"))

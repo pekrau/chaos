@@ -450,17 +450,17 @@ def get(item: items.Item):
     return Response(content=item.path.read_text(), media_type=constants.TEXT_MIMETYPE)
 
 
-@rt("/system")
+@rt("/status")
 def get():
-    "Display system information."
+    "Display status information."
     status = utils.get_status()
     statistics = items.get_statistics()
     table = Table(
-        Thead(Tr(Th("Resource status", colspan=2))),
+        Thead(Tr(Th("Resources", colspan=2))),
         Tbody(
             Tr(
                 Td("Memory used"),
-                Td(utils.numerical(status["ram"]), cls="right"),
+                Td(f"{utils.numerical(status['ram'])} bytes", cls="right"),
             ),
             Tr(
                 Td("Data directory"),
@@ -506,7 +506,7 @@ def get():
                     Span(
                         A(
                             status["trash_count"],
-                            href="/system/trash",
+                            href="/status/trash",
                             style="margin-left: 2em;",
                         ),
                     ),
@@ -563,12 +563,12 @@ def get():
         ),
     )
     return (
-        Title("System"),
+        Title("Status"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li("System"),
+                    Li("Status"),
                 ),
                 cls="main",
             ),
@@ -580,7 +580,7 @@ def get():
             Div(
                 Form(
                     Input(type="submit", value="Reread items"),
-                    action="/system/reread",
+                    action="/status/reread",
                     method="POST",
                 ),
                 Form(
@@ -595,14 +595,14 @@ def get():
     )
 
 
-@rt("/system/reread")
+@rt("/status/reread")
 def post():
     "Reread all items from disk."
     items.read()
     return components.redirect()
 
 
-@rt("/system/trash")
+@rt("/status/trash")
 def get():
     "List items in trash."
     entries = {}
@@ -643,7 +643,7 @@ def get():
                         aria_describedby="purge-helper",
                     ),
                     Small("All data will be permanently lost.", id="purge-helper"),
-                    action="/system/purge",
+                    action="/status/purge",
                     method="POST",
                 ),
                 cls="grid",
@@ -662,7 +662,7 @@ def get():
                             ],
                         ),
                         Input(type="submit", value="Retrieve"),
-                        action="/system/trash",
+                        action="/status/trash",
                         method="POST",
                     ),
                 ),
@@ -672,7 +672,7 @@ def get():
     )
 
 
-@rt("/system/trash")
+@rt("/status/trash")
 def post(names: list[str] = None):
     "Retrieve the given items from trash."
     for name in names:
@@ -684,15 +684,15 @@ def post(names: list[str] = None):
             target = constants.DATA_DIR / filepaths[0].with_stem(itemid).name
             shutil.move(source, target)
     items.read()
-    return components.redirect("/system/trash")
+    return components.redirect("/status/trash")
 
 
-@rt("/system/purge")
+@rt("/sstatus/purge")
 def post():
     "Empty the trash; delete the file."
     for trashfile in constants.TRASH_DIR.iterdir():
         trashfile.unlink()
-    return components.redirect("/system/trash")
+    return components.redirect("/status/trash")
 
 
 @rt("/logout")

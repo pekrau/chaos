@@ -1,6 +1,7 @@
 "Image item pages."
 
 from http import HTTPStatus as HTTP
+import mimetypes
 import pathlib
 import urllib.parse
 
@@ -56,23 +57,15 @@ def get():
 @rt("/")
 async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None):
     "Actually create and add the image."
-    filename = pathlib.Path(upfile.filename)
     if upfile.content_type not in constants.IMAGE_MIMETYPES:
         raise errors.Error("Cannot upload non-image file.")
-    ext = filename.suffix
-    if ext == ".md":
-        raise errors.Error("Upload of Markdown file is disallowed.")
+    filename = pathlib.Path(upfile.filename)
     image = items.Image()
     image.title = title.strip() or filename.stem
-    image.ext = ext
-    filecontent = await upfile.read()
-    try:
-        with open(f"{constants.DATA_DIR}/{image.filename}", "wb") as outfile:
-            outfile.write(filecontent)
-    except OSError as error:
-        raise errors.Error(error)
+    image.ext = filename.suffix
     image.text = text.strip()
     image.tags = tags
+    image.content = await upfile.read()
     image.write()
     return components.redirect(image.url)
 
@@ -111,10 +104,9 @@ def get(image: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1
 def get(image: items.Item, ext: str):
     "Download the content of the image."
     assert isinstance(image, items.Image)
-    if image.filepath.suffix == ext:
-        return FileResponse(image.filepath)
-    else:
+    if image.filepath.suffix != ext:
         raise errors.Error("invalid format", HTTP.NOT_FOUND)
+    return FileResponse(image.filepath)
 
 
 @rt("/{image:Item}/edit")
@@ -162,20 +154,19 @@ async def post(
 ):
     "Actually edit the image."
     assert isinstance(image, items.Image)
-    if upfile.filename:
-        ext = pathlib.Path(upfile.filename).suffix
-        if ext == ".md":
-            raise errors.Error("Upload of Markdown file is disallowed.")
-        image.ext = ext  # The MIME type may change on image update.
-        filecontent = await upfile.read()
-        try:
-            with open(f"{constants.DATA_DIR}/{image.filename}", "wb") as outfile:
-                outfile.write(filecontent)
-        except OSError as error:
-            raise errors.Error(error)
     image.title = title
     image.text = text.strip()
     image.tags = tags
+    if upfile.filename:
+        type = mimetypes.guess_type(upfile.filename)[0]
+        if type not in constants.IMAGE_MIMETYPES:
+            raise errors.Error(
+                f"Invalid file type '{type}'", HTTP.UNSUPPORTED_MEDIA_TYPE
+            )
+        image.ext = pathlib.Path(
+            upfile.filename
+        ).suffix  # The MIME type may change on update.
+        image.content = await upfile.read()
     image.write()
     return components.redirect(image.url)
 
@@ -228,6 +219,8 @@ def get(image: items.Item):
 def post(source: items.File, title: str, convert: str = None):
     "Actually copy the image."
     assert isinstance(source, items.Image)
+    result.text = source.text
+    result.tags = source.tags
     if convert == "graphic":
         result = items.Graphic()
         result.title = title
@@ -237,15 +230,7 @@ def post(source: items.File, title: str, convert: str = None):
         result = items.Image()
         result.title = title
         result.ext = source.ext
-        with open(source.filepath, "rb") as infile:
-            filecontent = infile.read()
-        try:
-            with open(f"{constants.DATA_DIR}/{result.filename}", "wb") as outfile:
-                outfile.write(filecontent)
-        except OSError as error:
-            raise errors.Error(error)
-    result.text = source.text
-    result.tags = source.tags
+        result.content = source.content
     result.write()
     return components.redirect(f"{result.url}/edit")
 

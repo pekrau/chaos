@@ -1,5 +1,6 @@
 "File item pages."
 
+import mimetypes
 import pathlib
 import urllib.parse
 
@@ -48,20 +49,17 @@ def get():
 async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None):
     "Actually add the file."
     filename = pathlib.Path(upfile.filename)
-    ext = filename.suffix
-    if ext == ".md":
+    type = mimetypes.guess_type(filename)[0]
+    if type == constants.MARKDOWN_MIMETYPE:
         raise errors.Error("Upload of Markdown file is disallowed.")
+    elif type in constants.IMAGE_MIMETYPES:
+        raise errors.Error("Image file must be uploades as image.")
     file = items.File()
     file.title = title.strip() or filename.stem
-    file.ext = ext
-    filecontent = await upfile.read()
-    try:
-        with open(f"{constants.DATA_DIR}/{file.filename}", "wb") as outfile:
-            outfile.write(filecontent)
-    except OSError as error:
-        raise errors.Error(error)
+    file.ext = filename.suffix
     file.text = text.strip()
     file.tags = tags
+    file.content = await upfile.read()
     file.write()
     return components.redirect(file.url)
 
@@ -95,10 +93,9 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
 def get(file: items.Item, ext: str):
     "Download the content of the file."
     assert isinstance(file, items.File)
-    if file.filepath.suffix == ext:
-        return FileResponse(file.filepath)
-    else:
+    if file.filepath.suffix != ext:
         raise errors.Error("invalid format", HTTP.NOT_FOUND)
+    return FileResponse(file.filepath)
 
 
 @rt("/{file:Item}/edit")
@@ -138,20 +135,18 @@ async def post(
 ):
     "Actually edit the file."
     assert isinstance(file, items.File)
-    if upfile.filename:
-        ext = pathlib.Path(upfile.filename).suffix
-        if ext == ".md":
-            raise errors.Error("Upload of Markdown file is disallowed.")
-        file.ext = ext  # The MIME type may change on file update.
-        filecontent = await upfile.read()
-        try:
-            with open(f"{constants.DATA_DIR}/{file.filename}", "wb") as outfile:
-                outfile.write(filecontent)
-        except OSError as error:
-            raise errors.Error(error)
     file.title = title
     file.text = text.strip()
     file.tags = tags
+    if upfile.filename:
+        filename = pathlib.Path(upfile.filename)
+        type = mimetypes.guess_type(filename)[0]
+        if type == constants.MARKDOWN_MIMETYPE:
+            raise errors.Error("Upload of Markdown file is disallowed.")
+        elif type in constants.IMAGE_MIMETYPES:
+            raise errors.Error("Image file must be uploades as image.")
+        file.ext = filename.suffix  # May change on update.
+        file.content = await upfile.read()
     file.write()
     return components.redirect(file.url)
 
@@ -200,13 +195,7 @@ def post(source: items.File, title: str):
     file.ext = source.ext
     file.text = source.text
     file.tags = source.tags
-    with open(source.filepath, "rb") as infile:
-        filecontent = infile.read()
-    try:
-        with open(f"{constants.DATA_DIR}/{file.filename}", "wb") as outfile:
-            outfile.write(filecontent)
-    except OSError as error:
-        raise errors.Error(error)
+    file.content = source.content
     file.write()
     return components.redirect(f"{file.url}/edit")
 

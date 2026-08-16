@@ -141,7 +141,7 @@ def get_type_icon(type):
         case "article":
             return get_article_icon()
         case _:
-            raise NotImplementedError
+            raise NotImplementedError(type)
 
 
 def get_note_icon(title="Note"):
@@ -213,7 +213,7 @@ def get_nav_menu(item=None):
     links.append(A("Add...", href="/add/"))
     links.append(A("Search...", href="/search"))
     links.append(A("Tags...", href="/search?term=&type=tag"))
-    links.append(A("System", href="/system"))
+    links.append(A("Status", href="/status"))
     links.extend([get_item_link(i, full=False) for i in items.get_shortcuts(item)])
     return Details(
         Summary(get_chaos_icon()),

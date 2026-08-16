@@ -81,6 +81,7 @@ def get_status():
     import items
 
     return {
+        "version": constants.__version__,
         "ram": psutil.Process().memory_info().rss,
         "disk_usage": sum(
             [

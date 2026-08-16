@@ -33,7 +33,7 @@ class Item:
 
     def __init_subclass__(cls, **kwargs):
         global TYPES
-        if not cls.__name__.startswith("_"):
+        if not cls.__name__.startswith("Generic"):
             TYPES[cls.__name__.lower()] = cls
 
     def __init__(self, path=None):
@@ -608,7 +608,7 @@ class GenericFile(Item):
     @property
     def mimetype(self):
         """Return MIME type, or None if not recognized.
-        Determined primarily from the file data, from the file extension as fall-back.
+        Determined primarily from the file data, with the file extension as fall-back.
         """
         kind = filetype.guess(self.filepath)  # Reads the file; needs absolute filename.
         if kind is None:
@@ -628,6 +628,18 @@ class GenericFile(Item):
     def url_file(self):
         "Return the URL for the file content."
         return self.url + self.ext
+
+    @property
+    def content(self):
+        "Return the contents of the file."
+        return self.filepath.read_bytes()
+
+    @content.setter
+    def content(self, data):
+        try:
+            return self.filepath.write_bytes(data)
+        except OSError as error:
+            raise errors.Error(error)
 
     def delete(self):
         "Delete the item and file from the file system and remove from the lookup."
@@ -1021,7 +1033,7 @@ def get_all_files():
     for item in lookup.values():
         result[item.id] = dict(modified=item.modified, size=item.size)
         if isinstance(item, GenericFile):
-            if item.filename.exists(): # Due to previous bug, the file may not exist.
+            if item.filename.exists():  # Due to previous bug, the file may not exist.
                 result[str(item.filename)] = dict(
                     modified=item.file_modified, size=item.file_size
                 )

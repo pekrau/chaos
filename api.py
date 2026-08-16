@@ -1,13 +1,17 @@
 "API resources."
 
+import base64
 from http import HTTPStatus as HTTP
 import io
+import mimetypes
+import pathlib
 import tarfile
 
 from fasthtml.common import *
 
 import components
 import constants
+import errors
 import items
 import utils
 
@@ -46,6 +50,56 @@ async def post(request):
     return {"note": note.id, "url": note.url}
 
 
+@rt("/link")
+async def post(request):
+    "Create and add a link."
+    data = await request.json()
+    link = items.Link()
+    link.title = data["title"]
+    link.href = data["href"]
+    link.tags = data["tags"]
+    link.text = data["text"]
+    link.write()
+    return {"link": link.id, "url": link.url}
+
+
+@rt("/image")
+async def post(request):
+    "Create and add an image."
+    data = await request.json()
+    image = items.Image()
+    image.title = data["title"]
+    type = mimetypes.guess_type(data["file"]["name"])[0]
+    if type not in constants.IMAGE_MIMETYPES:
+        raise errors.Error(f"Invalid file type '{type}'", HTTP.UNSUPPORTED_MEDIA_TYPE)
+    image.ext = pathlib.Path(data["file"]["name"]).suffix
+    image.tags = data["tags"]
+    image.text = data["text"]
+    image.content = base64.b64decode(data["file"]["content"].encode("ascii"))
+    image.write()
+    return {"image": image.id, "url": image.url}
+
+
+@rt("/file")
+async def post(request):
+    "Create and add a file."
+    data = await request.json()
+    file = items.File()
+    file.title = data["title"]
+    filename = data["file"]["name"]
+    type = mimetypes.guess_type(filename)[0]
+    if type == constants.MARKDOWN_MIMETYPE:
+        raise errors.Error("Upload of Markdown file is disallowed.")
+    elif type in constants.IMAGE_MIMETYPES:
+        raise errors.Error("Image file must be uploaded as 'image'.")
+    file.ext = filename.suffix
+    file.tags = data["tags"]
+    file.text = data["text"]
+    file.content = base64.b64decode(data["file"]["content"].encode("ascii"))
+    file.write()
+    return {"file": file.id, "url": file.url}
+
+
 @rt("/tag")
 async def post(request):
     "Create and add a tag."
@@ -54,6 +108,7 @@ async def post(request):
     tag.title = data["title"]
     tag.tags = data["tags"]
     tag.text = data["text"]
+    tag.color = data.get("color") or None
     tag.write()
     return {"tag": tag.id, "url": tag.url}
 

@@ -1,9 +1,5 @@
 "chaos: Update the local directory from the www instance."
 
-# Debug only
-import icecream
-icecream.install()
-
 from http import HTTPStatus as HTTP
 import io
 import os
@@ -11,7 +7,15 @@ from pathlib import Path
 import sys
 import tarfile
 
+import dotenv
 import requests
+
+# This must be done before importing 'constants'.
+dotenv.load_dotenv()   # '.env' file exists only on the local machine.
+
+if os.environ.get("CHAOS_DEVELOPMENT"):
+    import icecream
+    icecream.install()
 
 import constants
 import items

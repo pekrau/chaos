@@ -23,7 +23,6 @@ if os.environ.get("CHAOS_DEVELOPMENT"):
     import icecream
     icecream.install()
 
-
 import constants
 import bibtex
 import components

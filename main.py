@@ -9,6 +9,7 @@ import shutil
 import sys
 
 import bibtexparser
+import dotenv
 import fasthtml
 from fasthtml.common import *
 from fasthtml.pico import Card
@@ -16,21 +17,16 @@ import marko
 import yaml
 
 # This must be done before importing 'constants'.
-from dotenv import load_dotenv
+dotenv.load_dotenv()   # '.env' file exists only on the local machine.
 
 if os.environ.get("CHAOS_DEVELOPMENT"):
     import icecream
-
     icecream.install()
-    with open(".env-development") as infile:
-        load_dotenv(stream=infile)
-else:
-    load_dotenv()
 
 
+import constants
 import bibtex
 import components
-import constants
 import items
 import note
 import tag

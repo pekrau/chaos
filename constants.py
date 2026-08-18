@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 10, 4)
+VERSION = (1, 10, 5)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -16,7 +16,7 @@ PUBMED_URL = "https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
 
 TABULATOR_VERSION = "6.4.0"
 
-DATA_DIR = pathlib.Path(os.environ["CHAOS_DIR"])
+DATA_DIR = pathlib.Path(os.environ["CHAOS_DATA_DIR"])
 if not DATA_DIR.exists():
     raise OSError(f"DATA_DIR {DATA_DIR} does not exist")
 

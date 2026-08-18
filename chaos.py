@@ -7,19 +7,11 @@ import os
 import sys
 
 import click
+import dotenv
 import requests
 
 # This must be done before importing 'constants'.
-from dotenv import load_dotenv
-
-if os.environ.get("CHAOS_DEVELOPMENT"):
-    import icecream
-
-    icecream.install()
-    with open(".env-development") as infile:
-        load_dotenv(stream=infile)
-else:
-    load_dotenv()
+dotenv.load_dotenv()   # '.env' file exists only on the local machine.
 
 import constants
 
@@ -38,7 +30,7 @@ class Data:
 @click.help_option("--help", "-h")
 @click.option("--url", envvar="CHAOS_REMOTE_URL", help="URL of the Chaos server.")
 @click.option(
-    "--password", envvar="CHAOS_PASSWORD", help="Password for the Chaos server."
+    "--password", envvar="CHAOS_REMOTE_PASSWORD", help="Password for the Chaos server."
 )
 @click.option("--verbose", "-v", is_flag=True, help="Verbose output.")
 @click.pass_context

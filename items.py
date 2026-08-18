@@ -943,7 +943,7 @@ def get_shortcuts(item=None):
     return [get(id) for id in (pinned + recent)]
 
 
-def read():
+def read(data_dir=constants.DATA_DIR):
     """Read all items from Markdowwn files in the data directory.
     Create the data directory if it does not exist.
     Read the current state; recent and pinned items.
@@ -957,7 +957,7 @@ def read():
         state = dict(pinned=[], recent=[])
         write_state()
     lookup.clear()
-    for path in constants.DATA_DIR.iterdir():
+    for path in data_dir.iterdir():
         item = read_item(path)
         if item is not None:
             lookup[item.id] = item

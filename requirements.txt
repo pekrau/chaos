@@ -28,7 +28,7 @@ psutil==7.2.2
 Pygments==2.20.0
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
-python-dotenv==1.2.2
+python-dotenv==1.2.3
 python-fasthtml==0.14.4
 python-multipart==0.0.31
 PyYAML==6.0.3

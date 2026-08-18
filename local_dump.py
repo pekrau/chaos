@@ -6,12 +6,7 @@ from pathlib import Path
 import sys
 import tarfile
 
-# This must be done before importing 'constants'.
 import dotenv
-
-dotenv.load_dotenv()
-
-import constants
 
 
 def dump(source_dir, target_dir):
@@ -30,11 +25,8 @@ def dump(source_dir, target_dir):
 
 
 if __name__ == "__main__":
-    dump(os.environ["CHAOS_DIR"], os.environ["CHAOS_DUMP_DIR"])
-    print(
-        str(datetime.date.today()),
-        "from",
-        os.environ["CHAOS_DIR"],
-        "to",
-        os.environ["CHAOS_DUMP_DIR"],
-    )
+    dotenv.load_dotenv()   # '.env' file exists only on the local machine.
+    target_dir = os.environ["CHAOS_TARGET_DIR"]
+    dump_dir = os.environ["CHAOS_DUMP_DIR"]
+    dump(target_dir, dump_dir)
+    print(f"{datetime.date.today()} from {target_dir} to {dump_dir}")

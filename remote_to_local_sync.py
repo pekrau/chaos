@@ -1,5 +1,9 @@
 "chaos: Update the local directory from the www instance."
 
+# Debug only
+import icecream
+icecream.install()
+
 from http import HTTPStatus as HTTP
 import io
 import os
@@ -8,11 +12,6 @@ import sys
 import tarfile
 
 import requests
-
-# This must be done before importing 'constants'. Imports the production '.env' file.
-import dotenv
-
-dotenv.load_dotenv()
 
 import constants
 import items
@@ -36,7 +35,7 @@ def update(url, password, target_dir):
     remote_items = response.json()
 
     target_dir = Path(target_dir)
-    items.read()
+    items.read(data_dir=target_dir)
     local_items = items.get_all_files()
 
     # Download the set of files with different 'modified' from the remote.
@@ -99,9 +98,9 @@ def update(url, password, target_dir):
 
 if __name__ == "__main__":
     url = os.environ["CHAOS_REMOTE_URL"]
-    target_dir = os.environ["CHAOS_DIR"]
+    target_dir = os.environ["CHAOS_TARGET_DIR"]
     try:
-        result = update(url, os.environ["CHAOS_PASSWORD"], target_dir)
+        result = update(url, os.environ["CHAOS_REMOTE_PASSWORD"], target_dir)
         if result:
             print()
             print(f"{timer.now}, instance {url}, target {target_dir}")

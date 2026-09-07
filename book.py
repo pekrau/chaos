@@ -1,7 +1,6 @@
 "Book reference item pages."
 
 import datetime as dt
-import urllib.parse
 
 from fasthtml.common import *
 from fasthtml.pico import Card

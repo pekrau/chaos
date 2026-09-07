@@ -10,7 +10,7 @@ charset-normalizer==3.4.7
 click==8.3.2
 colorama==0.4.6
 executing==2.2.1
-fastcore==1.14.1
+fastcore==2.2.22
 fastlite==0.2.4
 filetype==1.2.0
 h11==0.16.0
@@ -29,7 +29,7 @@ Pygments==2.20.0
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.3
-python-fasthtml==0.14.4
+python-fasthtml==0.14.13
 python-multipart==0.0.31
 PyYAML==6.0.3
 requests==2.33.1

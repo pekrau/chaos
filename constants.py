@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 10, 5)
+VERSION = (1, 11, 0)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -33,6 +33,9 @@ EMAIL = re.compile(r"(\S+@\S+\.\S+)")
 TEL = re.compile(
     r"(((\+[1-9]\d{2,4})|(\b0\d{1,4}))-?(\d{6,8}\b|(\d{2,4} \d\d \d\d\b)))"
 )
+
+MALE = "male"
+FEMALE = "female"
 
 TIMEZONE = zoneinfo.ZoneInfo(os.environ.get("TZ", "UTC"))
 

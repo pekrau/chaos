@@ -2,11 +2,13 @@
 databases, graphics, books and articles.
 """
 
+import io
 import itertools
 import os
 import pathlib
 import shutil
 import sys
+import tarfile
 
 import bibtexparser
 import dotenv
@@ -37,6 +39,7 @@ import database
 import graphic
 import book
 import article
+import person
 import api
 import utils
 from migrate import migrate
@@ -53,6 +56,7 @@ app, rt = components.get_app_rt(
         Mount("/graphic", graphic.app),
         Mount("/book", book.app),
         Mount("/article", article.app),
+        Mount("/person", person.app),
         Mount("/api", api.app),
     ]
 )
@@ -195,7 +199,7 @@ def get():
             cls="container",
         ),
         Main(
-            *[Div(*t, cls="grid") for t in itertools.batched(forms, 2)], cls="container"
+            *[Div(*t, cls="grid") for t in itertools.batched(forms, 3)], cls="container"
         ),
     )
 
@@ -574,6 +578,15 @@ def get():
             software,
             Div(
                 Form(
+                    Fieldset(
+                        Input(type="file", name="upfile", required=True),
+                        Input(type="submit", value="Upload items in tar file"),
+                        cls="grid",
+                    ),
+                    action="/upload",
+                    method="POST",
+                ),
+                Form(
                     Input(type="submit", value="Reread items"),
                     action="/status/reread",
                     method="POST",
@@ -583,7 +596,6 @@ def get():
                     action="/logout",
                     method="POST",
                 ),
-                cls="grid",
             ),
             cls="container",
         ),
@@ -682,13 +694,29 @@ def post(names: list[str] = None):
     return components.redirect("/status/trash")
 
 
-@rt("/sstatus/purge")
+@rt("/status/purge")
 def post():
     "Empty the trash; delete the file."
     for trashfile in constants.TRASH_DIR.iterdir():
         trashfile.unlink()
     return components.redirect("/status/trash")
 
+
+@rt("/upload")
+async def post(session, upfile: UploadFile):
+    "Upload tar file containing items to add."
+    tar = tarfile.open(fileobj=io.BytesIO(await upfile.read()))
+    for name in tar.getnames():
+        name = pathlib.Path(name).stem
+        if name in items.lookup:
+            add_toast(session, f"Error: item {name} already exists", "error")
+            break
+    else:
+        tar.extractall(path=constants.DATA_DIR)
+        items.read()
+        add_toast(session, "items uploaded from tar file", "success")
+    return components.redirect("/status")
+    
 
 @rt("/logout")
 def post(session):

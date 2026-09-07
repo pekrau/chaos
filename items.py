@@ -276,7 +276,7 @@ class Event(Item):
             return False
 
     def __hash__(self):
-        "It seems that this must be defined again, when '__eq__' is also defined?!"
+        "XXX It seems that this must be defined again, when '__eq__' is also defined?!"
         return hash(self.id)
 
     def __len__(self):
@@ -876,6 +876,100 @@ class Article(GenericReference):
         if isinstance(value, str):
             value = value.strip() or None
         self.frontmatter["pmid"] = value
+
+
+@functools.total_ordering
+class Person(Item):
+    "Person item class."
+
+    def __lt__(self, other):
+        assert isinstance(other, Person)
+        if self.birth and other.birth:
+            try:
+                return self.birth < other.birth
+            except TypeError:
+                if isinstance(self.birth, dt.date):
+                    return self.birth.year < other.birth
+                if isinstance(other.birth, dt.date):
+                    return self.birth < other.birth.year
+        else:
+            return self.id < other.id
+
+    def __eq__(self, other):
+        if isinstance(other, Person):
+            return self.birth == other.birth and self.death == other.death
+        else:
+            return False
+
+    def __hash__(self):
+        "XXX It seems that this must be defined again, when '__eq__' is also defined?!"
+        return hash(self.id)
+
+    @property
+    def birth(self):
+        return self.frontmatter["birth"]
+
+    @birth.setter
+    def birth(self, value):
+        if isinstance(value, str):
+            if value := value.strip():
+                value = dt.date.fromisoformat(value)
+            else:
+                value = None
+        self.frontmatter["birth"] = value
+
+    @property
+    def death(self):
+        return self.frontmatter["death"]
+
+    @death.setter
+    def death(self, value):
+        if isinstance(value, str):
+            if value := value.strip():
+                value = dt.date.fromisoformat(value)
+            else:
+                value = None
+        self.frontmatter["death"] = value
+
+    @property
+    def sex(self):
+        return self.frontmatter["sex"]
+
+    @sex.setter
+    def sex(self, value):
+        if isinstance(value, str):
+            value = value.strip() or None
+        self.frontmatter["sex"] = value
+
+    @property
+    def father(self):
+        global lookup
+        return lookup.get(self.frontmatter["father"])
+
+    @father.setter
+    def father(self, value):
+        if isinstance(value, str):
+            value = value.strip() or None
+        self.frontmatter["father"] = value
+
+    @property
+    def mother(self):
+        global lookup
+        return lookup.get(self.frontmatter["mother"])
+
+    @mother.setter
+    def mother(self, value):
+        if isinstance(value, str):
+            value = value.strip() or None
+        self.frontmatter["mother"] = value
+
+    @property
+    def children(self):
+        result = set()
+        for person in get_items("person"):
+            if self is person.father or self is person.mother:
+                result.add(person)
+        return sorted(result)
 
 
 def get_id(stem):

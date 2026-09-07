@@ -10,7 +10,6 @@ import json
 import os
 import pathlib
 import sqlite3
-import urllib.parse
 
 from fasthtml.common import *
 from fasthtml.pico import Card

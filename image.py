@@ -3,7 +3,6 @@
 from http import HTTPStatus as HTTP
 import mimetypes
 import pathlib
-import urllib.parse
 
 
 from fasthtml.common import *

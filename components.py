@@ -140,6 +140,8 @@ def get_type_icon(type):
             return get_book_icon()
         case "article":
             return get_article_icon()
+        case "person":
+            return get_person_icon()
         case _:
             raise NotImplementedError(type)
 
@@ -195,8 +197,8 @@ def get_article_icon(title="Article"):
     return get_icon("journal-text.svg", title=title)
 
 
-def get_edit_icon(title="Edit"):
-    return get_icon("pencil-square.svg", title=title)
+def get_person_icon(title="Person"):
+    return get_icon("person-fill.svg", title=title)
 
 
 def get_left_icon():
@@ -621,6 +623,8 @@ def get_item_link(item, full=True, cls=None):
             return A(get_book_icon(), item, href=item.url, cls=cls)
         case "article":
             return A(get_article_icon(), item, href=item.url, cls=cls)
+        case "person":
+            return A(get_person_icon(), item, href=item.url, cls=cls)
         case _:
             raise NotImplementedError
 

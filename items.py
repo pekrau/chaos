@@ -884,7 +884,6 @@ class Person(Item):
 
     def __lt__(self, other):
         assert isinstance(other, Person)
-        ic(self.frontmatter, other.frontmatter)
         if self.birth and other.birth:
             try:
                 return self.birth < other.birth

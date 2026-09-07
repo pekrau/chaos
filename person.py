@@ -168,9 +168,9 @@ def get(person: items.Item):
                     Input(type="radio", name="sex", id="female", value=constants.FEMALE, checked=person.sex == constants.FEMALE),
                     Label("Female", htmlFor="female")
                 ),
-                Div(
-                    Input(type="text", name="father", placeholder="Father...", value=person.father),
-                    Input(type="text", name="mother", placeholder="Mother...", value=person.mother),
+                Fieldset(
+                    Input(type="text", name="father", placeholder="Father...", value=person.father.id if person.father else ""),
+                    Input(type="text", name="mother", placeholder="Mother...", value=person.mother.id if person.mother else ""),
                     cls="grid",
                 ),
                 components.get_text_input(person.text),

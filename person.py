@@ -48,7 +48,7 @@ def get():
                     ),
                     Label("Female", htmlFor="female"),
                 ),
-                Div(
+                Fieldset(
                     Input(type="text", name="father", placeholder="Father..."),
                     Input(type="text", name="mother", placeholder="Mother..."),
                     cls="grid",
@@ -108,14 +108,14 @@ def get(person: items.Item, tags_page: int = 1, refs_page: int = 1):
             if parts:
                 parts.append(", ")
             parts.append(components.get_item_link(child))
-        relatives.append(Span("Children ", *parts))
+        relatives.append(Div("Children ", *parts))
     if siblings := person.siblings:
         parts = []
         for sibling in siblings:
             if parts:
                 parts.append(", ")
             parts.append(components.get_item_link(sibling))
-        relatives.append(Span("Siblings ", *parts))
+        relatives.append(Div("Siblings ", *parts))
 
     return (
         Title(person),

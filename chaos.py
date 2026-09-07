@@ -11,7 +11,7 @@ import dotenv
 import requests
 
 # This must be done before importing 'constants'.
-dotenv.load_dotenv()   # '.env' file exists only on the local machine.
+dotenv.load_dotenv()  # '.env' file exists only on the local machine.
 
 import constants
 

@@ -19,10 +19,11 @@ import marko
 import yaml
 
 # This must be done before importing 'constants'.
-dotenv.load_dotenv()   # '.env' file exists only on the local machine.
+dotenv.load_dotenv()  # '.env' file exists only on the local machine.
 
 if os.environ.get("CHAOS_DEVELOPMENT"):
     import icecream
+
     icecream.install()
 
 import constants
@@ -716,7 +717,7 @@ async def post(session, upfile: UploadFile):
         items.read()
         add_toast(session, "items uploaded from tar file", "success")
     return components.redirect("/status")
-    
+
 
 @rt("/logout")
 def post(session):

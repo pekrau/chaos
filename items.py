@@ -884,6 +884,7 @@ class Person(Item):
 
     def __lt__(self, other):
         assert isinstance(other, Person)
+        ic(self.frontmatter, other.frontmatter)
         if self.birth and other.birth:
             try:
                 return self.birth < other.birth
@@ -969,6 +970,23 @@ class Person(Item):
         for person in get_items("person"):
             if self is person.father or self is person.mother:
                 result.add(person)
+        return sorted(result)
+
+    @property
+    def siblings(self):
+        result = set()
+        for person in get_items("person"):
+            if (
+                self.father is not None
+                and person.father is not None
+                and self.father is person.father
+            ) or (
+                self.mother is not None
+                and person.mother is not None
+                and self.mother is person.mother
+            ):
+                result.add(person)
+        result.discard(self)
         return sorted(result)
 
 

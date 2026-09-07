@@ -25,7 +25,7 @@ def dump(source_dir, target_dir):
 
 
 if __name__ == "__main__":
-    dotenv.load_dotenv()   # '.env' file exists only on the local machine.
+    dotenv.load_dotenv()  # '.env' file exists only on the local machine.
     target_dir = os.environ["CHAOS_TARGET_DIR"]
     dump_dir = os.environ["CHAOS_DUMP_DIR"]
     dump(target_dir, dump_dir)

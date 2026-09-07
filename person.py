@@ -43,8 +43,10 @@ def get():
                 Fieldset(
                     Input(type="radio", name="sex", id="male", value=constants.MALE),
                     Label("Male", htmlFor="male"),
-                    Input(type="radio", name="sex", id="female", value=constants.FEMALE),
-                    Label("Female", htmlFor="female")
+                    Input(
+                        type="radio", name="sex", id="female", value=constants.FEMALE
+                    ),
+                    Label("Female", htmlFor="female"),
                 ),
                 Div(
                     Input(type="text", name="father", placeholder="Father..."),
@@ -65,14 +67,14 @@ def get():
 
 @rt("/")
 def post(
-        title: str,
-        text: str,
-        birth: str = None,
-        death: str = None,
-        sex: str = None,
-        father: str = "",
-        mother: str = "",
-        tags: list[str] = None,
+    title: str,
+    text: str,
+    birth: str = None,
+    death: str = None,
+    sex: str = None,
+    father: str = "",
+    mother: str = "",
+    tags: list[str] = None,
 ):
     "Actually create and add the person."
     person = items.Person()
@@ -93,10 +95,12 @@ def get(person: items.Item, tags_page: int = 1, refs_page: int = 1):
     "View the person."
     assert isinstance(person, items.Person)
     relatives = [
-        Div("Father ", 
-             components.get_item_link(person.father) if person.father else "-"),
-        Div("Mother ", 
-             components.get_item_link(person.mother) if person.mother else "-")
+        Div(
+            "Father ", components.get_item_link(person.father) if person.father else "-"
+        ),
+        Div(
+            "Mother ", components.get_item_link(person.mother) if person.mother else "-"
+        ),
     ]
     if children := person.children:
         parts = []
@@ -105,6 +109,13 @@ def get(person: items.Item, tags_page: int = 1, refs_page: int = 1):
                 parts.append(", ")
             parts.append(components.get_item_link(child))
         relatives.append(Span("Children ", *parts))
+    if siblings := person.siblings:
+        parts = []
+        for sibling in siblings:
+            if parts:
+                parts.append(", ")
+            parts.append(components.get_item_link(sibling))
+        relatives.append(Span("Siblings ", *parts))
 
     return (
         Title(person),
@@ -112,18 +123,17 @@ def get(person: items.Item, tags_page: int = 1, refs_page: int = 1):
         components.get_header_item_view(person),
         Main(
             Card(
-                Span(
-                    Strong(NotStr("&#9733;")),
-                    " Birth ",
-                    person.birth or "-"
+                Span(Strong(NotStr("&#9733;")), " Birth ", person.birth or "-"),
+                Span(Strong(NotStr("&#8224;")), " Death ", person.death or "-"),
+                (
+                    components.get_icon("gender-male.svg")
+                    if person.sex == constants.MALE
+                    else (
+                        components.get_icon("gender-female.svg")
+                        if person.sex == constants.FEMALE
+                        else ""
+                    )
                 ),
-                Span(
-                    Strong(NotStr("&#8224;")),
-                    " Death ",
-                    person.death or "-"
-                ),
-                components.get_icon("gender-male.svg") if person.sex == constants.MALE else
-                (components.get_icon("gender-female.svg") if person.sex == constants.FEMALE else ""),
                 cls="grid",
             ),
             Card(*relatives) if relatives else "",
@@ -163,14 +173,36 @@ def get(person: items.Item):
                     cls="grid",
                 ),
                 Fieldset(
-                    Input(type="radio", name="sex", id="male", value=constants.MALE, checked=person.sex == constants.MALE),
+                    Input(
+                        type="radio",
+                        name="sex",
+                        id="male",
+                        value=constants.MALE,
+                        checked=person.sex == constants.MALE,
+                    ),
                     Label("Male", htmlFor="male"),
-                    Input(type="radio", name="sex", id="female", value=constants.FEMALE, checked=person.sex == constants.FEMALE),
-                    Label("Female", htmlFor="female")
+                    Input(
+                        type="radio",
+                        name="sex",
+                        id="female",
+                        value=constants.FEMALE,
+                        checked=person.sex == constants.FEMALE,
+                    ),
+                    Label("Female", htmlFor="female"),
                 ),
                 Fieldset(
-                    Input(type="text", name="father", placeholder="Father...", value=person.father.id if person.father else ""),
-                    Input(type="text", name="mother", placeholder="Mother...", value=person.mother.id if person.mother else ""),
+                    Input(
+                        type="text",
+                        name="father",
+                        placeholder="Father...",
+                        value=person.father.id if person.father else "",
+                    ),
+                    Input(
+                        type="text",
+                        name="mother",
+                        placeholder="Mother...",
+                        value=person.mother.id if person.mother else "",
+                    ),
                     cls="grid",
                 ),
                 components.get_text_input(person.text),
@@ -186,13 +218,17 @@ def get(person: items.Item):
 
 
 @rt("/{person:Item}/edit")
-def post(person: items.Item, title: str, text: str,
-        birth: str = None,
-        death: str = None,
-        sex: str = None,
-        father: str = "",
-        mother: str = "",
-         tags: list[str] = None):
+def post(
+    person: items.Item,
+    title: str,
+    text: str,
+    birth: str = None,
+    death: str = None,
+    sex: str = None,
+    father: str = "",
+    mother: str = "",
+    tags: list[str] = None,
+):
     "Actually edit the person."
     assert isinstance(person, items.Person)
     person.title = title

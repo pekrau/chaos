@@ -11,10 +11,11 @@ import dotenv
 import requests
 
 # This must be done before importing 'constants'.
-dotenv.load_dotenv()   # '.env' file exists only on the local machine.
+dotenv.load_dotenv()  # '.env' file exists only on the local machine.
 
 if os.environ.get("CHAOS_DEVELOPMENT"):
     import icecream
+
     icecream.install()
 
 import constants

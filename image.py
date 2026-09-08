@@ -218,16 +218,18 @@ def get(image: items.Item):
 def post(source: items.File, title: str, convert: str = None):
     "Actually copy the image."
     assert isinstance(source, items.Image)
-    result.text = source.text
-    result.tags = source.tags
     if convert == "graphic":
         result = items.Graphic()
         result.title = title
+        result.text = source.text
+        result.tags = source.tags
         result.frontmatter["graphic"] = constants.SVG
         result.frontmatter["specification"] = source.filepath.read_text()
     else:
         result = items.Image()
         result.title = title
+        result.text = source.text
+        result.tags = source.tags
         result.ext = source.ext
         result.content = source.content
     result.write()

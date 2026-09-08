@@ -963,30 +963,103 @@ class Person(Item):
             value = value.strip() or None
         self.frontmatter["mother"] = value
 
-    @property
-    def children(self):
+    def parents(self):
+        "Föräldrar."
         result = set()
-        for person in get_items("person"):
-            if self is person.father or self is person.mother:
-                result.add(person)
-        return sorted(result)
+        if self.father:
+            result.add(self.father)
+        if self.mother:
+            result.add(self.mother)
+        return result
 
-    @property
-    def siblings(self):
+    def grandparents(self):
+        "Far- och morföräldrar."
+        result = set()
+        for parent in self.parents():
+            result.update(parent.parents())
+        return result
+
+    def greatgrandparents(self):
+        "Gammelfar- och morföräldrar."
+        result = set()
+        for grandparent in self.grandparents():
+            result.update(grandparent.parents())
+        return result
+
+    def children(self):
+        "Barn."
         result = set()
         for person in get_items("person"):
-            if (
-                self.father is not None
-                and person.father is not None
-                and self.father is person.father
-            ) or (
-                self.mother is not None
-                and person.mother is not None
-                and self.mother is person.mother
-            ):
+            if self in person.parents():
+                result.add(person)
+        return result
+
+    def grandchildren(self):
+        "Barnbarn."
+        result = set()
+        for person in get_items("person"):
+            if self in person.grandparents():
+                result.add(person)
+        return result
+
+    def greatgrandchildren(self):
+        "Barnbarns barn."
+        result = set()
+        for person in get_items("person"):
+            if self in person.greatgrandparents():
+                result.add(person)
+        return result
+
+    def siblings(self):
+        "Syskon."
+        result = set()
+        parents = self.parents()
+        for person in get_items("person"):
+            if person.parents().intersection(parents):
                 result.add(person)
         result.discard(self)
-        return sorted(result)
+        return result
+
+    def aunts(self):
+        "Mostrar, morbröder, fastrar och farbröder."
+        result = set()
+        for parent in self.parents():
+            for person in parent.siblings():
+                result.add(person)
+            for person in parent.siblings():
+                result.add(person)
+        return result
+
+    def cousins(self):
+        "Kusiner."
+        result = set()
+        for aunt in self.aunts():
+            result.update(aunt.children())
+        return result
+
+    def grandaunts(self):
+        "Gammel-mostrar, -morbröder, -fastrar och -farbröder."
+        result = set()
+        grandparents = self.grandparents()
+        for greatgrandparent in self.greatgrandparents():
+            for person in greatgrandparent.children():
+                if person not in grandparents:
+                    result.add(person)
+        return result
+
+    def first_cousins_once_removed(self):
+        "Föräldrars kusiner."
+        result = set()
+        for person in self.grandaunts():
+            result.update(person.children())
+        return result
+
+    def second_cousins(self):
+        "Sysslingar."
+        result = set()
+        for person in self.first_cousins_once_removed():
+            result.update(person.children())
+        return result
 
 
 def get_id(stem):

@@ -94,29 +94,88 @@ def post(
 def get(person: items.Item, tags_page: int = 1, refs_page: int = 1):
     "View the person."
     assert isinstance(person, items.Person)
-    relatives = [
-        Div(
-            "Father ", components.get_item_link(person.father) if person.father else "-"
-        ),
-        Div(
-            "Mother ", components.get_item_link(person.mother) if person.mother else "-"
-        ),
-    ]
-    if children := person.children:
+    rows = []
+    if parents := person.greatgrandparents():
         parts = []
-        for child in children:
+        for parent in sorted(parents):
+            if parts:
+                parts.append(" ")
+            parts.append(components.get_item_link(parent))
+        rows.append(Tr(Th("Greatgrandparents"), Td(*parts)))
+    if parents := person.grandparents():
+        parts = []
+        for parent in sorted(parents):
+            if parts:
+                parts.append(" ")
+            parts.append(components.get_item_link(parent))
+        rows.append(Tr(Th("Grandparents"), Td(*parts)))
+    if person.father:
+        rows.append(Tr(Th("Father"), Td(components.get_item_link(person.father))))
+    if person.mother:
+        rows.append(Tr(Th("Mother"), Td(components.get_item_link(person.mother))))
+    if siblings := person.siblings():
+        parts = []
+        for sibling in sorted(siblings):
+            if parts:
+                parts.append(" ")
+            parts.append(components.get_item_link(sibling))
+        rows.append(Tr(Th("Siblings", Td(*parts))))
+    if children := person.children():
+        parts = []
+        for child in sorted(children):
+            if parts:
+                parts.append(" ")
+            parts.append(components.get_item_link(child))
+        rows.append(Tr(Th("Children", Td(*parts))))
+    if children := person.grandchildren():
+        parts = []
+        for child in sorted(children):
             if parts:
                 parts.append(", ")
             parts.append(components.get_item_link(child))
-        relatives.append(Div("Children ", *parts))
-    if siblings := person.siblings:
+        rows.append(Tr(Th("Grandchildren", Td(*parts))))
+    if children := person.greatgrandchildren():
         parts = []
-        for sibling in siblings:
+        for child in sorted(children):
             if parts:
                 parts.append(", ")
-            parts.append(components.get_item_link(sibling))
-        relatives.append(Div("Siblings ", *parts))
-
+            parts.append(components.get_item_link(child))
+        rows.append(Tr(Th("Greatgrandchildren", Td(*parts))))
+    if aunts := person.aunts():
+        parts = []
+        for aunt in sorted(aunts):
+            if parts:
+                parts.append(", ")
+            parts.append(components.get_item_link(aunt))
+        rows.append(Tr(Th("Aunts and uncles", Td(*parts))))
+    if cousins := person.cousins():
+        parts = []
+        for cousin in sorted(cousins):
+            if parts:
+                parts.append(", ")
+            parts.append(components.get_item_link(cousin))
+        rows.append(Tr(Th("Cousins", Td(*parts))))
+    if aunts := person.grandaunts():
+        parts = []
+        for aunt in sorted(aunts):
+            if parts:
+                parts.append(", ")
+            parts.append(components.get_item_link(aunt))
+        rows.append(Tr(Th("Grand-aunts and -uncles", Td(*parts))))
+    if cousins := person.first_cousins_once_removed():
+        parts = []
+        for cousin in sorted(cousins):
+            if parts:
+                parts.append(", ")
+            parts.append(components.get_item_link(cousin))
+        rows.append(Tr(Th("First cousins once removed", Td(*parts))))
+    if cousins := person.second_cousins():
+        parts = []
+        for cousin in sorted(cousins):
+            if parts:
+                parts.append(", ")
+            parts.append(components.get_item_link(cousin))
+        rows.append(Tr(Th("Second cousins", Td(*parts))))
     return (
         Title(person),
         components.get_clipboard_script(),
@@ -136,7 +195,7 @@ def get(person: items.Item, tags_page: int = 1, refs_page: int = 1):
                 ),
                 cls="grid",
             ),
-            Card(*relatives) if relatives else "",
+            Card(Table(*rows, cls="striped")) if rows else "",
             components.get_text_card(person),
             Form(
                 components.get_refs_card(person, refs_page),

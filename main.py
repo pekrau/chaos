@@ -455,39 +455,54 @@ def get():
     "Display status information."
     status = utils.get_status()
     statistics = items.get_statistics()
-    table = Table(
+    resources = Table(
         Thead(Tr(Th("Resources", colspan=2))),
         Tbody(
             Tr(
-                Td("Memory used"),
-                Td(f"{utils.numerical(status['ram'])} bytes", cls="right"),
+                Td("RAM total"),
+                Td(f"{utils.numerical(status['ram_total'])} bytes", cls="right"),
+            ),
+            Tr(
+                Td("RAM free"),
+                Td(f"{utils.numerical(status['ram_free'])} bytes", cls="right"),
+            ),
+            Tr(
+                Td("RAM used"),
+                Td(f"{utils.numerical(status['ram_used'])} bytes", cls="right"),
+            ),
+            Tr(
+                Td("RAM process"),
+                Td(
+                    Span(f"{status['ram_percent']:.1f}%", style="margin-right: 2em;"),
+                    f"{utils.numerical(status['ram_process'])} bytes",
+                    cls="right"
+                ),
             ),
             Tr(
                 Td("Data directory"),
                 Td(constants.DATA_DIR, cls="right"),
             ),
             Tr(
-                Td("Disk usage"),
-                Td(
-                    f"{utils.numerical(status['disk_usage'])} bytes",
-                    Span(
-                        f"{100 * status['disk_usage'] / (status['disk_usage'] + status['disk_free']):.1f}%",
-                        style="margin-left: 2em;",
-                    ),
-                    cls="right",
-                ),
+                Td("Disk total"),
+                Td(f"{utils.numerical(status['disk_total'])} bytes", cls="right"),
             ),
             Tr(
                 Td("Disk free"),
+                Td(f"{utils.numerical(status['disk_free'])} bytes", cls="right"),
+            ),
+            Tr(
+                Td("Disk data"),
                 Td(
-                    f"{utils.numerical(status['disk_free'])} bytes",
-                    Span(
-                        f"{100 * status['disk_free'] / (status['disk_usage'] + status['disk_free']):.1f}%",
-                        style="margin-left: 2em;",
-                    ),
+                    Span(f"{status['disk_percent']:.1f}%", style="margin-right: 2em;"),
+                    f"{utils.numerical(status['disk_data'])} bytes",
                     cls="right",
                 ),
             ),
+        ),
+    )
+    data_items = Table(
+        Thead(Tr(Th("Data items", colspan=2))),
+        Tbody(
             Tr(
                 Td("# items"),
                 Td(A(statistics.pop("item"), href="/search"), cls="right"),
@@ -575,7 +590,8 @@ def get():
             cls="container",
         ),
         Main(
-            table,
+            resources,
+            data_items,
             software,
             Div(
                 Form(

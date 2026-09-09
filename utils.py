@@ -80,16 +80,24 @@ def get_status():
     "Get the status of the instance."
     import items
 
-    return {
+    ram = psutil.virtual_memory()
+    disk = psutil.disk_usage(constants.DATA_DIR)
+    result = {
         "version": constants.__version__,
-        "ram": psutil.Process().memory_info().rss,
-        "disk_usage": sum(
+        "ram_total": ram.total,
+        "ram_free": ram.free,
+        "ram_used": ram.used,
+        "ram_process": psutil.Process().memory_info().rss,
+        "disk_total": disk.total,
+        "disk_free": disk.free,
+        # This sums sizes of all files, not just '.md' files.
+        "disk_data": sum(
             [
                 os.path.getsize(constants.DATA_DIR / filename)
                 for filename in constants.DATA_DIR.iterdir()
             ]
         ),
-        "disk_free": shutil.disk_usage(constants.DATA_DIR).free,
+        "disk_percent": disk.percent,
         "items_count": len(items.lookup),
         "trash_count": len(
             [
@@ -105,3 +113,6 @@ def get_status():
             ]
         ),
     }
+    result["ram_percent"] = 100 * result["ram_process"] / ram.total
+    result["disk_percent"] = 100 * result["disk_data"] / disk.total
+    return result

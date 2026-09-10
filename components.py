@@ -98,8 +98,13 @@ def redirect(href="/"):
     return RedirectResponse(href, status_code=HTTP.SEE_OTHER)
 
 
-def get_icon(filename, title=""):
-    return Img(src=f"/static/{filename}", title=title, cls="icon", width=24, height=24)
+def get_icon(filename, title=None, color=None):
+    kwargs = {}
+    if title:
+        kwargs["title"] = title
+    if color:
+        kwargs["style"] = f"background-color: {color};"
+    return Img(src=f"/static/{filename}", cls="icon", width=24, height=24, **kwargs)
 
 
 def get_chaos_icon():
@@ -150,8 +155,8 @@ def get_note_icon(title="Note"):
     return get_icon("card-text.svg", title=title)
 
 
-def get_tag_icon(title="Tag"):
-    return get_icon("tag.svg", title=title)
+def get_tag_icon(title="Tag", color=None):
+    return get_icon("tag.svg", title=title, color=color)
 
 
 def get_event_icon(title="Event"):
@@ -572,7 +577,7 @@ def get_item_link(item, full=True, cls=None):
         case "note":
             return A(get_note_icon(), item, href=item.url, cls=cls)
         case "tag":
-            return A(get_tag_icon(), item, href=item.url, cls=cls)
+            return A(get_tag_icon(color=item.color), item, href=item.url, cls=cls)
         case "event":
             return A(get_event_icon(), item, href=item.url, cls=cls)
         case "link":
@@ -671,7 +676,7 @@ def get_tags_input(item_tags=frozenset(), tag=None):
                             value=t.id,
                             checked=t in item_tags,
                         ),
-                        t,
+                        get_tag_title_color(t),
                     )
                 )
                 for t in tags
@@ -679,6 +684,19 @@ def get_tags_input(item_tags=frozenset(), tag=None):
         ),
         cls="dropdown",
     )
+
+
+def get_tag_title_color(tag):
+    if color := tag.color:
+        return Span(
+            Span(
+                " ",
+                style=f"background-color: {color}; padding-right: 1em; margin-right: 0.4em;",
+            ),
+            tag.title,
+        )
+    else:
+        return tag.title
 
 
 def get_cancel_form(href):

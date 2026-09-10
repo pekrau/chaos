@@ -10,6 +10,7 @@ import components
 import constants
 import errors
 import items
+import utils
 
 app, rt = components.get_app_rt()
 
@@ -82,7 +83,7 @@ def get(file: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1)
             cls="container",
         ),
         components.get_footer_item_view(
-            file, size=f"{file.size:,d} + {file.file_size:,d} bytes"
+            file, size=f"{file.size:_d} + {file.file_size:_d} bytes"
         ),
         components.get_clipboard_activate(),
     )

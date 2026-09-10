@@ -3,12 +3,18 @@
 import datetime as dt
 import os
 import os.path
-import psutil
 import shutil
+import sys
 import unicodedata
 
-import babel.numbers
+import bibtexparser
+import click
+import fasthtml
+import marko
+import psutil
+import requests
 import webcolors
+import yaml
 
 import constants
 
@@ -42,11 +48,6 @@ def normalize(s):
     return result.casefold()
 
 
-def numerical(n):
-    "Return the numerical value as a decimal string formatted according to locale."
-    return babel.numbers.format_decimal(n, locale=os.environ.get("LC_MONETARY"))
-
-
 def to_hex_color(color):
     "Convert to hex color, if not already."
     if not color:
@@ -77,13 +78,12 @@ def get_total_pages(total_items):
 
 
 def get_status():
-    "Get the status of the instance."
+    "Get the status of the instance: resources, item counts, software"
     import items
 
     ram = psutil.virtual_memory()
     disk = psutil.disk_usage(constants.DATA_DIR)
-    result = {
-        "version": constants.__version__,
+    resources = {
         "ram_total": ram.total,
         "ram_free": ram.free,
         "ram_used": ram.used,
@@ -106,13 +106,67 @@ def get_status():
                 if not filename.suffix
             ]
         ),
-        "trash_usage": sum(
+        "trash_used": sum(
             [
                 os.path.getsize(constants.TRASH_DIR / filename)
                 for filename in constants.TRASH_DIR.iterdir()
             ]
         ),
     }
-    result["ram_percent"] = 100 * result["ram_process"] / ram.total
-    result["disk_percent"] = 100 * result["disk_data"] / disk.total
-    return result
+    resources["ram_percent"] = 100 * resources["ram_process"] / ram.total
+    resources["disk_percent"] = 100 * resources["disk_data"] / disk.total
+    software = [
+        dict(name="chaos", href=constants.GITHUB_URL, version=constants.__version__),
+        dict(
+            name="Python",
+            href="https://www.python.org/",
+            version=".".join([str(v) for v in sys.version_info[0:3]]),
+        ),
+        dict(name="fastHTML", href="https://fastht.ml/", version=fasthtml.__version__),
+        dict(
+            name="Marko",
+            href="https://marko-py.readthedocs.io/",
+            version=marko.__version__,
+        ),
+        dict(
+            name="PyYAML",
+            href="https://pypi.org/project/PyYAML/",
+            version=yaml.__version__,
+        ),
+        dict(
+            name="BibtexParser",
+            href="https://bibtexparser.readthedocs.io/en/main/",
+            version=bibtexparser.__version__,
+        ),
+        dict(
+            name="requests",
+            href="https://requests.readthedocs.io/en/latest/",
+            version=requests.__version__,
+        ),
+        dict(
+            name="click",
+            href="https://click.palletsprojects.com/en/stable/",
+            version=click.__version__,
+        ),
+        dict(
+            name="psutil",
+            href="https://github.com/giampaolo/psutil",
+            version=psutil.__version__,
+        ),
+        dict(
+            name="webcolors",
+            href="https://webcolors.readthedocs.io/en/stable/",
+            version=constants.WEBCOLORS_VERSION,
+        ),
+        dict(
+            name="Tabulator",
+            href="https://tabulator.info/",
+            version=constants.TABULATOR_VERSION,
+        ),
+    ]
+    return dict(
+        version=constants.__version__,
+        resources=resources,
+        data_items=items.get_counts(),
+        software=software,
+    )

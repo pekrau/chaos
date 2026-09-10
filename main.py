@@ -10,13 +10,10 @@ import shutil
 import sys
 import tarfile
 
-import bibtexparser
 import dotenv
 import fasthtml
 from fasthtml.common import *
 from fasthtml.pico import Card
-import marko
-import yaml
 
 # This must be done before importing 'constants'.
 dotenv.load_dotenv()  # '.env' file exists only on the local machine.
@@ -328,7 +325,7 @@ def get(
                                                     value=t.id,
                                                     checked=t.id in tags,
                                                 ),
-                                                t.title,
+                                                components.get_tag_title_color(t),
                                             )
                                         )
                                         for t in tag.get_all_tags()
@@ -454,129 +451,8 @@ def get(item: items.Item):
 def get():
     "Display status information."
     status = utils.get_status()
-    statistics = items.get_statistics()
-    resources = Table(
-        Thead(Tr(Th("Resources", colspan=2))),
-        Tbody(
-            Tr(
-                Td("RAM total"),
-                Td(f"{utils.numerical(status['ram_total'])} bytes", cls="right"),
-            ),
-            Tr(
-                Td("RAM free"),
-                Td(f"{utils.numerical(status['ram_free'])} bytes", cls="right"),
-            ),
-            Tr(
-                Td("RAM used"),
-                Td(f"{utils.numerical(status['ram_used'])} bytes", cls="right"),
-            ),
-            Tr(
-                Td("RAM process"),
-                Td(
-                    Span(f"{status['ram_percent']:.1f}%", style="margin-right: 2em;"),
-                    f"{utils.numerical(status['ram_process'])} bytes",
-                    cls="right"
-                ),
-            ),
-            Tr(
-                Td("Data directory"),
-                Td(constants.DATA_DIR, cls="right"),
-            ),
-            Tr(
-                Td("Disk total"),
-                Td(f"{utils.numerical(status['disk_total'])} bytes", cls="right"),
-            ),
-            Tr(
-                Td("Disk free"),
-                Td(f"{utils.numerical(status['disk_free'])} bytes", cls="right"),
-            ),
-            Tr(
-                Td("Disk data"),
-                Td(
-                    Span(f"{status['disk_percent']:.1f}%", style="margin-right: 2em;"),
-                    f"{utils.numerical(status['disk_data'])} bytes",
-                    cls="right",
-                ),
-            ),
-        ),
-    )
-    data_items = Table(
-        Thead(Tr(Th("Data items", colspan=2))),
-        Tbody(
-            Tr(
-                Td("# items"),
-                Td(A(statistics.pop("item"), href="/search"), cls="right"),
-            ),
-            *[
-                Tr(
-                    Td(f"# {key}s"),
-                    Td(A(statistics[key], href=f"/search?type={key}"), cls="right"),
-                )
-                for key in statistics
-            ],
-            Tr(
-                Td("# items in trash"),
-                Td(
-                    f"{utils.numerical(status['trash_usage'])} bytes",
-                    Span(
-                        A(
-                            status["trash_count"],
-                            href="/status/trash",
-                            style="margin-left: 2em;",
-                        ),
-                    ),
-                    cls="right",
-                ),
-            ),
-        ),
-    )
-    software = Table(
-        Thead(Tr(Th("Software", colspan=2))),
-        Tbody(
-            Tr(
-                Td(A("chaos", href=constants.GITHUB_URL, target="_blank")),
-                Td(constants.__version__, cls="right"),
-            ),
-            Tr(
-                Td(A("Python", href="https://www.python.org/", target="_blank")),
-                Td(f"{'.'.join([str(v) for v in sys.version_info[0:3]])}", cls="right"),
-            ),
-            Tr(
-                Td(A("fastHTML", href="https://fastht.ml/", target="_blank")),
-                Td(fasthtml.__version__, cls="right"),
-            ),
-            Tr(
-                Td(
-                    A("Marko", href="https://marko-py.readthedocs.io/", target="_blank")
-                ),
-                Td(marko.__version__, cls="right"),
-            ),
-            Tr(
-                Td(
-                    A(
-                        "PyYAML",
-                        href="https://pypi.org/project/PyYAML/",
-                        target="_blank",
-                    )
-                ),
-                Td(yaml.__version__, cls="right"),
-            ),
-            Tr(
-                Td(
-                    A(
-                        "BibtexParser",
-                        href="https://bibtexparser.readthedocs.io/en/main/",
-                        target="_blank",
-                    )
-                ),
-                Td(bibtexparser.__version__, cls="right"),
-            ),
-            Tr(
-                Td(A("Tabulator", href="https://tabulator.info/", target="_blank")),
-                Td(constants.TABULATOR_VERSION, cls="right"),
-            ),
-        ),
-    )
+    resources = status["resources"]
+    data_items = status["data_items"]
     return (
         Title("Status"),
         Header(
@@ -590,9 +466,108 @@ def get():
             cls="container",
         ),
         Main(
-            resources,
-            data_items,
-            software,
+            Table(
+                Thead(Tr(Th("Resources", colspan=2))),
+                Tbody(
+                    Tr(
+                        Td("RAM total"),
+                        Td(f"{resources['ram_total']:_d} bytes", cls="right"),
+                    ),
+                    Tr(
+                        Td("RAM free"),
+                        Td(f"{resources['ram_free']:_d} bytes", cls="right"),
+                    ),
+                    Tr(
+                        Td("RAM used"),
+                        Td(f"{resources['ram_used']:_d} bytes", cls="right"),
+                    ),
+                    Tr(
+                        Td("RAM process"),
+                        Td(
+                            Span(
+                                f"{resources['ram_percent']:.1f}%",
+                                style="margin-right: 2em;",
+                            ),
+                            f"{resources['ram_process']:_d} bytes",
+                            cls="right",
+                        ),
+                    ),
+                    Tr(
+                        Td("Data directory"),
+                        Td(constants.DATA_DIR, cls="right"),
+                    ),
+                    Tr(
+                        Td("Disk total"),
+                        Td(f"{resources['disk_total']:_d} bytes", cls="right"),
+                    ),
+                    Tr(
+                        Td("Disk free"),
+                        Td(f"{resources['disk_free']:_d} bytes", cls="right"),
+                    ),
+                    Tr(
+                        Td("Disk used"),
+                        Td(
+                            Span(
+                                f"{resources['disk_percent']:.1f}%",
+                                style="margin-right: 2em;",
+                            ),
+                            f"{resources['disk_data']:_d} bytes",
+                            cls="right",
+                        ),
+                    ),
+                ),
+            ),
+            Table(
+                Thead(Tr(Th("Data items", colspan=2))),
+                Tbody(
+                    Tr(
+                        Td("# items"),
+                        Td(A(data_items.pop("item"), href="/search"), cls="right"),
+                    ),
+                    *[
+                        Tr(
+                            Td(f"# {key}s"),
+                            Td(
+                                A(data_items[key], href=f"/search?type={key}"),
+                                cls="right",
+                            ),
+                        )
+                        for key in data_items
+                    ],
+                    Tr(
+                        Td("# items in trash"),
+                        Td(
+                            f"{resources['trash_used']:_d} bytes",
+                            Span(
+                                A(
+                                    resources["trash_count"],
+                                    href="/status/trash",
+                                    style="margin-left: 2em;",
+                                ),
+                            ),
+                            cls="right",
+                        ),
+                    ),
+                ),
+            ),
+            Table(
+                Thead(Tr(Th("Software", colspan=2))),
+                Tbody(
+                    *[
+                        Tr(
+                            Td(
+                                A(
+                                    software["name"],
+                                    href=software["href"],
+                                    target="_blank",
+                                )
+                            ),
+                            Td(software["version"], cls="right"),
+                        )
+                        for software in status["software"]
+                    ]
+                ),
+            ),
             Div(
                 Form(
                     Fieldset(

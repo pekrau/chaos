@@ -69,7 +69,7 @@ def post(
     else:
         tag = items.Tag()
     tag.title = title
-    tag.color = color_name or color_hex
+    tag.color = color_name or (color_hex if color_hex != "#000000" else None)
     tag.text = text.strip()
     tag.tags = tags
     tag.write()

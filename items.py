@@ -1224,7 +1224,7 @@ def get_all_files():
     return result
 
 
-def get_statistics():
+def get_counts():
     global TYPES
     result = dict(item=len(lookup))
     result.update(dict([(type, 0) for type in TYPES if not type.startswith("generic")]))

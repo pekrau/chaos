@@ -27,7 +27,7 @@ timer = Timer()
 
 def update(url, password, target_dir):
     """Get the current state of the remote site and update the local data.
-    Return a dictionary with statistics.
+    Return a dictionary with the results of the operation.
     """
     response = requests.get(
         url.rstrip("/") + "/api/all", headers=dict(password=password)

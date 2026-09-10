@@ -2,7 +2,6 @@ anyio==4.13.0
 apsw==3.53.0.0
 apswutils==0.1.2
 asttokens==3.0.1
-babel==2.18.0
 beautifulsoup4==4.14.3
 bibtexparser==1.4.4
 certifi==2026.2.25

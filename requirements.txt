@@ -1,4 +1,4 @@
-anyio==4.13.0
+anyio==4.14.2
 apsw==3.53.0.0
 apswutils==0.1.2
 asttokens==3.0.1

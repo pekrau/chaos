@@ -220,30 +220,6 @@ class Note(Item):
     pass
 
 
-class Tag(Item):
-    "Tag item class."
-
-    def __init__(self, path=None):
-        super().__init__(path=path)
-        self._tagged = set()  # Set of id's of items using this tag.
-
-    @property
-    def color(self):
-        return self.frontmatter.get("color")
-
-    @color.setter
-    def color(self, color):
-        if color:
-            self.frontmatter["color"] = utils.to_hex_color(color)
-        else:
-            self.frontmatter["color"] = None
-
-    @property
-    def tagged(self):
-        "List of items tagged by this tag."
-        return [get(id) for id in self._tagged]
-
-
 class Link(Item):
     "Link item class."
 
@@ -578,6 +554,30 @@ class Duration:
         return dt.timedelta(
             weeks=self.weeks, days=self.days, hours=self.hours, minutes=self.minutes
         )
+
+
+class Tag(Item):
+    "Tag item class."
+
+    def __init__(self, path=None):
+        super().__init__(path=path)
+        self._tagged = set()  # Set of id's of items using this tag.
+
+    @property
+    def color(self):
+        return self.frontmatter.get("color")
+
+    @color.setter
+    def color(self, color):
+        if color:
+            self.frontmatter["color"] = utils.to_hex_color(color)
+        else:
+            self.frontmatter["color"] = None
+
+    @property
+    def tagged(self):
+        "List of items tagged by this tag."
+        return [get(id) for id in self._tagged]
 
 
 class GenericFile(Item):
@@ -1179,14 +1179,14 @@ def setup_pointers():
     for item in lookup.values():
         for tag in item.tags:
             tag._tagged.add(item.id)
-        for m in constants.REF.finditer(item.text):
+        for m in constants.REFERENCE.finditer(item.text):
             try:
                 other = get(m.group(1))
             except KeyError:
                 pass
             else:
                 other.refs_to_self.add(item.id)
-        for m in constants.INCL.finditer(item.text):
+        for m in constants.INCLUDE.finditer(item.text):
             try:
                 other = get(m.group(1))
             except KeyError:

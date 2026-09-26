@@ -534,8 +534,9 @@ def get(event: items.Item):
 def post(event: items.Item):
     "Actually delete the event."
     assert isinstance(event, items.Event)
+    date = event.date
     event.delete()
-    return components.redirect()
+    return components.redirect(f"/event/day/{date}")
 
 
 @rt("/year/")

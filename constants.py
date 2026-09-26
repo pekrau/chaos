@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 11, 6)
+VERSION = (1, 12, 0)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -27,13 +27,11 @@ TRASH_DIR = DATA_DIR / "trash"
 FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 
 FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
-REF = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
-INCL = re.compile(r"\[!([0-9a-z-]+)\]\]", re.IGNORECASE)
 URL = re.compile(r"(https?://\S+)")
 EMAIL = re.compile(r"(\S+@\S+\.\S+)")
-TEL = re.compile(
-    r"(((\+[1-9]\d{2,4})|(\b0\d{1,4}))-?(\d{6,8}\b|(\d{2,4} \d\d \d\d\b)))"
-)
+TEL = re.compile(r"([\+0][ \d-]{6,18}\d)")
+REFERENCE = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
+INCLUDE = re.compile(r"\[!([0-9a-z-]+)\]\]", re.IGNORECASE)
 
 MALE = "male"
 FEMALE = "female"

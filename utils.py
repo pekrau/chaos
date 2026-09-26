@@ -11,6 +11,7 @@ import bibtexparser
 import click
 import fasthtml
 import marko
+import mermaidx
 import psutil
 import requests
 import webcolors
@@ -147,6 +148,11 @@ def get_status():
             name="click",
             href="https://click.palletsprojects.com/en/stable/",
             version=click.__version__,
+        ),
+        dict(
+            name="mermaidx",
+            href="https://github.com/MohammadRaziei/mermaidx",
+            version=mermaidx.__version__,
         ),
         dict(
             name="psutil",

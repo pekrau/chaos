@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 12, 2)
+VERSION = (1, 12, 3)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -91,5 +91,5 @@ TABULATOR_JAVASCRIPT = (
     "https://unpkg.com/tabulator-tables@6.5.0/dist/js/tabulator.min.js"
 )
 TABULATOR_CSS = (
-    "https://unpkg.com/tabulator-tables@6.5.0/dist/css/tabulator_site.min.css"
+    "https://unpkg.com/tabulator-tables@6.5.0/dist/css/tabulator_simple.min.css"
 )

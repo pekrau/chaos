@@ -255,7 +255,6 @@ def get_search_field(term=None):
         value=term,
         placeholder="Search terms...",
         aria_label="Search",
-        autofocus=True,
         cls="search",
     )
 

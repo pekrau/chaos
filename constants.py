@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 12, 0)
+VERSION = (1, 12, 1)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -14,8 +14,9 @@ ISBN_URL = "https://isbnsearch.org/isbn/{isbn}"
 DOI_URL = "https://doi.org/{doi}"
 PUBMED_URL = "https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
 
-TABULATOR_VERSION = "6.4.0"
+MERMAID_VERSION = "11.16.0"
 WEBCOLORS_VERSION = "25.10.0"
+TABULATOR_VERSION = "6.4.0"
 
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DATA_DIR"])
 if not DATA_DIR.exists():
@@ -29,7 +30,7 @@ FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")
 FRONTMATTER = re.compile(r"^---([\n\r].*?[\n\r])---[\n\r](.*)$", re.DOTALL)
 URL = re.compile(r"(https?://\S+)")
 EMAIL = re.compile(r"(\S+@\S+\.\S+)")
-TEL = re.compile(r"([\+0][ \d-]{6,18}\d)")
+TEL = re.compile(r"((\+|(\b0))[ \d-]{6,18}\d)")
 REFERENCE = re.compile(r"\[\[([0-9a-z-]+)\]\]", re.IGNORECASE)
 INCLUDE = re.compile(r"\[!([0-9a-z-]+)\]\]", re.IGNORECASE)
 
@@ -60,6 +61,13 @@ IMAGE_MIMETYPES = {
     PNG_MIMETYPE,
     JPEG_MIMETYPE,
     SVG_MIMETYPE,
+    WEBP_MIMETYPE,
+    GIF_MIMETYPE,
+}
+
+PIXEL_IMAGE_MIMETYPES = {
+    PNG_MIMETYPE,
+    JPEG_MIMETYPE,
     WEBP_MIMETYPE,
     GIF_MIMETYPE,
 }

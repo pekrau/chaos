@@ -1,6 +1,7 @@
 "Extensions to Markdown."
 
 import csv
+import datetime
 import io
 import html
 import string
@@ -107,7 +108,9 @@ class IncludeRenderer:
         try:
             item = items.get(element.include)
         except KeyError:
-            return f'<span class="error">Error: no such item [!{element.include}]]</span>'
+            return (
+                f'<span class="error">Error: no such item [!{element.include}]]</span>'
+            )
 
         match item.type:
 
@@ -165,6 +168,7 @@ class FencedCodeRenderer:
     def render_fenced_code(self, element):
         content = element.children[0].children
         match element.lang:
+
             case "table-csv":
                 if "striped" in element.extra:
                     result = ['<table class="striped">']
@@ -182,19 +186,29 @@ class FencedCodeRenderer:
                         try:
                             float(cell)
                             result.append(f'<td class="right">{cell}</td>')
-                        except (ValueError, TypeError):
-                            result.append(f'<td>{cell}</td>')
+                        except ValueError:
+                            try:
+                                datetime.date.fromisoformat(cell)
+                                result.append(
+                                    f'<td><a href="/event/day/{cell}">{cell}</a></td>'
+                                )
+                            except ValueError:
+                                html = to_html(cell).strip()
+                                if html.startswith("<p>") and html.endswith("</p>"):
+                                    html = html[3:-4]
+                                result.append(f"<td>{html}</td>")
                     result.append("</tr>")
                 result.extend(["</tbody>", "</table>"])
                 return "".join(result)
+
             case "mermaid":
                 return mermaidx.render(content).svg()
-            case _:
-                return "<pre><code>{}</code></pre>\n".format(html.escape(content))
+
+        return "<pre><code>{}</code></pre>\n".format(html.escape(content))
 
 
 def to_html(text):
-    "Use a fresh converter instance for each invocation."
+    "Convert Markdown to HTML. Use a fresh converter instance for each invocation."
     if not text:
         return ""
     converter = marko.Markdown(

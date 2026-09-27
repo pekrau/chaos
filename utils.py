@@ -155,6 +155,11 @@ def get_status():
             version=mermaidx.__version__,
         ),
         dict(
+            name="Mermaid",
+            href="https://mermaid.ai/docs/guides/intro",
+            version=constants.MERMAID_VERSION,
+        ),
+        dict(
             name="psutil",
             href="https://github.com/giampaolo/psutil",
             version=psutil.__version__,

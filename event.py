@@ -597,6 +597,9 @@ def get(year: int):
                     ),
                     Li(title),
                 ),
+                Ul(
+                    Li(Form(components.get_search_field(), action="/search")),
+                ),
             ),
             cls="container",
         ),
@@ -672,6 +675,9 @@ def get(year: int, month: int):
                         ),
                     ),
                     Li(title),
+                ),
+                Ul(
+                    Li(Form(components.get_search_field(), action="/search")),
                 ),
             ),
             cls="container",
@@ -762,6 +768,9 @@ def get(year: int, week: int):
                         ),
                     ),
                     Li(title),
+                ),
+                Ul(
+                    Li(Form(components.get_search_field(), action="/search")),
                 ),
             ),
             cls="container",
@@ -887,6 +896,9 @@ def get(year: int, month: int, day: int):
                         ),
                     ),
                     Li(title),
+                ),
+                Ul(
+                    Li(Form(components.get_search_field(), action="/search")),
                 ),
             ),
             cls="container",

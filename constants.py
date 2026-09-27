@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 12, 1)
+VERSION = (1, 12, 2)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -16,7 +16,6 @@ PUBMED_URL = "https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
 
 MERMAID_VERSION = "11.16.0"
 WEBCOLORS_VERSION = "25.10.0"
-TABULATOR_VERSION = "6.4.0"
 
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DATA_DIR"])
 if not DATA_DIR.exists():
@@ -86,3 +85,11 @@ VEGA_LITE_LIBRARIES = [
     "https://cdn.jsdelivr.net/npm/vega-embed@7",
 ]
 GRAPHIC_TYPES = [SVG, VEGA_LITE]
+
+TABULATOR_VERSION = "6.5.0"
+TABULATOR_JAVASCRIPT = (
+    "https://unpkg.com/tabulator-tables@6.5.0/dist/js/tabulator.min.js"
+)
+TABULATOR_CSS = (
+    "https://unpkg.com/tabulator-tables@6.5.0/dist/css/tabulator_site.min.css"
+)

@@ -256,12 +256,18 @@ def get(database: items.Item, relname: str):
     "Display table or view rows."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
+    for name, column in schema[relname]["columns"].items():
+        if column["primary"]:  # Will not happen if a view.
+            rowfunc = f'table.on("rowClick", function(e, row) {{ window.location.href = "/database/{database.id}/row/{relname}/" + row.getData().{name}; }});'
+            break
+    else:
+        rowfunc = ""
     title = f"{schema[relname]['type'].capitalize()} {relname}"
     return (
         Title(title),
         Link(
-            href=f"/static/tabulator_simple.{constants.TABULATOR_VERSION}.min.css",
             rel="stylesheet",
+            href=constants.TABULATOR_CSS,
         ),
         Header(
             Nav(
@@ -294,18 +300,115 @@ def get(database: items.Item, relname: str):
         ),
         Script(
             type="text/javascript",
-            src=f"/static/tabulator.{constants.TABULATOR_VERSION}.min.js",
+            src=constants.TABULATOR_JAVASCRIPT,
         ),
         Script(
             f"""var table = new Tabulator("#table", {{
-height: 500,
 autoColumns: true,
+pagination: true,
+paginationSize: 20,
 ajaxURL: "{database.url}/rows/{relname}.json",
 ajaxResponse: function(url, params, response) {{return response.data}},
-}});""",
+}});
+{rowfunc}""",
             type="text/javascript",
         ),
     )
+
+
+@rt("/{database:Item}/row/{tablename:str}/{key:str}")
+def get(database: items.Item, tablename: str, key: str):
+    "Edit a row in a table."
+    assert isinstance(database, items.Database)
+    schema = database.get_schema()
+    for name, column in schema[tablename]["columns"].items():
+        if column["primary"]:
+            break
+    else:
+        raise ValueError(f"no primary key in table '{tablename}'")
+    with database.connect(readonly=True) as cnx:
+        keys = list(schema[tablename]["columns"].keys())
+        sql = f"SELECT {','.join(keys)} FROM {tablename} WHERE {name}=?"
+        rows = list(cnx.execute(sql, (key,)))
+        if len(rows) != 1:
+            return components.redirect(f"{database.url}/rows/{tablename}")
+        data = dict(zip(keys, rows[0]))
+    inputs = []
+    for name, column in schema[tablename]["columns"].items():
+        label = [Strong(name), " ", column["type"]]
+        if not column["null"]:
+            label.append(" NOT NULL")
+        if column["primary"]:
+            label.append(" PRIMARY KEY")
+        kwargs = dict(name=name, required=not column["null"], value=data[name])
+        if column["type"] == "INTEGER":
+            inputs.append((Div(*label), Input(type="number", step=1, **kwargs)))
+        elif column["type"] == "REAL":
+            inputs.append((Div(*label), Input(type="number", step=0.01, **kwargs)))
+        else:
+            inputs.append((Div(*label), Input(type="text", **kwargs)))
+    return (
+        Title(f"Edit row in table {tablename}"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu(database)),
+                    Li("Edit row in table ", Strong(tablename)),
+                    Li(
+                        components.get_database_icon(),
+                        A(database, href=database.url),
+                    ),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            Form(
+                *[Label(i[0], i[1]) for i in inputs],
+                Input(type="submit", value="Update row"),
+                action=f"{database.url}/row/{tablename}/{key}",
+                method="POST",
+            ),
+            components.get_cancel_form(f"{database.url}/rows/{tablename}"),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/row/{tablename:str}/{key:str}")
+def post(session, database: items.Item, tablename: str, key: str, form: dict):
+    "Actually update the row in a table."
+    assert isinstance(database, items.Database)
+    schema = database.get_schema()
+    for primary, column in schema[tablename]["columns"].items():
+        if column["primary"]:
+            break
+    else:
+        raise ValueError(f"no primary key in table '{tablename}'")
+    with set_modified_when_changed(database):
+        with database.connect() as cnx:
+            values = []
+            parts = []
+            for name, column in schema[tablename]["columns"].items():
+                parts.append(f"{name}=?")
+                match column["type"]:
+                    case "INTEGER":
+                        value = int(form[name]) if form[name] else None
+                        if column["primary"]:
+                            key = int(key)
+                    case "REAL":
+                        value = float(form[name]) if form[name] else None
+                    case _:
+                        value = form[name] if form[name] else None
+                values.append(value)
+            values.append(key)
+            sql = f"UPDATE {tablename} SET {','.join(parts)} WHERE {primary}=?"
+            try:
+                cnx.execute(sql, values)
+            except sqlite3.Error as error:
+                raise errors.Error(error)
+    add_toast(session, "Row updated.", "success")
+    return components.redirect(f"{database.url}/rows/{tablename}")
 
 
 @rt("/{database:Item}/rows/{relname:Name}{ext:Ext}")

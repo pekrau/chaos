@@ -286,6 +286,9 @@ def get_header_item_view(item, copy=True, operations=None):
                 ),
                 Li(item.title),
             ),
+            Ul(
+                Li(Form(get_search_field(), action="/search")),
+            ),
         ),
         cls="container",
     )

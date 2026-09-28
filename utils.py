@@ -152,7 +152,7 @@ def get_status():
         dict(
             name="Vega-Lite",
             href="https://vega.github.io/vega-lite/",
-            version=constants.VEGA_LITE_VERSION,
+            version="6.5",  # Must track the libraries spec in 'constants.py'
         ),
         dict(
             name="mermaidx",
@@ -161,8 +161,8 @@ def get_status():
         ),
         dict(
             name="Mermaid",
-            href="https://mermaid.ai/docs/guides/intro",
-            version=constants.MERMAID_VERSION,
+            href="https://mermaid.ai/open-source/intro/",
+            version="11.16.0",  # Depends on what's in mermaidx.
         ),
         dict(
             name="psutil",
@@ -172,12 +172,12 @@ def get_status():
         dict(
             name="webcolors",
             href="https://webcolors.readthedocs.io/en/stable/",
-            version=constants.WEBCOLORS_VERSION,
+            version="25.10.0",
         ),
         dict(
             name="Tabulator",
             href="https://tabulator.info/",
-            version=constants.TABULATOR_VERSION,
+            version="6.5.0",  # Must track the libraries spec in 'constants.py'
         ),
     ]
     return dict(

@@ -253,7 +253,7 @@ def get_search_field(term=None):
         type="search",
         name="term",
         value=term,
-        placeholder="Search terms...",
+        placeholder="Search...",
         aria_label="Search",
         cls="search",
     )

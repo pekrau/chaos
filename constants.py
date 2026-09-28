@@ -14,8 +14,6 @@ ISBN_URL = "https://isbnsearch.org/isbn/{isbn}"
 DOI_URL = "https://doi.org/{doi}"
 PUBMED_URL = "https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
 
-WEBCOLORS_VERSION = "25.10.0"
-
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DATA_DIR"])
 if not DATA_DIR.exists():
     raise OSError(f"DATA_DIR {DATA_DIR} does not exist")
@@ -78,17 +76,14 @@ SCORE_TITLE_WEIGHT = 2.0
 
 SVG = "SVG"
 VEGA_LITE = "Vega-Lite"
-VEGA_LITE_VERSION = "6.5"
 VEGA_LITE_LIBRARIES = [
     "https://cdn.jsdelivr.net/npm/vega@6",
     "https://cdn.jsdelivr.net/npm/vega-lite@6",
     "https://cdn.jsdelivr.net/npm/vega-embed@7",
 ]
 MERMAID = "Mermaid"
-MERMAID_VERSION = "11.16.0"
 GRAPHIC_TYPES = [SVG, VEGA_LITE, MERMAID]
 
-TABULATOR_VERSION = "6.5.0"
 TABULATOR_JAVASCRIPT = (
     "https://unpkg.com/tabulator-tables@6.5.0/dist/js/tabulator.min.js"
 )

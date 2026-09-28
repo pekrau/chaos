@@ -150,6 +150,11 @@ def get_status():
             version=click.__version__,
         ),
         dict(
+            name="Vega-Lite",
+            href="https://vega.github.io/vega-lite/",
+            version=constants.VEGA_LITE_VERSION,
+        ),
+        dict(
             name="mermaidx",
             href="https://github.com/MohammadRaziei/mermaidx",
             version=mermaidx.__version__,

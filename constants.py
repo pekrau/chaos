@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 12, 3)
+VERSION = (1, 12, 4)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -14,7 +14,6 @@ ISBN_URL = "https://isbnsearch.org/isbn/{isbn}"
 DOI_URL = "https://doi.org/{doi}"
 PUBMED_URL = "https://pubmed.ncbi.nlm.nih.gov/{pmid}/"
 
-MERMAID_VERSION = "11.16.0"
 WEBCOLORS_VERSION = "25.10.0"
 
 DATA_DIR = pathlib.Path(os.environ["CHAOS_DATA_DIR"])
@@ -79,12 +78,15 @@ SCORE_TITLE_WEIGHT = 2.0
 
 SVG = "SVG"
 VEGA_LITE = "Vega-Lite"
+VEGA_LITE_VERSION = "6.5"
 VEGA_LITE_LIBRARIES = [
     "https://cdn.jsdelivr.net/npm/vega@6",
     "https://cdn.jsdelivr.net/npm/vega-lite@6",
     "https://cdn.jsdelivr.net/npm/vega-embed@7",
 ]
-GRAPHIC_TYPES = [SVG, VEGA_LITE]
+MERMAID = "mermaid"
+MERMAID_VERSION = "11.16.0"
+GRAPHIC_TYPES = [SVG, VEGA_LITE, MERMAID]
 
 TABULATOR_VERSION = "6.5.0"
 TABULATOR_JAVASCRIPT = (

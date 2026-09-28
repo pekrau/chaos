@@ -124,10 +124,10 @@ class IncludeRenderer:
 
                 match item.graphic:
 
-                    case "SVG":
+                    case constants.SVG:
                         return item.specification
 
-                    case "Vega-Lite":
+                    case constants.VEGA_LITE:
                         result = []
                         try:
                             self._vega_lite_ordinal += 1
@@ -152,6 +152,9 @@ vegaEmbed("#chaos_graphic{ordinal}", specification, {{downloadFileName: "filenam
 </script>"""
                         )
                         return "\n".join(result)
+
+                    case constants.MERMAID:
+                        return mermaidx.render(item.specification).svg()
 
                 return (
                     f'<span class="error">Error: not implemented [!{item.id}]]</span>'
@@ -193,16 +196,15 @@ class FencedCodeRenderer:
                                     f'<td><a href="/event/day/{cell}">{cell}</a></td>'
                                 )
                             except ValueError:
-                                html = to_html(cell).strip()
-                                if html.startswith("<p>") and html.endswith("</p>"):
-                                    html = html[3:-4]
-                                result.append(f"<td>{html}</td>")
+                                content = to_html(cell).strip()
+                                if content.startswith("<p>") and content.endswith(
+                                    "</p>"
+                                ):
+                                    content = content[3:-4]
+                                result.append(f"<td>{content}</td>")
                     result.append("</tr>")
                 result.extend(["</tbody>", "</table>"])
                 return "".join(result)
-
-            case "mermaid":
-                return mermaidx.render(content).svg()
 
         return "<pre><code>{}</code></pre>\n".format(html.escape(content))
 

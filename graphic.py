@@ -11,6 +11,8 @@ import errors
 import items
 import minixml
 
+import mermaidx
+
 app, rt = components.get_app_rt()
 
 
@@ -67,7 +69,7 @@ def post(
     match graphic_type:
 
         case constants.VEGA_LITE:
-            try:
+            try:  # Syntax check and cleanup.
                 specification = json.dumps(
                     json.loads(specification.strip()), indent=2, ensure_ascii=False
                 )
@@ -75,12 +77,15 @@ def post(
                 raise errors.Error(str(error))
 
         case constants.SVG:
-            try:  # Compact representation; no indentation.
+            try:  # Syntax check and cleanup: compact representation; no indentation.
                 xml = minixml.parse(specification.strip())
                 xml.repr_indent = None
                 specification = repr(xml)
             except ValueError as error:
                 raise errors.Error(str(error))
+
+        case constants.MERMAID:
+            pass  # Keep specification as is.
 
         case _:
             raise errors.Error("unknown graphic type.")
@@ -116,6 +121,13 @@ vegaEmbed("#chaos_graphic", specification, {{downloadFileName: "filename"}})
         case constants.SVG:
             display = Card(
                 NotStr(graphic.specification),
+                Footer(graphic.frontmatter["graphic"]),
+                cls="overflow-auto",
+            )
+
+        case constants.MERMAID:
+            display = Card(
+                NotStr(mermaidx.render(graphic.specification).svg()),
                 Footer(graphic.frontmatter["graphic"]),
                 cls="overflow-auto",
             )
@@ -207,7 +219,7 @@ def post(
     match graphic.graphic:
 
         case constants.VEGA_LITE:
-            try:
+            try:  # Syntax check and cleanup.
                 specification = json.dumps(
                     json.loads(specification.strip()), ensure_ascii=False
                 )
@@ -215,12 +227,15 @@ def post(
                 raise errors.Error(str(error))
 
         case constants.SVG:
-            try:  # Compact representation; no indentation.
+            try:  # Syntax check and cleanup: compact representation; no indentation.
                 xml = minixml.parse(specification.strip())
                 xml.repr_indent = None
                 specification = repr(xml)
             except ValueError as error:
                 raise errors.Error(str(error))
+
+        case constants.MERMAID:
+            pass  # Keep specification as is.
 
         case _:
             raise errors.Error("unknown graphic type.")

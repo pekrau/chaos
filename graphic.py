@@ -173,6 +173,9 @@ def get(graphic: items.Item):
             # Add indentation to the XML representation.
             specification = repr(minixml.parse(graphic.specification))
 
+        case constants.MERMAID:
+            specification = graphic.specification
+
         case _:
             raise NotImplementedError
 

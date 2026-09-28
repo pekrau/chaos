@@ -6,7 +6,7 @@ import re
 import string
 import zoneinfo
 
-VERSION = (1, 12, 4)
+VERSION = (1, 12, 5)
 __version__ = ".".join([str(n) for n in VERSION])
 
 GITHUB_URL = "https://github.com/pekrau/chaos"
@@ -84,7 +84,7 @@ VEGA_LITE_LIBRARIES = [
     "https://cdn.jsdelivr.net/npm/vega-lite@6",
     "https://cdn.jsdelivr.net/npm/vega-embed@7",
 ]
-MERMAID = "mermaid"
+MERMAID = "Mermaid"
 MERMAID_VERSION = "11.16.0"
 GRAPHIC_TYPES = [SVG, VEGA_LITE, MERMAID]
 

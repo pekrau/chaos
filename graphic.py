@@ -128,12 +128,8 @@ vegaEmbed("#chaos_graphic", specification, {{downloadFileName: "filename"}})
             )
 
         case constants.MERMAID:
-            try:
-                svg = graphic.frontmatter["mermaid_svg"]
-            except KeyError:
-                svg = mermaidx.render(graphic.specification).svg()
             display = Card(
-                NotStr(svg),
+                NotStr(graphic.frontmatter["mermaid_svg"]),
                 Footer(graphic.frontmatter["graphic"]),
                 cls="overflow-auto",
             )

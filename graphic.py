@@ -85,7 +85,9 @@ def post(
                 raise errors.Error(str(error))
 
         case constants.MERMAID:
-            pass  # Keep specification as is.
+            # Keep specification as is.
+            # Compute and cache Mermaid SVG code.
+            graphic.frontmatter["mermaid_svg"] = mermaidx.render(specification).svg()
 
         case _:
             raise errors.Error("unknown graphic type.")
@@ -126,8 +128,12 @@ vegaEmbed("#chaos_graphic", specification, {{downloadFileName: "filename"}})
             )
 
         case constants.MERMAID:
+            try:
+                svg = graphic.frontmatter["mermaid_svg"]
+            except KeyError:
+                svg = mermaidx.render(graphic.specification).svg()
             display = Card(
-                NotStr(mermaidx.render(graphic.specification).svg()),
+                NotStr(svg),
                 Footer(graphic.frontmatter["graphic"]),
                 cls="overflow-auto",
             )
@@ -238,7 +244,9 @@ def post(
                 raise errors.Error(str(error))
 
         case constants.MERMAID:
-            pass  # Keep specification as is.
+            # Keep specification as is.
+            # Compute and cache Mermaid SVG code.
+            graphic.frontmatter["mermaid_svg"] = mermaidx.render(specification).svg()
 
         case _:
             raise errors.Error("unknown graphic type.")

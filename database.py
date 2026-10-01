@@ -91,7 +91,7 @@ async def post(
 
 @rt("/{database:Item}")
 def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
-    "View the data for the database."
+    "View the database."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     return (
@@ -100,7 +100,9 @@ def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int 
         components.get_header_item_view(
             database,
             operations=[
-                A("Add table from CSV file...", href=f"{database.url}/csv"),
+                A("Execute SQL...", href=f"{database.url}/execute"),
+                A("Create table...", href=f"{database.url}/table"),
+                A("Create table from CSV file...", href=f"{database.url}/csv"),
                 A("Download Sqlite", href=database.url_file),
                 A("Download SQL", href=database.url_sql),
             ],
@@ -108,17 +110,6 @@ def get(database: items.Item, page: int = 1, tags_page: int = 1, refs_page: int 
         Main(
             components.get_text_card(database),
             get_overview(database),
-            Card(
-                Form(
-                    Fieldset(
-                        Input(type="text", name="sql", placeholder="SQL command"),
-                        Input(type="submit", value="Execute"),
-                        role="group",
-                    ),
-                    action=f"{database.url}/execute",
-                    method="POST",
-                ),
-            ),
             Form(
                 components.get_refs_card(database, refs_page),
                 components.get_tags_card(database, tags_page),
@@ -161,16 +152,16 @@ def get(database: items.Item, ext: str):
 
 @rt("/{database:Item}/row/{tablename:str}")
 def get(database: items.Item, tablename: str):
-    "Add a row to the table."
+    "Form for adding a row to the table."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     inputs = []
     for name, column in schema[tablename]["columns"].items():
         label = [Strong(name), " ", column["type"]]
-        if not column["null"]:
-            label.append(" NOT NULL")
         if column["primary"]:
             label.append(" PRIMARY KEY")
+        if not column["null"]:
+            label.append(" NOT NULL")
         kwargs = dict(name=name, required=not column["null"])
         if column["type"] == "INTEGER":
             inputs.append((Div(*label), Input(type="number", step=1, **kwargs)))
@@ -257,10 +248,10 @@ def get(database: items.Item, relname: str):
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     for name, column in schema[relname]["columns"].items():
-        if column["primary"]:  # Will not happen if a view.
+        if column["primary"]:
             rowfunc = f'table.on("rowClick", function(e, row) {{ window.location.href = "/database/{database.id}/row/{relname}/" + row.getData().{name}; }});'
             break
-    else:
+    else:  # View or no primary key in table.
         rowfunc = ""
     title = f"{schema[relname]['type'].capitalize()} {relname}"
     return (
@@ -318,7 +309,7 @@ ajaxResponse: function(url, params, response) {{return response.data}},
 
 @rt("/{database:Item}/row/{tablename:str}/{key:str}")
 def get(database: items.Item, tablename: str, key: str):
-    "Edit a row in a table."
+    "Form for updating a row in a table."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     for name, column in schema[tablename]["columns"].items():
@@ -389,17 +380,17 @@ def post(session, database: items.Item, tablename: str, key: str, form: dict):
         with database.connect() as cnx:
             values = []
             parts = []
-            for name, column in schema[tablename]["columns"].items():
-                parts.append(f"{name}=?")
+            for colname, column in schema[tablename]["columns"].items():
+                parts.append(f"{colname}=?")
                 match column["type"]:
                     case "INTEGER":
-                        value = int(form[name]) if form[name] else None
+                        value = int(form[colname]) if form[colname] else None
                         if column["primary"]:
                             key = int(key)
                     case "REAL":
-                        value = float(form[name]) if form[name] else None
+                        value = float(form[colname]) if form[colname] else None
                     case _:
-                        value = form[name] if form[name] else None
+                        value = form[colname] if form[colname] else None
                 values.append(value)
             values.append(key)
             sql = f"UPDATE {tablename} SET {','.join(parts)} WHERE {primary}=?"
@@ -449,7 +440,7 @@ def get(database: items.Item, relname: str, ext: str):
 
 @rt("/{database:Item}/rows/{tablename:str}/csv")
 def get(database: items.Item, tablename: str):
-    "Add data to the table from a CSV file."
+    "Form for adding data to the table from a CSV file."
     assert isinstance(database, items.Database)
     schema = database.get_schema()
     return (
@@ -533,11 +524,309 @@ async def post(database: items.Item, tablename: str, upfile: UploadFile):
     return components.redirect(database.url)
 
 
+@rt("/{database:Item}/table")
+def get(database: items.Item):
+    "From to create a table."
+    assert isinstance(database, items.Database)
+    title = "Create table"
+    return (
+        Title(title),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(title),
+                    Li(
+                        components.get_database_icon(),
+                        A(database, href=database.url),
+                    ),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            Form(
+                Label(
+                    "Table name",
+                    Input(
+                        type="text",
+                        name="tablename",
+                        required=True,
+                    ),
+                ),
+                Card(
+                    Header("First column"),
+                    Body(*get_column_def_fields()),
+                ),
+                Input(type="submit", value="Create"),
+                action=f"{database.url}/table",
+                method="POST",
+            ),
+            components.get_cancel_form(database.url),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/table")
+def post(
+    database: items.Item,
+    tablename: str,
+    colname: str,
+    coltype: str,
+    primarykey: bool = False,
+    notnull: bool = False,
+    unique: bool = False,
+    default: str = "",
+):
+    "Actually create the table."
+    assert isinstance(database, items.Database)
+    column = get_column_def(colname, coltype, primarykey, notnull, unique, default)
+    sql = f"CREATE TABLE {tablename} ({column})"
+    try:
+        with set_modified_when_changed(database):
+            with database.connect() as cnx:
+                cnx.execute(sql)
+    except sqlite3.Error as error:
+        raise errors.Error(error)
+    return components.redirect(database.url)
+
+
+@rt("/{database:Item}/table/{tablename}")
+def get(database: items.Item, tablename: str):
+    "Form to alter the table by adding or removing a column."
+    assert isinstance(database, items.Database)
+    try:
+        table = database.get_schema()[tablename]
+    except KeyError:
+        raise errors.Error("no such table", HTTP.NOT_FOUND)
+    primarykey = False
+    for column in table["columns"].values():
+        if column["primary"]:
+            primarykey = True
+            break
+    title = f"Alter column in table '{tablename}'"
+    return (
+        Title(title),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu()),
+                    Li(title),
+                    Li(
+                        components.get_database_icon(),
+                        A(database, href=database.url),
+                    ),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            Card(
+                Header("Drop column"),
+                Body(
+                    Table(
+                        Thead(
+                            Tr(
+                                Th("Column"),
+                                Th("Type"),
+                                Th("Constraint"),
+                                Th(),
+                            ),
+                        ),
+                        Tbody(
+                            *[
+                                Tr(
+                                    Td(colname),
+                                    Td(column["type"]),
+                                    Td(
+                                        " ".join(
+                                            c
+                                            for c in [
+                                                (
+                                                    "PRIMARY KEY"
+                                                    if column["primary"]
+                                                    else ""
+                                                ),
+                                                (
+                                                    "NOT NULL"
+                                                    if not column["null"]
+                                                    else ""
+                                                ),
+                                            ]
+                                            if c
+                                        )
+                                    ),
+                                    Td(
+                                        Form(
+                                            Input(
+                                                type="submit",
+                                                value=f"Drop {colname}",
+                                                disabled=bool(column["primary"]),
+                                            ),
+                                            action=f"{database.url}/table/{tablename}/{colname}",
+                                        ),
+                                    ),
+                                )
+                                for colname, column in table["columns"].items()
+                            ]
+                        ),
+                    ),
+                ),
+            ),
+            Card(
+                Header("Add column"),
+                Body(
+                    Form(
+                        *get_column_def_fields(primarykey),
+                        Input(type="submit", value="Add"),
+                        action=f"{database.url}/table/{tablename}",
+                        method="POST",
+                    ),
+                    components.get_cancel_form(database.url),
+                ),
+            ),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/table/{tablename}/{colname}")
+def get(database: items.Item, tablename: str, colname: str):
+    "Ask for confirmation to drop the column."
+    assert isinstance(database, items.Database)
+    try:
+        table = database.get_schema()[tablename]
+    except KeyError:
+        raise errors.Error("no such table", HTTP.NOT_FOUND)
+    return (
+        Title(f"Drop column '{colname}' from table '{tablename}' in '{database}'"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu(database)),
+                    Li(
+                        f"Drop column '{colname}' from table '{tablename}' in ",
+                        components.get_item_icon(database),
+                        database,
+                    ),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            H3(f"Really drop the column '{colname}'?"),
+            Form(
+                Input(type="submit", value="Yes, drop"),
+                action=f"{database.url}/table/{tablename}/{colname}",
+                method="POST",
+            ),
+            components.get_cancel_form(database.url),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/table/{tablename}/{colname}")
+def post(database: items.Item, tablename: str, colname: str):
+    "Actually alter the table by dropping the column."
+    assert isinstance(database, items.Database)
+    try:
+        table = database.get_schema()[tablename]
+        if table["type"] != "table":
+            raise KeyError
+    except KeyError:
+        raise errors.Error("no such table", HTTP.NOT_FOUND)
+    if not colname in table["columns"]:
+        raise errors.Error("no such column in table", HTTP.NOT_FOUND)
+    with set_modified_when_changed(database):
+        with database.connect() as cnx:
+            cnx.execute(f"ALTER TABLE {tablename} DROP COLUMN {colname}")
+    return components.redirect(database.url)
+
+
+@rt("/{database:Item}/table/{tablename}")
+def post(
+    database: items.Item,
+    tablename: str,
+    colname: str,
+    coltype: str,
+    primarykey: bool = False,
+    notnull: bool = False,
+    unique: bool = False,
+    default: str = "",
+):
+    "Actually alter the table by adding a column."
+    assert isinstance(database, items.Database)
+    try:
+        table = database.get_schema()[tablename]
+        if table["type"] != "table":
+            raise KeyError
+    except KeyError:
+        raise errors.Error("no such table", HTTP.NOT_FOUND)
+    column = get_column_def(colname, coltype, primarykey, notnull, unique, default)
+    sql = f"ALTER TABLE {tablename} ADD COLUMN {column}"
+    with set_modified_when_changed(database):
+        with database.connect() as cnx:
+            cnx.execute(sql)
+    return components.redirect(database.url)
+
+
+@rt("/{database:Item}/relation/{relname}/drop")
+def get(database: items.Item, relname: str):
+    "Ask for confirmation to drop the table or view."
+    assert isinstance(database, items.Database)
+    try:
+        relation = database.get_schema()[relname]
+    except KeyError:
+        raise errors.Error("no such table or view", HTTP.NOT_FOUND)
+    return (
+        Title(f"Drop {relation['type']} '{relname}' in '{database}'"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu(database)),
+                    Li(
+                        f"Drop {relation['type']} '{relname}' in ",
+                        components.get_item_icon(database),
+                        database,
+                    ),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            H3(f"Really drop the {relation['type']} '{relname}'?"),
+            Form(
+                Input(type="submit", value="Yes, drop"),
+                action=f"{database.url}/relation/{relname}/drop",
+                method="POST",
+            ),
+            components.get_cancel_form(database.url),
+            cls="container",
+        ),
+    )
+
+
+@rt("/{database:Item}/relation/{relname}/drop")
+def post(database: items.Item, relname: str):
+    "Actually drop the table or view."
+    assert isinstance(database, items.Database)
+    try:
+        relation = database.get_schema()[relname]
+    except KeyError:
+        raise errors.Error("no such table or view", HTTP.NOT_FOUND)
+    with set_modified_when_changed(database):
+        with database.connect() as cnx:
+            cnx.execute(f"DROP {relation['type']} {relname}")
+    return components.redirect(database.url)
+
+
 @rt("/{database:Item}/csv")
 def get(database: items.Item):
-    "Add table from CSV file upload."
+    "Form to create table and add contents from CSV file upload."
     assert isinstance(database, items.Database)
-    title = "Upload CSV file"
+    title = "Create table and upload CSV file"
     return (
         Title(title),
         Header(
@@ -564,7 +853,7 @@ def get(database: items.Item):
                     ),
                 ),
                 Label(
-                    "CSV file to upload.",
+                    "CSV file to upload",
                     Input(
                         type="file",
                         name="upfile",
@@ -606,8 +895,8 @@ async def post(database: items.Item, tablename: str, upfile: UploadFile):
     return components.redirect(database.url)
 
 
-@rt("/{database:Item}/execute")
-def post(database: items.Item, sql: str = None):
+@rt("/{database:Item}/execute", methods=["GET", "POST"])
+def execute(database: items.Item, sql: str = None):
     "Execute a SQL command."
     assert isinstance(database, items.Database)
     column_names = []
@@ -741,7 +1030,7 @@ def post(database: items.Item, sql: str, ext: str):
 
 @rt("/{database:Item}/edit")
 def get(database: items.Item):
-    "Form for editing the data for the database."
+    "Form for editing the annotation of the database."
     assert isinstance(database, items.Database)
     return (
         *components.get_header_item_edit(database),
@@ -762,7 +1051,7 @@ def get(database: items.Item):
 
 @rt("/{database:Item}/edit")
 async def post(database: items.Item, title: str, text: str, tags: list[str] = None):
-    "Actually edit the database."
+    "Actually edit the annotation of the database."
     assert isinstance(database, items.Database)
     database.title = title
     database.text = text.strip()
@@ -927,6 +1216,18 @@ def get_overview(database):
         operations.append(
             Li(A("Download JSON", href=f"{database.url}/rows/{relname}.json"))
         )
+        if relation["type"] == "table":
+            operations.append(
+                Li(A("Alter table...", href=f"{database.url}/table/{relname}"))
+            )
+        operations.append(
+            Li(
+                A(
+                    f"Drop {relation['type']}...",
+                    href=f"{database.url}/relation/{relname}/drop",
+                )
+            )
+        )
         rows.append(
             Div(
                 Details(
@@ -943,10 +1244,75 @@ def get_overview(database):
                     Ul(*operations),
                     cls="dropdown",
                 ),
-                cls="grid",
+                cls="grid vpadded",
             )
         )
     return Card(*rows)
+
+
+def get_column_def_fields(primarykey=False):
+    return [
+        Label("Name", Input(type="text", name="colname", required=True)),
+        Fieldset(
+            Legend("Type"),
+            Input(type="radio", name="coltype", id="integer", value="INTEGER"),
+            Label("INTEGER", htmlFor="integer"),
+            Input(type="radio", name="coltype", id="real", value="REAL"),
+            Label("REAL", htmlFor="real"),
+            Input(
+                type="radio",
+                name="coltype",
+                id="text",
+                required=True,
+                checked=True,
+                value="TEXT",
+            ),
+            Label("TEXT", htmlFor="text"),
+        ),
+        Div(
+            Fieldset(
+                Legend("Constraint"),
+                Input(
+                    type="checkbox",
+                    name="primarykey",
+                    id="primarykey",
+                    disabled=primarykey,
+                ),
+                Label("PRIMARY KEY", htmlFor="primarykey"),
+                Input(type="checkbox", name="notnull", id="notnull"),
+                Label("NOT NULL", htmlfor="notnull"),
+                Input(type="checkbox", name="unique", id="unique"),
+                Label("UNIQUE", htmlfor="unique"),
+            ),
+            Fieldset(
+                Label("Default value"),
+                Input(type="text", name="default"),
+            ),
+            cls="grid",
+        ),
+    ]
+
+
+def get_column_def(colname, coltype, primarykey, notnull, unique, default):
+    "Return the SQL for the column definition."
+    column = [colname, coltype]
+    if primarykey:
+        column.append("PRIMARY KEY")
+        # Force primary key to be NOT NULL.
+        # Sqlite3 allows NULL, which really does not make sense.
+        column.append("NOT NULL")
+    else:
+        if notnull:
+            column.append("NOT NULL")
+        if unique:
+            column.append("UNIQUE")
+        if default:
+            try:
+                float(default)
+                column.append(f"DEFAULT {default}")
+            except (ValueError, TypeError):
+                column.append(f'DEFAULT "{default}"')
+    return " ".join(column)
 
 
 def parse_csv_content(content):

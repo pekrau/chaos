@@ -173,6 +173,10 @@ div.vspacer {
     min-height: 0.5em;
 }
 
+div.vpadded {
+    padding: 8px 0px;
+}
+
 div.border {
     height: 100%;
     border-width: 1px;

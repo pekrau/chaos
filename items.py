@@ -682,7 +682,7 @@ class Database(GenericFile):
                         type=row[2],
                         null=not row[3],
                         default=row[4],
-                        primary=bool(row[5]),
+                        primary=row[5],
                     )
                 relation = dict(columns=columns)
                 sql = cnx.execute(

@@ -1213,7 +1213,7 @@ def get_overview(database):
             for column_name, column in relation["columns"].items()
         ]
         spec.append(Li(relation["sql"]))
-        operations = [Li(A("View rows", href=f"{database.url}/rows/{relname}"))]
+        operations = []
         if relation["type"] == "table":
             operations.append(Li(A("Add row...", href=f"{database.url}/row/{relname}")))
             operations.append(
@@ -1248,8 +1248,14 @@ def get_overview(database):
                     ),
                     Ul(*spec),
                 ),
+                A(
+                    f"{relation['count']} rows",
+                    href=f"{database.url}/rows/{relname}",
+                    role="button",
+                    cls="contrast outline",
+                ),
                 Details(
-                    Summary(f"{relation['count']} rows"),
+                    Summary("Operations"),
                     Ul(*operations),
                     cls="dropdown",
                 ),

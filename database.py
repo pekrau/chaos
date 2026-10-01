@@ -253,9 +253,8 @@ def get(database: items.Item, relname: str):
             break
     else:  # View or no primary key in table.
         rowfunc = ""
-    title = f"{schema[relname]['type'].capitalize()} {relname}"
     return (
-        Title(title),
+        Title(f"{schema[relname]['type'].capitalize()} {relname}"),
         Link(
             rel="stylesheet",
             href=constants.TABULATOR_CSS,
@@ -264,7 +263,11 @@ def get(database: items.Item, relname: str):
             Nav(
                 Ul(
                     Li(components.get_nav_menu(database)),
-                    Li(title),
+                    Li(
+                        schema[relname]["type"].capitalize(),
+                        " ",
+                        Strong(relname)
+                    ),
                     Li(
                         components.get_database_icon(),
                         A(database, href=database.url),
@@ -605,14 +608,16 @@ def get(database: items.Item, tablename: str):
         if column["primary"]:
             primarykey = True
             break
-    title = f"Alter column in table '{tablename}'"
     return (
-        Title(title),
+        Title(f"Alter column in table '{tablename}'"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu()),
-                    Li(title),
+                    Li(
+                        "Alter column in table ",
+                        Strong(tablename),
+                    ),
                     Li(
                         components.get_database_icon(),
                         A(database, href=database.url),
@@ -700,13 +705,17 @@ def get(database: items.Item, tablename: str, colname: str):
     except KeyError:
         raise errors.Error("no such table", HTTP.NOT_FOUND)
     return (
-        Title(f"Drop column '{colname}' from table '{tablename}' in '{database}'"),
+        Title(f"Drop column {colname} from table {tablename} in {database}"),
         Header(
             Nav(
                 Ul(
                     Li(components.get_nav_menu(database)),
                     Li(
-                        f"Drop column '{colname}' from table '{tablename}' in ",
+                        f"Drop column ",
+                        Strong(colname),
+                        " from table ",
+                        Strong(tablename),
+                        " in ",
                         components.get_item_icon(database),
                         database,
                     ),
@@ -742,7 +751,7 @@ def post(database: items.Item, tablename: str, colname: str):
     with set_modified_when_changed(database):
         with database.connect() as cnx:
             cnx.execute(f"ALTER TABLE {tablename} DROP COLUMN {colname}")
-    return components.redirect(database.url)
+    return components.redirect(f"{database.url}/table/{tablename}")
 
 
 @rt("/{database:Item}/table/{tablename}")
@@ -769,7 +778,7 @@ def post(
     with set_modified_when_changed(database):
         with database.connect() as cnx:
             cnx.execute(sql)
-    return components.redirect(database.url)
+    return components.redirect(f"{database.url}/table/{tablename}")
 
 
 @rt("/{database:Item}/relation/{relname}/drop")

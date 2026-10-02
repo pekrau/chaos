@@ -2,7 +2,7 @@
 
 from http import HTTPStatus as HTTP
 import os
-from urllib.parse import urlsplit
+import urllib.parse
 
 from fasthtml.common import *
 from fasthtml.pico import Card
@@ -588,7 +588,7 @@ def get_item_link(item, full=True, cls=None):
                     A(get_link_icon(), item, href=item.url),
                     ", ",
                     A(
-                        urlsplit(item.href).hostname,
+                        urllib.parse.urlsplit(item.href).hostname,
                         href=item.href,
                         target="_blank",
                         cls="contrast",

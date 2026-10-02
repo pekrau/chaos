@@ -70,7 +70,7 @@ def post(
         tag = items.Tag()
     tag.title = title
     tag.color = color_name or (color_hex if color_hex != "#000000" else None)
-    tag.text = text.strip()
+    tag.text = text
     tag.tags = tags
     tag.write()
     return components.redirect(tag.url)
@@ -180,7 +180,7 @@ def post(
             tag.color = color
         elif color_hex != tag.color:
             tag.color = color_hex
-    tag.text = text.strip()
+    tag.text = text
     tag.tags = tags
     tag.write()
     return components.redirect(tag.url)

@@ -43,7 +43,7 @@ def post(title: str, text: str, tags: list[str] = None):
     "Actually create and add the note."
     note = items.Note()
     note.title = title
-    note.text = text.strip()
+    note.text = text
     note.tags = tags
     note.write()
     return components.redirect(note.url)
@@ -97,7 +97,7 @@ def post(note: items.Item, title: str, text: str, tags: list[str] = None):
     "Actually edit the note."
     assert isinstance(note, items.Note)
     note.title = title
-    note.text = text.strip()
+    note.text = text
     note.tags = tags
     note.write()
     return components.redirect(note.url)

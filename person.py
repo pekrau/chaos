@@ -84,7 +84,7 @@ def post(
     person.sex = sex
     person.father = father.lstrip("[").rstrip("]") or None
     person.mother = mother.lstrip("[").rstrip("]") or None
-    person.text = text.strip()
+    person.text = text
     person.tags = tags
     person.write()
     return components.redirect(person.url)
@@ -296,7 +296,7 @@ def post(
     person.sex = sex
     person.father = father.lstrip("[").rstrip("]") or None
     person.mother = mother.lstrip("[").rstrip("]") or None
-    person.text = text.strip()
+    person.text = text
     person.tags = tags
     person.write()
     return components.redirect(person.url)

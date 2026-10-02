@@ -32,7 +32,7 @@ def get():
         ),
         Main(
             Form(
-                components.get_title_input(autofocus=True),
+                components.get_title_input(autofocus=True, required=False),
                 Input(
                     type="file",
                     name="upfile",
@@ -60,9 +60,9 @@ async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None
         raise errors.Error("Cannot upload non-image file.")
     filename = pathlib.Path(upfile.filename)
     image = items.Image()
-    image.title = title.strip() or filename.stem
+    image.title = title.strip() or filename.stem.replace("_", " ").replace("-", " ")
     image.ext = filename.suffix
-    image.text = text.strip()
+    image.text = text
     image.tags = tags
     image.content = await upfile.read()
     image.write()
@@ -154,7 +154,7 @@ async def post(
     "Actually edit the image."
     assert isinstance(image, items.Image)
     image.title = title
-    image.text = text.strip()
+    image.text = text
     image.tags = tags
     if upfile.filename:
         type = mimetypes.guess_type(upfile.filename)[0]

@@ -1,5 +1,8 @@
 "Link item pages."
 
+import pathlib
+import urllib.parse
+
 from fasthtml.common import *
 from fasthtml.pico import Card
 
@@ -26,7 +29,7 @@ def get():
         ),
         Main(
             Form(
-                components.get_title_input(autofocus=True),
+                components.get_title_input(autofocus=True, required=False),
                 Input(type="href", name="href", placeholder="Href...", required=True),
                 components.get_text_input(),
                 components.get_tags_input(),
@@ -44,9 +47,14 @@ def get():
 def post(title: str, href: str, text: str, tags: list[str] = None):
     "Actually create and add the link."
     link = items.Link()
-    link.title = title
-    link.href = href.strip() or "/"
-    link.text = text.strip()
+    parts = urllib.parse.urlsplit(href)
+    link.title = (
+        title
+        or pathlib.Path(parts.path).stem.replace("_", " ").replace("-", " ")
+        or parts.netloc
+    )
+    link.href = href
+    link.text = text
     link.tags = tags
     link.write()
     return components.redirect(link.url)

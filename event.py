@@ -65,7 +65,7 @@ def post(
     "Actually create and add an event."
     event = items.Event()
     event.title = title
-    event.text = text.strip()
+    event.text = text
     # Start date is always given.
     start = dt.datetime.fromisoformat(start_date)
     # Add start time, if given.
@@ -246,7 +246,7 @@ def post(
     "Actually edit the event."
     assert isinstance(event, items.Event)
     event.title = title
-    event.text = text.strip()
+    event.text = text
     # Start date is always given.
     start = dt.datetime.fromisoformat(start_date)
     # Add start time, if given.

@@ -160,7 +160,7 @@ def post(
         article.published = published or None
         article.doi = doi or None
         article.pmid = pmid or None
-        article.text = text.strip()  # Note: abstract also in text, if BibTex
+        article.text = text  # Note: abstract also in text, if BibTex
     article.tags = tags
     article.write()
     return components.redirect(article.url)
@@ -308,7 +308,7 @@ def post(
     article.published = published
     article.doi = doi
     article.pmid = pmid
-    article.text = text.strip()
+    article.text = text
     article.tags = tags
     article.write()
     return components.redirect(article.url)

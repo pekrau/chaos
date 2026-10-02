@@ -83,7 +83,7 @@ async def post(
         database.filepath.unlink()
         raise errors.Error(error)
     cnx.close()
-    database.text = text.strip()
+    database.text = text
     database.tags = tags
     database.write()
     return components.redirect(database.url)
@@ -263,11 +263,7 @@ def get(database: items.Item, relname: str):
             Nav(
                 Ul(
                     Li(components.get_nav_menu(database)),
-                    Li(
-                        schema[relname]["type"].capitalize(),
-                        " ",
-                        Strong(relname)
-                    ),
+                    Li(schema[relname]["type"].capitalize(), " ", Strong(relname)),
                     Li(
                         components.get_database_icon(),
                         A(database, href=database.url),
@@ -1063,7 +1059,7 @@ async def post(database: items.Item, title: str, text: str, tags: list[str] = No
     "Actually edit the annotation of the database."
     assert isinstance(database, items.Database)
     database.title = title
-    database.text = text.strip()
+    database.text = text
     database.tags = tags
     database.write()
     return components.redirect(database.url)

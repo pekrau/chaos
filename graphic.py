@@ -94,7 +94,7 @@ def post(
 
     graphic.frontmatter["graphic"] = graphic_type
     graphic.frontmatter["specification"] = specification
-    graphic.text = text.strip()
+    graphic.text = text
     graphic.tags = tags
     graphic.write()
     return components.redirect(graphic.url)
@@ -249,7 +249,7 @@ def post(
 
     graphic.frontmatter["specification"] = specification
     graphic.title = title
-    graphic.text = text.strip()
+    graphic.text = text
     graphic.tags = tags
     graphic.write()
     return components.redirect(graphic.url)

@@ -31,7 +31,7 @@ def get():
         ),
         Main(
             Form(
-                components.get_title_input(autofocus=True),
+                components.get_title_input(autofocus=True, required=False),
                 Input(type="file", name="upfile", required=True),
                 components.get_text_input(),
                 components.get_tags_input(),
@@ -55,9 +55,9 @@ async def post(title: str, upfile: UploadFile, text: str, tags: list[str] = None
     elif type in constants.IMAGE_MIMETYPES:
         raise errors.Error("Image file must be uploades as image.")
     file = items.File()
-    file.title = title.strip() or filename.stem
+    file.title = title.strip() or filename.stem.replace("_", " ").replace("-", " ")
     file.ext = filename.suffix
-    file.text = text.strip()
+    file.text = text
     file.tags = tags
     file.content = await upfile.read()
     file.write()
@@ -136,7 +136,7 @@ async def post(
     "Actually edit the file."
     assert isinstance(file, items.File)
     file.title = title
-    file.text = text.strip()
+    file.text = text
     file.tags = tags
     if upfile.filename:
         filename = pathlib.Path(upfile.filename)

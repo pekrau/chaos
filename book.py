@@ -147,7 +147,7 @@ def post(
         book.publisher = publisher or None
         book.published = published or None
         book.isbn = isbn or None
-    book.text = text.strip()
+    book.text = text
     book.tags = tags
     book.write()
     return components.redirect(book.url)
@@ -269,7 +269,7 @@ def post(
     book.publisher = publisher
     book.published = published
     book.isbn = isbn
-    book.text = text.strip()
+    book.text = text
     book.tags = tags
     book.write()
     return components.redirect(book.url)

@@ -82,7 +82,7 @@ def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
     assert isinstance(tag, items.Tag)
     items_list = tag.tagged
     items_list.sort(key=lambda i: i.modified, reverse=True)
-    color_name = utils.to_name_color(tag.color)
+    color_name = tag.color_name
     if not color_name:
         color_name = I("Undefined")
     elif color_name == tag.color:
@@ -120,7 +120,7 @@ def get(tag: items.Item, page: int = 1, tags_page: int = 1, refs_page: int = 1):
 def get(tag: items.Item):
     "Form for editing a tag."
     assert isinstance(tag, items.Tag)
-    color_name = utils.to_name_color(tag.color)
+    color_name = tag.color_name
     if not color_name:
         color_name = "none"
     elif color_name == tag.color:
@@ -175,7 +175,7 @@ def post(
         else:
             tag.color = None
     else:
-        color = utils.to_hex_color(color_name)
+        color = tag.to_hex_color(color_name)
         if color_name and color != tag.color:
             tag.color = color
         elif color_hex != tag.color:

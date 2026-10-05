@@ -442,15 +442,10 @@ def get(item: items.Item):
     return components.redirect(item.url)
 
 
-@rt("/source/{item:Item}")
-def get(item: items.Item):
-    return Response(content=item.path.read_text(), media_type=constants.TEXT_MIMETYPE)
-
-
 @rt("/status")
 def get():
     "Display status information."
-    status = utils.get_status()
+    status = api.get_status()
     resources = status["resources"]
     data_items = status["data_items"]
     return (

@@ -300,7 +300,7 @@ def get_footer_item_view(item, size=None):
         Div(
             Div(item.modified_local),
             Div(size or f"{item.size} bytes"),
-            Div(A("Source", href=f"/source/{item.id}"), cls="right"),
+            Div(A("Source", href=f"/api/item/{item.id}"), cls="right"),
             cls="grid",
         ),
         cls="container",

@@ -1,6 +1,5 @@
 .env*
 .sesskey
-.project
 *~
 *.log
 __pycache__

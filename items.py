@@ -12,6 +12,7 @@ import shutil
 import sqlite3
 
 import filetype
+import webcolors
 import yaml
 
 import constants
@@ -157,17 +158,15 @@ class Item:
         """Write the item to file.
         Setup pointers between items again; inefficient, but defensive and safe.
         """
-        with self.path.open(mode="w") as outfile:
-            if self.frontmatter:
-                frontmatter = copy.deepcopy(self.frontmatter)
-                # Convert set to list for YAML output.
-                try:
-                    frontmatter["tags"] = list(frontmatter["tags"])
-                except KeyError:
-                    pass
-                outfile.write("---\n")
-                outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
-                outfile.write("---\n")
+        frontmatter = copy.deepcopy(self.frontmatter)
+        try:
+            frontmatter["tags"] = list(frontmatter["tags"])
+        except KeyError:
+            pass
+        with self.path.open(mode="w", encoding="utf-8") as outfile:
+            outfile.write("---\n")
+            outfile.write(yaml.safe_dump(frontmatter, allow_unicode=True))
+            outfile.write("---\n")
             if self.text:
                 outfile.write(self.text)
         if refresh:
@@ -563,6 +562,18 @@ class Tag(Item):
         super().__init__(path=path)
         self._tagged = set()  # Set of id's of items using this tag.
 
+    @staticmethod
+    def to_hex_color(color):
+        "Convert to hex color, if not already."
+        if not color:
+            color = "black"
+        if not color.startswith("#"):
+            try:
+                color = webcolors.name_to_hex(color)
+            except ValueError:
+                color = "black"
+        return color
+
     @property
     def color(self):
         return self.frontmatter.get("color")
@@ -570,9 +581,19 @@ class Tag(Item):
     @color.setter
     def color(self, color):
         if color:
-            self.frontmatter["color"] = utils.to_hex_color(color)
+            self.frontmatter["color"] = self.to_hex_color(color)
         else:
             self.frontmatter["color"] = None
+
+    @property
+    def color_name(self):
+        "Convert to name color, or keep in hex if no name."
+        if color := self.color and color.startswith("#"):
+            try:
+                return webcolors.hex_to_name(webcolors.normalize_hex(color))
+            except ValueError:
+                pass
+        return color
 
     @property
     def tagged(self):
@@ -1152,19 +1173,13 @@ def read_item(path):
     "Read the Markdown file and return the item."
     if path.suffix != ".md":
         return None
-    content = path.read_text()
-    m = constants.FRONTMATTER.match(content)
-    if not m:
-        return None
-    frontmatter = yaml.safe_load(m.group(1))
-    # Convert tags from YAML list to set.
     try:
-        frontmatter["tags"] = set(frontmatter["tags"])
-    except KeyError:
-        pass
+        frontmatter, text = utils.split_markdown(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return None
     item = TYPES[frontmatter["type"]](path)
     item.frontmatter.update(frontmatter)
-    item.text = content[m.start(2) :]
+    item.text = text
     return item
 
 

@@ -362,6 +362,11 @@ def get(database: items.Item, tablename: str, key: str):
                 action=f"{database.url}/row/{tablename}/{key}",
                 method="POST",
             ),
+            Form(
+                Input(type="submit", value="Delete row", cls="outline"),
+                action=f"{database.url}/row/{tablename}/{key}/delete",
+                method="POST",
+            ),
             components.get_cancel_form(f"{database.url}/rows/{tablename}"),
             cls="container",
         ),
@@ -401,6 +406,27 @@ def post(session, database: items.Item, tablename: str, key: str, form: dict):
             except sqlite3.Error as error:
                 raise errors.Error(error)
     add_toast(session, "Row updated.", "success")
+    return components.redirect(f"{database.url}/rows/{tablename}")
+
+
+@rt("/{database:Item}/row/{tablename:str}/{key:str}/delete")
+def post(session, database: items.Item, tablename: str, key: str):
+    "Actually delete the row in a table."
+    assert isinstance(database, items.Database)
+    schema = database.get_schema()
+    for primary, column in schema[tablename]["columns"].items():
+        if column["primary"]:
+            break
+    else:
+        raise ValueError(f"no primary key in table '{tablename}'")
+    with set_modified_when_changed(database):
+        with database.connect() as cnx:
+            sql = f"DELETE FROM {tablename} WHERE {primary}=?"
+            try:
+                cnx.execute(sql, (key,))
+            except sqlite3.Error as error:
+                raise errors.Error(error)
+    add_toast(session, "Row deleted.", "success")
     return components.redirect(f"{database.url}/rows/{tablename}")
 
 

@@ -18,7 +18,8 @@ DATA_DIR = pathlib.Path(os.environ["CHAOS_DATA_DIR"])
 if not DATA_DIR.exists():
     raise OSError(f"DATA_DIR {DATA_DIR} does not exist")
 
-STATE_FILE = DATA_DIR / ".state.yaml"
+STATE_FILE_NAME = ".state.yaml"
+STATE_FILE = DATA_DIR / STATE_FILE_NAME
 TRASH_DIR = DATA_DIR / "trash"
 
 FILENAME_CHARACTERS = set(string.ascii_letters + string.digits + "-")

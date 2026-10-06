@@ -1,6 +1,7 @@
 "API resources."
 
 import base64
+import copy
 from http import HTTPStatus as HTTP
 import io
 import mimetypes
@@ -231,7 +232,7 @@ def get():
     """
     stat = constants.STATE_FILE.stat()
     result = {constants.STATE_FILE.name:
-              dict(modified=utils.iso_utc_from_timestamp(stat.st_mtime),
+              dict(modified=utils.iso_from_timestamp(stat.st_mtime),
                    size=stat.st_size)
               }
     for item in items.lookup.values():
@@ -266,13 +267,18 @@ async def post(request):
 
 @rt("/item/{item:Item}")
 def get(item: items.Item):
-    "Return the source Markdown with YAML frontmatter."
-    return Response(content=item.path.read_text(), media_type=constants.TEXT_MIMETYPE)
+    "Return the frontmatter and the text for the item."
+    frontmatter = copy.deepcopy(item.frontmatter)
+    try:
+        frontmatter["tags"] = list(frontmatter["tags"])
+    except KeyError:
+        pass
+    return dict(frontmatter=frontmatter, text=item.text)
 
 
 @rt("/item/{item:Item}")
 async def post(request, item: items.Item):
-    "Upload source Markdown with YAML frontmatter."
+    "Update the frontmatter and text for the item."
     data = await request.json()
     try:
         frontmatter = data["frontmatter"]

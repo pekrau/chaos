@@ -92,7 +92,7 @@ class Item:
     @property
     def modified(self):
         "Modified timestamp in ISO format in UTC timezone."
-        return utils.iso_utc_from_timestamp(self.path.stat().st_mtime)
+        return utils.iso_from_timestamp(self.path.stat().st_mtime)
 
     @property
     def modified_local(self):
@@ -180,6 +180,7 @@ class Item:
         """
         global lookup, state
         shutil.move(self.path, constants.TRASH_DIR / self.id)
+        # Override code in GenericFile handles the attached file.
         lookup.pop(self.id)
         try:
             state["pinned"].remove(self.id)
@@ -643,7 +644,7 @@ class GenericFile(Item):
     @property
     def file_modified(self):
         "Modified timestamp in UTC ISO format."
-        return utils.iso_utc_from_timestamp(self.filepath.stat().st_mtime)
+        return utils.iso_from_timestamp(self.filepath.stat().st_mtime)
 
     @property
     def url_file(self):
@@ -1218,24 +1219,6 @@ def get_items(type=None):
     else:
         type = type.lower()
         return [i for i in lookup.values() if i.type == type]
-
-
-# def get_all_files():
-#     "Get a map of item paths and filepaths with their 'modified' and 'size' values."
-#     global lookup
-#     result = {
-#         constants.STATE_FILE.name: utils.iso_utc_from_timestamp(
-#             constants.STATE_FILE.stat().st_mtime
-#         )
-#     }
-#     for item in lookup.values():
-#         result[item.id] = dict(modified=item.modified, size=item.size)
-#         if isinstance(item, GenericFile):
-#             if item.filepath.exists():  # File may not exist due to a previous bug.
-#                 result[str(item.filename)] = dict(
-#                     modified=item.file_modified, size=item.file_size
-#                 )
-#     return result
 
 
 def get_counts():

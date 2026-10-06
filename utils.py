@@ -5,6 +5,7 @@ import os
 import os.path
 import shutil
 import sys
+import time
 import unicodedata
 
 import yaml
@@ -12,9 +13,9 @@ import yaml
 import constants
 
 
-def iso_utc_from_timestamp(timestamp):
+def iso_from_timestamp(timestamp=None, tz=dt.UTC):
     "Convert timestamp to ISO format string in UTC timezone."
-    return dt.datetime.fromtimestamp(timestamp, tz=dt.UTC).strftime("%Y-%m-%d %H:%M:%S")
+    return dt.datetime.fromtimestamp(timestamp or time.time(), tz=tz).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_datetime(year, month, day=1):

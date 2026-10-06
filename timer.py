@@ -24,7 +24,7 @@ class Timer:
     @property
     def current(self):
         return {
-            "elapsed time": f"{self.elapsed:.3f}",
+            "Elapsed time": f"{self.elapsed:.3f}",
             "CPU time": f"{self.cputime:.3f}",
         }
 

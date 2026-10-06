@@ -3,7 +3,9 @@ NOTE: This uses its own virtual environment, as specified in 'cli_requirements.t
 """
 
 import base64
+import datetime
 from http import HTTPStatus as HTTP
+import io
 import json
 import mimetypes
 import os
@@ -43,7 +45,7 @@ class Interface:
     def headers(self):
         return dict(password=self.password)
 
-    def get(self, path=None, as_text=False):
+    def get(self, path=None):
         "GET call to the server. Return the data as JSON or text."
         response = requests.get(self.url(path), headers=self.headers)
         if response.status_code in (HTTP.BAD_GATEWAY, HTTP.SERVICE_UNAVAILABLE):
@@ -52,12 +54,9 @@ class Interface:
             sys.exit(f"Error: no such URL '{response.url}'")
         elif response.status_code != HTTP.OK:
             sys.exit(f"Error: {response.status_code=} {response.content=}")
-        if as_text:
-            return response.text
-        else:
-            return response.json()
+        return response.json()
 
-    def post(self, path, data):
+    def post(self, path, data, as_content=False):
         "POST call to the server. Return the JSON data."
         response = requests.post(
             self.url(path), headers=self.headers, data=json.dumps(data)
@@ -68,7 +67,10 @@ class Interface:
             sys.exit(f"Error: no such URL '{response.url}'")
         elif response.status_code != HTTP.OK:
             sys.exit(f"Error: {response.status_code=} {response.content=}")
-        return response.json()
+        if as_content:
+            return response.content
+        else:
+            return response.json()
 
     def data(self, title, tags, text, **kwargs):
         "Return the dictionary for a POST call to add an item."
@@ -250,73 +252,6 @@ def tag(obj, title, tags, color, text):
     click.echo(f"Added {obj.server}{response['url']}")
 
 
-@main.command(help="Update the local directory from the www instance.")
-@click.help_option("--help", "-h")
-@click.option("--local", envvar="CHAOS_LOCAL_DIR", help="Local directory to update.")
-@click.pass_obj
-def sync(obj, local):
-    remote_items = obj.get("all")
-    # for name, data in sorted(remote_items.items()):
-    #     print("REMOTE", name, data)
-    stat = constants.STATE_FILE.stat()
-    local_items = {constants.STATE_FILE.name:
-                   dict(modified=utils.iso_utc_from_timestamp(stat.st_mtime),
-                        size=stat.st_size)
-    }
-    local = Path(local)
-    for path in local.iterdir():
-        if path.suffix != ".md":
-            continue
-        stat = path.stat()
-        local_items[path.stem] = dict(
-            modified=utils.iso_utc_from_timestamp(stat.st_mtime),
-            size=stat.st_size
-        )
-        try:
-            frontmatter, text = utils.split_markdown(path.read_text(encoding="utf-8"))
-        except ValueError:
-            pass
-        else:
-            if ext := frontmatter.get("ext"):
-                extpath = path.with_suffix(ext)
-                if extpath.exists(): # File may not exist due to a previous bug.
-                    stat = extpath.stat()
-                    local_items[extpath.name] = dict(
-                        modified=utils.iso_utc_from_timestamp(stat.st_mtime),
-                        size=stat.st_size
-                    )
-    # for name, data in sorted(local_items.items()):
-    #     print("LOCAL", name, data)
-
-    # Determine the set of files to download.
-    # Files existing in remote, but not in local, or differing in local.
-    download_items = set()
-    for name, info in remote_items.items():
-        if "woke" in name:
-            print(name, info)
-        modified = info["modified"]
-        size = info["size"]
-        if (
-            (name not in local_items)
-            or (local_items[name]["modified"] != modified)
-            or (local_items[name]["size"] != size)
-        ):
-            download_items.add(name)
-
-    for name in sorted(download_items):
-        print(name)
-
-    # Delete local items that do not exist remotely.
-    delete_items = set(local_items.keys()).difference(remote_items.keys())
-    # for name in sorted(delete_items):
-    #     print(name)
-    
-    # for name in delete_items:
-    #     path = target_dir / name
-    #     if not path.suffix:
-    #         path = path.with_suffix(".md")
-    #     path.unlink()
-
 @main.command(help="Optical Character Recognition of an image")
 @click.help_option("--help", "-h")
 @click.option("--language", "-l", type=str, default="en", help="Language for text.")
@@ -331,20 +266,24 @@ def sync(obj, local):
 @click.pass_obj
 def ocr(obj, language, upload, itemid):
     itemid = itemid.lstrip("[[").rstrip("]]")
-    frontmatter, text = utils.split_markdown(obj.get(f"item/{itemid}", as_text=True))
+    data = obj.get(f"item/{itemid}")
+    frontmatter = data["frontmatter"]
+    text = data["text"]
     if frontmatter.get("type") != "image" or not (ext := frontmatter.get("ext")):
         sys.exit("Error: Item is not an image.")
     if mimetypes.guess_type(f"dummy{ext}")[0] not in constants.PIXEL_IMAGE_MIMETYPES:
         sys.exit("Error: Item is not a pixel image.")
     response = requests.get(obj.url(f"/image/{itemid}{ext}"), headers=obj.headers)
-    click.echo(f"Before importing EasyOCR: {obj.timer}")
-    import easyocr
 
-    click.echo(f"After importing EasyOCR: {obj.timer}")
+    import easyocr
+    click.echo(f"Imported EasyOCR. {obj.timer}")
+
     reader = easyocr.Reader([language], gpu=False, verbose=False)
-    click.echo(f"After loading EasyOCR '{language}': {obj.timer}")
+    click.echo(f"Loaded EasyOCR '{language}'. {obj.timer}")
+
     result = reader.readtext(response.content, detail=0)
-    click.echo(f"After detecting text: {obj.timer}")
+    click.echo(f"Detected text. {obj.timer}")
+
     if result:
         result = "\n".join(result)
         if upload:
@@ -355,6 +294,92 @@ def ocr(obj, language, upload, itemid):
             click.echo(result)
     else:
         click.echo("<No text found>")
+
+
+@main.command(help="Update the local directory from the www instance.")
+@click.help_option("--help", "-h")
+@click.option("--local", envvar="CHAOS_LOCAL_DIR", help="Local directory to update.")
+@click.pass_obj
+def sync(obj, local):
+    local = Path(local)
+    state_filepath = local / constants.STATE_FILE_NAME
+    stat = state_filepath.stat()
+    local_items = {state_filepath.name:
+                   dict(modified=utils.iso_from_timestamp(stat.st_mtime),
+                        size=stat.st_size)
+    }
+    for path in local.iterdir():
+        if path.suffix != ".md":
+            continue
+        stat = path.stat()
+        local_items[path.stem] = dict(
+            modified=utils.iso_from_timestamp(stat.st_mtime),
+            size=stat.st_size
+        )
+        try:
+            frontmatter, text = utils.split_markdown(path.read_text(encoding="utf-8"))
+        except ValueError:
+            pass
+        else:
+            if ext := frontmatter.get("ext"):
+                extpath = path.with_suffix(ext)
+                if extpath.exists(): # File may not exist due to a previous bug.
+                    stat = extpath.stat()
+                    local_items[extpath.name] = dict(
+                        modified=utils.iso_from_timestamp(stat.st_mtime),
+                        size=stat.st_size
+                    )
+    # Determine the set of files to download.
+    # Files existing in remote, but not in local, or differing in local.
+    remote_items = obj.get("all")
+    download_items = list()
+    for name, info in remote_items.items():
+        modified = info["modified"]
+        size = info["size"]
+        if (
+            (name not in local_items)
+            or (local_items[name]["modified"] != modified)
+            or (local_items[name]["size"] != size)
+        ):
+            download_items.append(name)
+
+    if download_items:
+        content = obj.post("download", dict(items=download_items), as_content=True)
+        if not content:
+            raise IOError("empty TGZ file from remote")
+        try:
+            tf = tarfile.open(fileobj=io.BytesIO(content), mode="r:gz")
+            tf.extractall(path=local)
+        except tarfile.TarError as message:
+            raise IOError(f"tar file error: {message}")
+
+    # Delete local items that do not exist remotely.
+    delete_items = set(local_items.keys()).difference(remote_items.keys())
+    for name in delete_items:
+        path = local / name
+        if not path.suffix:
+            path = path.with_suffix(".md")
+        path.unlink()
+
+    click.echo(f"{utils.iso_from_timestamp(tz=None)} Downloaded {len(download_items)} items. Deleted {len(delete_items)} items. {obj.timer}")
+
+
+@main.command(help="Create a tarfile of the local directory in the dump directory.")
+@click.help_option("--help", "-h")
+@click.option("--local", envvar="CHAOS_LOCAL_DIR", help="Local directory.")
+@click.option("--dump", envvar="CHAOS_DUMP_DIR", help="Dump directory.")
+@click.pass_obj
+def dump(obj, local, dump):
+    tarfilepath = Path(dump) / f"chaos_{datetime.date.today()}.tgz"
+    with tarfile.open(tarfilepath, mode="w:gz") as outfile:
+        for dirpath, dirnames, filenames in os.walk(local):
+            abspath = Path(dirpath)
+            relpath = Path(dirpath).relative_to(local)
+            for filename in filenames:
+                outfile.add(
+                    abspath.joinpath(filename), arcname=relpath.joinpath(filename)
+                )
+    click.echo(f"{utils.iso_from_timestamp(tz=None)} Wrote '{tarfilepath}'")
 
 
 if __name__ == "__main__":

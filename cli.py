@@ -276,6 +276,7 @@ def ocr(obj, language, upload, itemid):
     response = requests.get(obj.url(f"/image/{itemid}{ext}"), headers=obj.headers)
 
     import easyocr
+
     click.echo(f"Imported EasyOCR. {obj.timer}")
 
     reader = easyocr.Reader([language], gpu=False, verbose=False)
@@ -304,17 +305,17 @@ def sync(obj, local):
     local = Path(local)
     state_filepath = local / constants.STATE_FILE_NAME
     stat = state_filepath.stat()
-    local_items = {state_filepath.name:
-                   dict(modified=utils.iso_from_timestamp(stat.st_mtime),
-                        size=stat.st_size)
+    local_items = {
+        state_filepath.name: dict(
+            modified=utils.iso_from_timestamp(stat.st_mtime), size=stat.st_size
+        )
     }
     for path in local.iterdir():
         if path.suffix != ".md":
             continue
         stat = path.stat()
         local_items[path.stem] = dict(
-            modified=utils.iso_from_timestamp(stat.st_mtime),
-            size=stat.st_size
+            modified=utils.iso_from_timestamp(stat.st_mtime), size=stat.st_size
         )
         try:
             frontmatter, text = utils.split_markdown(path.read_text(encoding="utf-8"))
@@ -323,11 +324,11 @@ def sync(obj, local):
         else:
             if ext := frontmatter.get("ext"):
                 extpath = path.with_suffix(ext)
-                if extpath.exists(): # File may not exist due to a previous bug.
+                if extpath.exists():  # File may not exist due to a previous bug.
                     stat = extpath.stat()
                     local_items[extpath.name] = dict(
                         modified=utils.iso_from_timestamp(stat.st_mtime),
-                        size=stat.st_size
+                        size=stat.st_size,
                     )
     # Determine the set of files to download.
     # Files existing in remote, but not in local, or differing in local.
@@ -361,7 +362,10 @@ def sync(obj, local):
             path = path.with_suffix(".md")
         path.unlink()
 
-    click.echo(f"{utils.iso_from_timestamp(tz=None)} Downloaded {len(download_items)} items. Deleted {len(delete_items)} items. {obj.timer}")
+    if download_items or delete_items:
+        click.echo(
+            f"{utils.iso_from_timestamp(tz=None)} Downloaded {len(download_items)} items. Deleted {len(delete_items)} items. {obj.timer}"
+        )
 
 
 @main.command(help="Create a tarfile of the local directory in the dump directory.")

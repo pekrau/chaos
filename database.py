@@ -191,7 +191,7 @@ def get(database: items.Item, tablename: str):
                 action=f"{database.url}/row/{tablename}",
                 method="POST",
             ),
-            components.get_cancel_form(database.url),
+            components.get_cancel_form(f"{database.url}/rows/{tablename}"),
             cls="container",
         ),
     )
@@ -276,6 +276,9 @@ def get(database: items.Item, relname: str):
             Card(
                 Header(f"{schema[relname]['count']} rows", cls="center"),
                 Div(id="table"),
+                Footer(
+                    A("Add row...", role="button", href=f"{database.url}/row/{relname}")
+                ),
             ),
             cls="container",
         ),

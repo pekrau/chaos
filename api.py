@@ -231,10 +231,11 @@ def get():
     which includes Markdown files and all other files (PDF, PNG, etc).
     """
     stat = constants.STATE_FILE.stat()
-    result = {constants.STATE_FILE.name:
-              dict(modified=utils.iso_from_timestamp(stat.st_mtime),
-                   size=stat.st_size)
-              }
+    result = {
+        constants.STATE_FILE.name: dict(
+            modified=utils.iso_from_timestamp(stat.st_mtime), size=stat.st_size
+        )
+    }
     for item in items.lookup.values():
         result[item.id] = dict(modified=item.modified, size=item.size)
         if isinstance(item, items.GenericFile):

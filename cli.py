@@ -7,7 +7,9 @@ from http import HTTPStatus as HTTP
 import json
 import mimetypes
 import os
+from pathlib import Path
 import sys
+import tarfile
 
 import click
 import dotenv
@@ -248,6 +250,73 @@ def tag(obj, title, tags, color, text):
     click.echo(f"Added {obj.server}{response['url']}")
 
 
+@main.command(help="Update the local directory from the www instance.")
+@click.help_option("--help", "-h")
+@click.option("--local", envvar="CHAOS_LOCAL_DIR", help="Local directory to update.")
+@click.pass_obj
+def sync(obj, local):
+    remote_items = obj.get("all")
+    # for name, data in sorted(remote_items.items()):
+    #     print("REMOTE", name, data)
+    stat = constants.STATE_FILE.stat()
+    local_items = {constants.STATE_FILE.name:
+                   dict(modified=utils.iso_utc_from_timestamp(stat.st_mtime),
+                        size=stat.st_size)
+    }
+    local = Path(local)
+    for path in local.iterdir():
+        if path.suffix != ".md":
+            continue
+        stat = path.stat()
+        local_items[path.stem] = dict(
+            modified=utils.iso_utc_from_timestamp(stat.st_mtime),
+            size=stat.st_size
+        )
+        try:
+            frontmatter, text = utils.split_markdown(path.read_text(encoding="utf-8"))
+        except ValueError:
+            pass
+        else:
+            if ext := frontmatter.get("ext"):
+                extpath = path.with_suffix(ext)
+                if extpath.exists(): # File may not exist due to a previous bug.
+                    stat = extpath.stat()
+                    local_items[extpath.name] = dict(
+                        modified=utils.iso_utc_from_timestamp(stat.st_mtime),
+                        size=stat.st_size
+                    )
+    # for name, data in sorted(local_items.items()):
+    #     print("LOCAL", name, data)
+
+    # Determine the set of files to download.
+    # Files existing in remote, but not in local, or differing in local.
+    download_items = set()
+    for name, info in remote_items.items():
+        if "woke" in name:
+            print(name, info)
+        modified = info["modified"]
+        size = info["size"]
+        if (
+            (name not in local_items)
+            or (local_items[name]["modified"] != modified)
+            or (local_items[name]["size"] != size)
+        ):
+            download_items.add(name)
+
+    for name in sorted(download_items):
+        print(name)
+
+    # Delete local items that do not exist remotely.
+    delete_items = set(local_items.keys()).difference(remote_items.keys())
+    # for name in sorted(delete_items):
+    #     print(name)
+    
+    # for name in delete_items:
+    #     path = target_dir / name
+    #     if not path.suffix:
+    #         path = path.with_suffix(".md")
+    #     path.unlink()
+
 @main.command(help="Optical Character Recognition of an image")
 @click.help_option("--help", "-h")
 @click.option("--language", "-l", type=str, default="en", help="Language for text.")
@@ -278,11 +347,12 @@ def ocr(obj, language, upload, itemid):
     click.echo(f"After detecting text: {obj.timer}")
     if result:
         result = "\n".join(result)
-        click.echo(result)
         if upload:
             text += "\n\n" + result
             obj.post(f"item/{itemid}", data=dict(frontmatter=frontmatter, text=text))
             click.echo("Result uploaded.")
+        else:
+            click.echo(result)
     else:
         click.echo("<No text found>")
 

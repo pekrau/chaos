@@ -1220,27 +1220,26 @@ def get_items(type=None):
         return [i for i in lookup.values() if i.type == type]
 
 
-def get_all_files():
-    "Get a map of item paths and filepaths with their 'modified' and 'size' values."
-    global lookup
-    result = {
-        constants.STATE_FILE.name: utils.iso_utc_from_timestamp(
-            constants.STATE_FILE.stat().st_mtime
-        )
-    }
-    result = {}
-    for item in lookup.values():
-        result[item.id] = dict(modified=item.modified, size=item.size)
-        if isinstance(item, GenericFile):
-            if item.filename.exists():  # Due to previous bug, the file may not exist.
-                result[str(item.filename)] = dict(
-                    modified=item.file_modified, size=item.file_size
-                )
-    return result
+# def get_all_files():
+#     "Get a map of item paths and filepaths with their 'modified' and 'size' values."
+#     global lookup
+#     result = {
+#         constants.STATE_FILE.name: utils.iso_utc_from_timestamp(
+#             constants.STATE_FILE.stat().st_mtime
+#         )
+#     }
+#     for item in lookup.values():
+#         result[item.id] = dict(modified=item.modified, size=item.size)
+#         if isinstance(item, GenericFile):
+#             if item.filepath.exists():  # File may not exist due to a previous bug.
+#                 result[str(item.filename)] = dict(
+#                     modified=item.file_modified, size=item.file_size
+#                 )
+#     return result
 
 
 def get_counts():
-    global TYPES
+    global TYPES, lookup
     result = dict(item=len(lookup))
     result.update(dict([(type, 0) for type in TYPES if not type.startswith("generic")]))
     for item in lookup.values():

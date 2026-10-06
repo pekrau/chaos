@@ -143,14 +143,6 @@ def get_status():
     )
 
 
-@rt("/all")
-def get():
-    """Return a JSON dictionary of items {name: {modified, size}} for all items,
-    which includes Markdown files and all other files (PDF, PNG, etc).
-    """
-    return items.get_all_files()
-
-
 @rt("/tags")
 def get():
     "Return the dictionary of all available tags; id -> title"
@@ -232,6 +224,26 @@ async def post(request):
     return dict(type="tag", id=tag.id, url=tag.url)
 
 
+@rt("/all")
+def get():
+    """Return a JSON dictionary of items {name: {modified, size}} for all items,
+    which includes Markdown files and all other files (PDF, PNG, etc).
+    """
+    stat = constants.STATE_FILE.stat()
+    result = {constants.STATE_FILE.name:
+              dict(modified=utils.iso_utc_from_timestamp(stat.st_mtime),
+                   size=stat.st_size)
+              }
+    for item in items.lookup.values():
+        result[item.id] = dict(modified=item.modified, size=item.size)
+        if isinstance(item, items.GenericFile):
+            if item.filepath.exists():  # File may not exist due to a previous bug.
+                result[str(item.filename)] = dict(
+                    modified=item.file_modified, size=item.file_size
+                )
+    return result
+
+
 @rt("/download")
 async def post(request):
     "Return a TGZ file of those items named in the request JSON data."
@@ -265,7 +277,7 @@ async def post(request, item: items.Item):
     try:
         frontmatter = data["frontmatter"]
         if frontmatter.get("type") != item.type:
-            raise errors.Error(f"Item type change not allowed", HTTP.FORBIDDEN)
+            raise errors.Error(f"Item type may not be changed", HTTP.FORBIDDEN)
     except KeyError:
         frontmatter = item.frontmatter
     try:
@@ -273,10 +285,10 @@ async def post(request, item: items.Item):
     except KeyError:
         text = item.text
     match item.type:
-        case "file" | "image":
+        case "file" | "image" | "database":
             if frontmatter.get("ext") != item.ext:
                 raise errors.Error(f"Item 'ext' may not be changed", HTTP.FORBIDDEN)
     item.frontmatter = frontmatter
     item.text = text
     item.write()
-    return dict(type="image", id=item.id, url=item.url)
+    return dict(type=item.type, id=item.id, url=item.url)

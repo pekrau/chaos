@@ -365,7 +365,6 @@ def get(database: items.Item, tablename: str, key: str):
             Form(
                 Input(type="submit", value="Delete row", cls="outline"),
                 action=f"{database.url}/row/{tablename}/{key}/delete",
-                method="POST",
             ),
             components.get_cancel_form(f"{database.url}/rows/{tablename}"),
             cls="container",
@@ -407,6 +406,46 @@ def post(session, database: items.Item, tablename: str, key: str, form: dict):
                 raise errors.Error(error)
     add_toast(session, "Row updated.", "success")
     return components.redirect(f"{database.url}/rows/{tablename}")
+
+
+@rt("/{database:Item}/row/{tablename:str}/{key:str}/delete")
+def get(session, database: items.Item, tablename: str, key: str):
+    "Ask for confirmation to delete the row in a table."
+    assert isinstance(database, items.Database)
+    try:
+        table = database.get_schema()[tablename]
+    except KeyError:
+        raise errors.Error("no such table", HTTP.NOT_FOUND)
+    return (
+        Title(f"Delete row '{key}' from table {tablename} in {database}"),
+        Header(
+            Nav(
+                Ul(
+                    Li(components.get_nav_menu(database)),
+                    Li(
+                        f"Delete row ",
+                        Strong(key),
+                        " from table ",
+                        Strong(tablename),
+                        " in ",
+                        components.get_item_icon(database),
+                        database,
+                    ),
+                ),
+            ),
+            cls="container",
+        ),
+        Main(
+            H3(f"Really delete the row '{key}'?"),
+            Form(
+                Input(type="submit", value="Yes, delete"),
+                action=f"{database.url}/row/{tablename}/{key}/delete",
+                method="POST",
+            ),
+            components.get_cancel_form(f"{database.url}/row/{tablename}/{key})"),
+            cls="container",
+        ),
+    )
 
 
 @rt("/{database:Item}/row/{tablename:str}/{key:str}/delete")
@@ -653,7 +692,7 @@ def get(database: items.Item, tablename: str):
         ),
         Main(
             Card(
-                Header("Drop column"),
+                Header("Alter column"),
                 Body(
                     Table(
                         Thead(
@@ -661,7 +700,7 @@ def get(database: items.Item, tablename: str):
                                 Th("Column"),
                                 Th("Type"),
                                 Th("Constraint"),
-                                Th(),
+                                Th("Drop"),
                             ),
                         ),
                         Tbody(
@@ -691,7 +730,7 @@ def get(database: items.Item, tablename: str):
                                         Form(
                                             Input(
                                                 type="submit",
-                                                value=f"Drop {colname}",
+                                                value="Drop",
                                                 disabled=bool(column["primary"]),
                                             ),
                                             action=f"{database.url}/table/{tablename}/{colname}",

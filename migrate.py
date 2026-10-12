@@ -42,11 +42,6 @@ def migrate():
                     except KeyError:
                         pass
                     item.tags = tags
-        # For Book items, remove language
-        if isinstance(item, items.Book):
-            if "language" in item.frontmatter:
-                with update(item):
-                    item.frontmatter.pop("language")
 
 
 @contextlib.contextmanager

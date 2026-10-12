@@ -9,7 +9,6 @@ import pathlib
 import tarfile
 
 from fasthtml.common import *
-import bibtexparser
 import click
 import fasthtml
 import marko
@@ -89,11 +88,6 @@ def get_status():
             name="PyYAML",
             href="https://pypi.org/project/PyYAML/",
             version=yaml.__version__,
-        ),
-        dict(
-            name="BibtexParser",
-            href="https://bibtexparser.readthedocs.io/en/main/",
-            version=bibtexparser.__version__,
         ),
         dict(
             name="requests",

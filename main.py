@@ -1,5 +1,5 @@
 """chaos: Web-based personal repository of notes, tags, links, images, files,
-databases, graphics, books and articles.
+databases and graphics.
 """
 
 import io
@@ -24,7 +24,6 @@ if os.environ.get("CHAOS_DEVELOPMENT"):
     icecream.install()
 
 import constants
-import bibtex
 import components
 import items
 import note
@@ -35,8 +34,6 @@ import file
 import image
 import database
 import graphic
-import book
-import article
 import person
 import api
 import utils
@@ -52,8 +49,6 @@ app, rt = components.get_app_rt(
         Mount("/image", image.app),
         Mount("/database", database.app),
         Mount("/graphic", graphic.app),
-        Mount("/book", book.app),
-        Mount("/article", article.app),
         Mount("/person", person.app),
         Mount("/api", api.app),
     ]

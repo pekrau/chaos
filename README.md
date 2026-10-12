@@ -1,7 +1,7 @@
 # chaos
 
 Web-based personal repository of notes, tags, events, links, images, files, 
-databases, graphics, books and articles.
+databases and graphics.
 
 ## Software
 

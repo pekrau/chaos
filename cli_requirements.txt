@@ -34,7 +34,7 @@ nvidia-nvshmem-cu13==3.4.5
 nvidia-nvtx==13.0.85
 opencv-python-headless==5.0.0.93
 packaging==26.3
-pillow==12.3.0
+pillow==13.0.0
 pyclipper==1.4.0
 python-bidi==0.6.11
 python-dotenv==1.2.4

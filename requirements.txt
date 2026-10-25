@@ -10,6 +10,7 @@ colorama==0.4.6
 executing==2.2.1
 fastcore==2.2.22
 fastlite==0.2.4
+filelock==4.2.4
 filetype==1.2.0
 h11==0.16.0
 httpcore==1.0.9

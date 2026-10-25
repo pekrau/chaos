@@ -589,7 +589,7 @@ class Tag(Item):
     @property
     def color_name(self):
         "Convert to name color, or keep in hex if no name."
-        if color := self.color and color.startswith("#"):
+        if (color := self.color) and color.startswith("#"):
             try:
                 return webcolors.hex_to_name(webcolors.normalize_hex(color))
             except ValueError:

@@ -11,8 +11,8 @@ import xml.sax.saxutils
 class Element:
     "XML element. Contains a reference to superelement and subelements (if any)."
 
-    repr_indent = 2
-    xml_decl = True
+    REPR_INDENT = 2  # Indentation to use for repr().
+    REPR_XML_DECL = True  # repr() outputs XML declaration if the element is root.
 
     def __init__(self, tag, *subelements, **attrs):
         self.tag = tag
@@ -40,7 +40,9 @@ class Element:
         "Return the string representation of the element and its subelements."
         outfile = io.StringIO()
         self.write(
-            outfile, indent=self.repr_indent, xml_decl=self.xml_decl and self.depth == 0
+            outfile,
+            indent=self.REPR_INDENT,
+            xml_decl=self.REPR_XML_DECL and self.depth == 0,
         )
         return outfile.getvalue()
 
@@ -194,10 +196,28 @@ class Element:
                 continue
             yield from subelement.walk(test=test)
 
-    def write(self, outfile, indent=None, xml_decl=False):
+    def diff(self, other):
+        "Return the first difference between this element and the other, recursively."
+        if not isinstance(other, Element):
+            return ("instance", self, other)
+        if self.tag != other.tag:
+            return ("tag", self, other)
+        if self.attrs != other.attrs:
+            return ("attrs", self, other)
+        if len(self) != len(other):
+            return ("len", self, other)
+        for subelement1, subelement2 in zip(self.subelements, other.subelements):
+            if isinstance(subelement1, Element):
+                if result := subelement1.diff(subelement2):
+                    return result
+            elif subelement1 != subelement2:
+                return ("diff", subelement1, subelement2)
+
+    def write(self, outfile, indent=None, xml_decl=False, encoding="utf-8"):
         "Write the XML of the element and its subelements into the open file object."
+        assert indent is None or isinstance(indent, int)
         if xml_decl:
-            outfile.write(f'<?xml version="1.0"?>\n')
+            outfile.write(f'<?xml version="1.0" encoding="{encoding}"?>\n')
         if indent is None:
             padding = ""
         else:
@@ -269,3 +289,35 @@ def read(filepath_or_stream):
 def parse(content):
     "Parse the given XML content (string). Return the root XML element."
     return read(io.StringIO(content))
+
+
+if __name__ == "__main__":
+    original = parse("""<?xml version="1.0" encoding="UTF-8" ?>
+<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" unique-identifier="db-id" version="3.0">
+<metadata>
+<dc:title id="t1">Sample .epub Book</dc:title>
+<dc:creator id="creator">Thomas Hansen</dc:creator>
+<dc:identifier id="db-id">isbn</dc:identifier>
+<meta property="dcterms:modified">2014-03-27T09:14:09Z</meta>
+<dc:language>en</dc:language>
+</metadata>
+</package>""")
+    output = io.StringIO()
+    original.write(output, indent=2)
+    print(output.getvalue())
+
+    root = Element("package", xmlns="http://www.idpf.org/2007/opf", version="3.0")
+    root["xmlns:dc"] = "http://purl.org/dc/elements/1.1/"
+    root["unique-identifier"] = "db-id"
+    metadata = root.create("metadata")
+    metadata.create("dc:title", id="t1").append("Sample .epub Book")
+    metadata.create("dc:creator", id="creator").append("Thomas Hansen")
+    metadata.create("dc:identifier", id="db-id").append("isbn")
+    metadata.create("meta", property="dcterms:modified").append("2014-03-27T09:14:09Z")
+    metadata.create("dc:language").append("en")
+    output = io.StringIO()
+    root.write(output, indent=2)
+    print(output.getvalue())
+
+    if diff := original.diff(root):
+        print(diff)

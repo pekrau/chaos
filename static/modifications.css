@@ -53,10 +53,10 @@
 
 .today {
     color: contrast-color(var(--backgroundColor));
-    border: thick solid blue;
-    border-style: dotted;
+    border: medium solid black;
+    border-radius: 6px;
     background-color: yellow;
-    padding: 2px 6px;
+    padding: 0px 30px;
 }
 
 *:required {

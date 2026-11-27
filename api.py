@@ -13,6 +13,7 @@ import click
 import fasthtml
 import marko
 import mermaidx
+import minixml
 import psutil
 import requests
 import webcolors
@@ -98,6 +99,11 @@ def get_status():
             name="click",
             href="https://click.palletsprojects.com/en/stable/",
             version=click.__version__,
+        ),
+        dict(
+            name="minixml",
+            href="https://github.com/pekrau/minixml",
+            version=minixml.__version__,
         ),
         dict(
             name="Vega-Lite",

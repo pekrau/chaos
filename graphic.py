@@ -78,9 +78,7 @@ def post(
 
         case constants.SVG:
             try:  # Syntax check and cleanup: compact representation; no indentation.
-                xml = minixml.parse(specification.strip())
-                xml.repr_indent = None
-                specification = repr(xml)
+                specification = minixml.unparse(minixml.parse(specification.strip()))
             except ValueError as error:
                 raise errors.Error(str(error))
 
